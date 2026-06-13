@@ -6,41 +6,93 @@ export interface EQBand {
   freq: number;
   gain: number;
   type: BiquadFilterType;
+  Q?: number;
 }
 
-const DEFAULT_BANDS: EQBand[] = [
-  { label: "60Hz", freq: 60, gain: 0, type: "lowshelf" },
-  { label: "230Hz", freq: 230, gain: 0, type: "peaking" },
-  { label: "910Hz", freq: 910, gain: 0, type: "peaking" },
-  { label: "3.6kHz", freq: 3600, gain: 0, type: "peaking" },
-  { label: "14kHz", freq: 14000, gain: 0, type: "highshelf" },
+export const DEFAULT_BANDS: EQBand[] = [
+  { label: "32",   freq: 32,    gain: 0, type: "lowshelf",  Q: 0.7 },
+  { label: "64",   freq: 64,    gain: 0, type: "peaking",   Q: 1.4 },
+  { label: "125",  freq: 125,   gain: 0, type: "peaking",   Q: 1.4 },
+  { label: "250",  freq: 250,   gain: 0, type: "peaking",   Q: 1.4 },
+  { label: "500",  freq: 500,   gain: 0, type: "peaking",   Q: 1.4 },
+  { label: "1k",   freq: 1000,  gain: 0, type: "peaking",   Q: 1.4 },
+  { label: "2k",   freq: 2000,  gain: 0, type: "peaking",   Q: 1.4 },
+  { label: "4k",   freq: 4000,  gain: 0, type: "peaking",   Q: 1.4 },
+  { label: "8k",   freq: 8000,  gain: 0, type: "peaking",   Q: 1.4 },
+  { label: "16k",  freq: 16000, gain: 0, type: "highshelf", Q: 0.7 },
 ];
 
+export const EQ_PRESETS: Record<string, number[]> = {
+  Flat:       [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  Bass:       [6, 5, 4, 2, 0, 0, 0, -1, -1, -2],
+  Vocal:      [-2, -1, 0, 2, 4, 4, 3, 2, 1, 0],
+  Rock:       [5, 4, 2, 0, -1, 0, 2, 4, 5, 4],
+  Pop:        [-1, 0, 2, 3, 4, 3, 2, 1, 0, -1],
+  Classical:  [4, 3, 2, 0, 0, 0, 0, 2, 3, 4],
+  Jazz:       [3, 2, 0, 2, -1, -1, 0, 1, 2, 3],
+  Electronic: [4, 4, 2, 0, -1, 0, 1, 2, 4, 5],
+  Podcast:    [-2, -1, 0, 2, 5, 5, 4, 2, 1, 0],
+  Nuit:       [3, 2, 1, 0, -2, -3, -3, -2, -1, 0],
+};
+
 export function useAudioPlayer() {
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const ctxRef = useRef<AudioContext | null>(null);
-  const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
-  const filtersRef = useRef<BiquadFilterNode[]>([]);
+  const audioRef    = useRef<HTMLAudioElement | null>(null);
+  const ctxRef      = useRef<AudioContext | null>(null);
+  const sourceRef   = useRef<MediaElementAudioSourceNode | null>(null);
+  const filtersRef  = useRef<BiquadFilterNode[]>([]);
   const analyserRef = useRef<AnalyserNode | null>(null);
 
   const [isPlaying, setIsPlaying] = useState(false);
-  const [volume, setVolume] = useState(0.8);
+  const [volume,    setVolume]    = useState(0.8);
   const [currentUrl, setCurrentUrl] = useState<string | null>(null);
-  const [bands, setBands] = useState<EQBand[]>(DEFAULT_BANDS);
+  const [bands,     setBands]     = useState<EQBand[]>(DEFAULT_BANDS);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error,     setError]     = useState<string | null>(null);
+
+  const buildGraph = useCallback((audio: HTMLAudioElement, currentBands: EQBand[]) => {
+    if (!ctxRef.current || ctxRef.current.state === "closed") {
+      ctxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+    }
+    const ctx = ctxRef.current;
+
+    if (sourceRef.current) { try { sourceRef.current.disconnect(); } catch {} }
+
+    const source = ctx.createMediaElementSource(audio);
+    sourceRef.current = source;
+
+    const filters = currentBands.map((band) => {
+      const f = ctx.createBiquadFilter();
+      f.type = band.type;
+      f.frequency.value = band.freq;
+      f.gain.value = band.gain;
+      f.Q.value = band.Q ?? 1.4;
+      return f;
+    });
+    filtersRef.current = filters;
+
+    const analyser = ctx.createAnalyser();
+    analyser.fftSize = 512;
+    analyser.smoothingTimeConstant = 0.8;
+    analyserRef.current = analyser;
+
+    let node: AudioNode = source;
+    for (const f of filters) { node.connect(f); node = f; }
+    node.connect(analyser);
+    analyser.connect(ctx.destination);
+
+    if (ctx.state === "suspended") ctx.resume();
+  }, []);
 
   const initAudio = useCallback((url: string) => {
-    // Reuse existing audio element if same URL
     if (audioRef.current && currentUrl === url) {
       if (!isPlaying) {
+        ctxRef.current?.resume();
         audioRef.current.play().catch(console.error);
         setIsPlaying(true);
       }
       return;
     }
 
-    // Stop previous
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.src = "";
@@ -56,72 +108,20 @@ export function useAudioPlayer() {
     audioRef.current = audio;
     setCurrentUrl(url);
 
-    // Build Web Audio graph
-    if (!ctxRef.current || ctxRef.current.state === "closed") {
-      ctxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-    }
-    const ctx = ctxRef.current;
+    buildGraph(audio, bands);
 
-    // Disconnect previous source
-    if (sourceRef.current) {
-      try { sourceRef.current.disconnect(); } catch {}
-    }
+    audio.oncanplay  = () => setIsLoading(false);
+    audio.onerror    = () => { setError("Impossible de charger le flux."); setIsLoading(false); };
+    audio.onplaying  = () => { setIsPlaying(true); setIsLoading(false); };
+    audio.onpause    = () => setIsPlaying(false);
+    audio.onwaiting  = () => setIsLoading(true);
 
-    const source = ctx.createMediaElementSource(audio);
-    sourceRef.current = source;
+    audio.play().catch(() => { setError("Lecture bloquée par le navigateur."); setIsLoading(false); });
+  }, [currentUrl, isPlaying, volume, bands, buildGraph]);
 
-    // Create EQ filters chain
-    const filters = bands.map((band) => {
-      const f = ctx.createBiquadFilter();
-      f.type = band.type;
-      f.frequency.value = band.freq;
-      f.gain.value = band.gain;
-      f.Q.value = 1;
-      return f;
-    });
-    filtersRef.current = filters;
-
-    // Analyser for visualizer
-    const analyser = ctx.createAnalyser();
-    analyser.fftSize = 256;
-    analyserRef.current = analyser;
-
-    // Chain: source -> filters -> analyser -> destination
-    let node: AudioNode = source;
-    for (const f of filters) { node.connect(f); node = f; }
-    node.connect(analyser);
-    analyser.connect(ctx.destination);
-
-    audio.oncanplay = () => setIsLoading(false);
-    audio.onerror = () => {
-      setError("Impossible de charger le flux.");
-      setIsLoading(false);
-    };
-    audio.onplaying = () => { setIsPlaying(true); setIsLoading(false); };
-    audio.onpause = () => setIsPlaying(false);
-    audio.onwaiting = () => setIsLoading(true);
-
-    if (ctx.state === "suspended") ctx.resume();
-    audio.play().catch((e) => {
-      setError("Lecture bloquée par le navigateur.");
-      setIsLoading(false);
-    });
-  }, [currentUrl, isPlaying, volume, bands]);
-
-  const play = useCallback(() => {
-    if (audioRef.current) {
-      ctxRef.current?.resume();
-      audioRef.current.play().catch(console.error);
-    }
-  }, []);
-
-  const pause = useCallback(() => {
-    audioRef.current?.pause();
-  }, []);
-
-  const togglePlay = useCallback(() => {
-    if (isPlaying) pause(); else play();
-  }, [isPlaying, play, pause]);
+  const play  = useCallback(() => { ctxRef.current?.resume(); audioRef.current?.play().catch(console.error); }, []);
+  const pause = useCallback(() => { audioRef.current?.pause(); }, []);
+  const togglePlay = useCallback(() => { if (isPlaying) pause(); else play(); }, [isPlaying, play, pause]);
 
   const changeVolume = useCallback((v: number) => {
     setVolume(v);
@@ -139,42 +139,31 @@ export function useAudioPlayer() {
     }
   }, []);
 
-  const resetEQ = useCallback(() => {
-    setBands(DEFAULT_BANDS.map((b) => ({ ...b, gain: 0 })));
-    filtersRef.current.forEach((f) => { f.gain.value = 0; });
+  const applyPreset = useCallback((gains: number[]) => {
+    setBands((prev) => prev.map((b, i) => ({ ...b, gain: gains[i] ?? 0 })));
+    gains.forEach((g, i) => {
+      if (filtersRef.current[i]) filtersRef.current[i].gain.value = g;
+    });
   }, []);
 
+  const resetEQ = useCallback(() => applyPreset(Array(10).fill(0)), [applyPreset]);
+
   const stop = useCallback(() => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.src = "";
-    }
+    audioRef.current?.pause();
+    if (audioRef.current) audioRef.current.src = "";
     setIsPlaying(false);
     setCurrentUrl(null);
   }, []);
 
-  useEffect(() => {
-    return () => {
-      audioRef.current?.pause();
-      ctxRef.current?.close();
-    };
+  useEffect(() => () => {
+    audioRef.current?.pause();
+    ctxRef.current?.close();
   }, []);
 
   return {
-    isPlaying,
-    volume,
-    currentUrl,
-    bands,
-    isLoading,
-    error,
-    analyserRef,
-    initAudio,
-    play,
-    pause,
-    togglePlay,
-    changeVolume,
-    updateBand,
-    resetEQ,
-    stop,
+    isPlaying, volume, currentUrl, bands, isLoading, error,
+    analyserRef, filtersRef,
+    initAudio, play, pause, togglePlay,
+    changeVolume, updateBand, applyPreset, resetEQ, stop,
   };
 }

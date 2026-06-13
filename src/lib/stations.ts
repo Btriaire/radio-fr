@@ -7,7 +7,13 @@ export interface Station {
   color: string;
   genre: string;
   freq?: string;
+  votes?: number;
+  clickcount?: number;
 }
+
+// Logo strategy: Google's S2 favicon service (reliable, no CORS)
+const gl = (domain: string) =>
+  `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
 
 export const STATIONS: Station[] = [
   {
@@ -15,7 +21,7 @@ export const STATIONS: Station[] = [
     name: "France Inter",
     tagline: "Culture & Actu",
     streamUrl: "https://icecast.radiofrance.fr/franceinter-midfi.mp3",
-    logo: "🎙️",
+    logo: gl("franceinter.fr"),
     color: "#e63946",
     genre: "Généraliste",
     freq: "87.8 FM",
@@ -25,7 +31,7 @@ export const STATIONS: Station[] = [
     name: "franceinfo",
     tagline: "Info en continu",
     streamUrl: "https://icecast.radiofrance.fr/franceinfo-midfi.mp3",
-    logo: "📻",
+    logo: gl("francetvinfo.fr"),
     color: "#4361ee",
     genre: "Info",
     freq: "105.5 FM",
@@ -35,7 +41,7 @@ export const STATIONS: Station[] = [
     name: "France Culture",
     tagline: "Arts & Idées",
     streamUrl: "https://icecast.radiofrance.fr/franceculture-midfi.mp3",
-    logo: "🎭",
+    logo: gl("radiofrance.fr"),
     color: "#7b2d8b",
     genre: "Culture",
     freq: "93.5 FM",
@@ -45,7 +51,7 @@ export const STATIONS: Station[] = [
     name: "France Musique",
     tagline: "Classique & Jazz",
     streamUrl: "https://icecast.radiofrance.fr/francemusique-midfi.mp3",
-    logo: "🎼",
+    logo: gl("francemusique.fr"),
     color: "#f77f00",
     genre: "Musique",
     freq: "91.7 FM",
@@ -55,7 +61,7 @@ export const STATIONS: Station[] = [
     name: "FIP",
     tagline: "Éclectique & Cool",
     streamUrl: "https://icecast.radiofrance.fr/fip-midfi.mp3",
-    logo: "🎵",
+    logo: gl("fip.fr"),
     color: "#06d6a0",
     genre: "Musique",
     freq: "105.1 FM",
@@ -65,7 +71,7 @@ export const STATIONS: Station[] = [
     name: "RTL",
     tagline: "La radio numéro 1",
     streamUrl: "https://streaming.radio.rtl.fr/rtl-1-44-96",
-    logo: "⭐",
+    logo: gl("rtl.fr"),
     color: "#ff6600",
     genre: "Généraliste",
     freq: "104.3 FM",
@@ -75,7 +81,7 @@ export const STATIONS: Station[] = [
     name: "Europe 1",
     tagline: "Toute l'actualité",
     streamUrl: "https://europe1.lmn.fm/europe1.mp3",
-    logo: "🌍",
+    logo: gl("europe1.fr"),
     color: "#0077b6",
     genre: "Généraliste",
     freq: "104.7 FM",
@@ -85,7 +91,7 @@ export const STATIONS: Station[] = [
     name: "RFI",
     tagline: "Radio Mondiale",
     streamUrl: "https://icecast.radiofrance.fr/rfi-monde-midfi.mp3",
-    logo: "🌐",
+    logo: gl("rfi.fr"),
     color: "#2d6a4f",
     genre: "International",
     freq: "89.0 FM",
@@ -95,7 +101,7 @@ export const STATIONS: Station[] = [
     name: "Nostalgie",
     tagline: "Les hits d'hier",
     streamUrl: "https://scdn.nrjaudio.fm/adwz1/fr/30601/mp3_128.mp3",
-    logo: "🕰️",
+    logo: gl("nostalgie.fr"),
     color: "#d4a017",
     genre: "Variété",
     freq: "96.5 FM",
@@ -105,7 +111,7 @@ export const STATIONS: Station[] = [
     name: "NRJ",
     tagline: "Hit music only",
     streamUrl: "https://scdn.nrjaudio.fm/adwz1/fr/30001/mp3_128.mp3",
-    logo: "🔥",
+    logo: gl("nrj.fr"),
     color: "#ff0033",
     genre: "Hits",
     freq: "100.3 FM",
@@ -115,7 +121,7 @@ export const STATIONS: Station[] = [
     name: "Chérie FM",
     tagline: "La radio positive",
     streamUrl: "https://scdn.nrjaudio.fm/adwz1/fr/30201/mp3_128.mp3",
-    logo: "💖",
+    logo: gl("cheriefm.fr"),
     color: "#e91e8c",
     genre: "Pop",
     freq: "95.9 FM",
@@ -125,7 +131,7 @@ export const STATIONS: Station[] = [
     name: "France Bleu",
     tagline: "Radio locale",
     streamUrl: "https://icecast.radiofrance.fr/francebleuidf-midfi.mp3",
-    logo: "🔵",
+    logo: gl("francebleu.fr"),
     color: "#2196f3",
     genre: "Local",
     freq: "107.1 FM",
