@@ -35,6 +35,22 @@ export default function StationCard({
         />
       )}
 
+      {/* Signal arcs — decorative, top-right corner */}
+      {isActive && (
+        <svg className="absolute top-0 right-0 opacity-20 pointer-events-none" width="80" height="60" viewBox="0 0 80 60" fill="none">
+          {[20, 36, 52].map((r, i) => (
+            <path key={r}
+              d={`M ${80 - r * 0.6} 0 A ${r} ${r} 0 0 0 80 ${r * 0.6}`}
+              stroke={station.color} strokeWidth="1.2" opacity={1 - i * 0.25}
+              strokeDasharray={i === 2 ? "3 3" : "none"}
+            />
+          ))}
+          {isPlaying && (
+            <circle cx="78" cy="4" r="3" fill={station.color} opacity="0.9" />
+          )}
+        </svg>
+      )}
+
       <StationLogo logo={station.logo} name={station.name} color={station.color} size="sm" />
 
       <div className="flex-1 min-w-0 relative z-10">

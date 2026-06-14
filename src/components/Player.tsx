@@ -50,11 +50,42 @@ export default function Player({ station, playerApi, isFavorite, onToggleFavorit
   const streams = station.streams ?? [];
 
   return (
-    <div className="glass-dark rounded-3xl overflow-hidden shadow-glass-lg">
+    <div className="glass-dark rounded-3xl overflow-hidden shadow-glass-lg relative">
+      {/* ── Decorative SVG background ── */}
+      <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-[0.06]"
+        viewBox="0 0 340 260" preserveAspectRatio="none" aria-hidden>
+        {/* Horizontal scan lines */}
+        {Array.from({length: 10}).map((_,i) => (
+          <line key={i} x1="0" y1={i * 28} x2="340" y2={i * 28}
+            stroke="var(--accent)" strokeWidth="0.6" />
+        ))}
+        {/* Corner arc top-left */}
+        <path d="M 0 0 Q 55 0 55 55" stroke="var(--accent-2)" strokeWidth="1.2" fill="none" />
+        {/* Corner arc bottom-right */}
+        <path d="M 340 260 Q 285 260 285 205" stroke="var(--accent)" strokeWidth="1.2" fill="none" />
+        {/* Right-side mini frequency bars */}
+        {[18,28,42,22,35,18,38,24,30,16].map((h, i) => (
+          <rect key={i} x={300 + i * 4} y={130 - h / 2}
+            width="2.5" height={h}
+            fill="var(--accent)" opacity="0.55" rx="1" />
+        ))}
+      </svg>
+
       {/* Station header */}
       <div className="px-5 pt-5 pb-3">
         <div className="flex items-center gap-4">
-          <StationLogo logo={station.logo} name={station.name} color={station.color} size="lg" />
+          {/* Signal rings around logo */}
+          <div className="relative flex-shrink-0">
+            {isPlaying && (
+              <svg className="absolute inset-0 -m-3 pointer-events-none" width="78" height="78" viewBox="0 0 78 78" fill="none" aria-hidden>
+                <circle cx="39" cy="39" r="34" stroke={station.color} strokeWidth="1"
+                  strokeDasharray="4 3" opacity="0.4" />
+                <circle cx="39" cy="39" r="37" stroke={station.color} strokeWidth="0.5"
+                  strokeDasharray="2 6" opacity="0.2" />
+              </svg>
+            )}
+            <StationLogo logo={station.logo} name={station.name} color={station.color} size="lg" />
+          </div>
 
           <div className="flex-1 min-w-0">
             <h2 className="font-semibold text-white text-lg leading-tight truncate">{station.name}</h2>
