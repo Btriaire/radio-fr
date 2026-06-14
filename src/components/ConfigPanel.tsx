@@ -57,48 +57,59 @@ export default function ConfigPanel({ open, onClose }: Props) {
               <section className="space-y-3">
                 <h3 className="text-xs font-semibold tracking-widest uppercase"
                   style={{ color: "var(--accent)" }}>
-                  Thème Métal
+                  Thème
                 </h3>
                 <div className="space-y-2">
                   {THEMES.map((t) => (
                     <button
                       key={t.id}
                       onClick={() => setTheme(t.id)}
-                      className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all glass glass-hover ${
-                        theme === t.id ? "border-opacity-60" : ""
-                      }`}
+                      className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all glass glass-hover`}
                       style={theme === t.id ? {
-                        borderColor: "var(--accent)",
-                        boxShadow: "0 0 12px color-mix(in srgb, var(--accent) 25%, transparent)",
+                        borderColor: t.swatch[1],
+                        boxShadow: `0 0 14px ${t.swatch[1]}40`,
                       } : {}}
                     >
-                      {/* Metal swatch */}
+                      {/* Theme swatch */}
                       <div className="w-10 h-10 rounded-xl flex-shrink-0 overflow-hidden relative"
-                        style={{ border: "1px solid rgba(255,255,255,0.1)" }}>
+                        style={{ border: `1px solid ${t.swatch[1]}40` }}>
                         {/* Base color */}
                         <div className="absolute inset-0" style={{ background: t.swatch[0] }} />
-                        {/* Metal brushed lines */}
-                        <div className="absolute inset-0"
-                          style={{
-                            backgroundImage: `repeating-linear-gradient(
-                              90deg,
-                              transparent 0px,
-                              rgba(255,255,255,0.06) 1px,
-                              transparent 2px,
-                              transparent 3px
-                            )`,
-                          }} />
-                        {/* Diagonal highlight */}
-                        <div className="absolute inset-0"
-                          style={{
-                            background: `linear-gradient(135deg, ${t.swatch[2]}55 0%, transparent 50%, ${t.swatch[1]}44 100%)`,
-                          }} />
-                        {/* Top shine */}
-                        <div className="absolute inset-x-0 top-0 h-1/2"
-                          style={{ background: "linear-gradient(to bottom, rgba(255,255,255,0.2), transparent)" }} />
-                        {/* Color dot */}
+
+                        {t.id === "cosmic" ? (
+                          /* Cosmic: starfield dots + nebula gradient */
+                          <>
+                            <div className="absolute inset-0"
+                              style={{ background: `radial-gradient(ellipse at 30% 70%, ${t.swatch[1]}80, transparent 60%), radial-gradient(ellipse at 80% 20%, ${t.swatch[2]}60, transparent 50%)` }} />
+                            {[...Array(6)].map((_,i) => (
+                              <div key={i} className="absolute w-0.5 h-0.5 rounded-full bg-white"
+                                style={{ top: `${[15,35,55,20,70,45][i]}%`, left: `${[20,60,35,80,15,70][i]}%`, opacity: 0.8 }} />
+                            ))}
+                          </>
+                        ) : t.id === "neon" ? (
+                          /* Neon: scan lines + electric glow */
+                          <>
+                            <div className="absolute inset-0"
+                              style={{ backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,229,255,0.08) 3px, rgba(0,229,255,0.08) 4px)" }} />
+                            <div className="absolute inset-0"
+                              style={{ background: `radial-gradient(ellipse at 50% 100%, ${t.swatch[1]}60, transparent 60%)` }} />
+                            <div className="absolute bottom-1 left-1 right-1 h-0.5 rounded-full"
+                              style={{ background: `linear-gradient(to right, ${t.swatch[2]}, ${t.swatch[1]})`, boxShadow: `0 0 6px ${t.swatch[1]}` }} />
+                          </>
+                        ) : (
+                          /* Metal: brushed lines + shine */
+                          <>
+                            <div className="absolute inset-0"
+                              style={{ backgroundImage: `repeating-linear-gradient(90deg, transparent 0px, rgba(255,255,255,0.06) 1px, transparent 2px, transparent 3px)` }} />
+                            <div className="absolute inset-0"
+                              style={{ background: `linear-gradient(135deg, ${t.swatch[2]}55 0%, transparent 50%, ${t.swatch[1]}44 100%)` }} />
+                            <div className="absolute inset-x-0 top-0 h-1/2"
+                              style={{ background: "linear-gradient(to bottom, rgba(255,255,255,0.2), transparent)" }} />
+                          </>
+                        )}
+                        {/* Accent dot */}
                         <div className="absolute bottom-1.5 right-1.5 w-2 h-2 rounded-full"
-                          style={{ background: t.swatch[1], boxShadow: `0 0 4px ${t.swatch[1]}` }} />
+                          style={{ background: t.swatch[1], boxShadow: `0 0 6px ${t.swatch[1]}` }} />
                       </div>
 
                       <div className="flex-1 text-left">

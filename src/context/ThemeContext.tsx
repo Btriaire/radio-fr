@@ -1,7 +1,7 @@
 "use client";
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
 
-export type ThemeId = "default" | "steel" | "bronze" | "copper" | "gunmetal";
+export type ThemeId = "default" | "steel" | "bronze" | "copper" | "gunmetal" | "cosmic" | "neon";
 
 export interface ThemeMeta {
   id: ThemeId;
@@ -40,6 +40,18 @@ export const THEMES: ThemeMeta[] = [
     name: "Gunmetal",
     swatch: ["#080a08", "#6aaa6a", "#90c890"],
     description: "Métal sombre, teintes militaires",
+  },
+  {
+    id: "cosmic",
+    name: "Cosmic Galaxy ✦",
+    swatch: ["#03001c", "#a855f7", "#ec4899"],
+    description: "Nébuleuse, violet & or stellaire",
+  },
+  {
+    id: "neon",
+    name: "Neon Tech ⚡",
+    swatch: ["#010107", "#00e5ff", "#00ff88"],
+    description: "Nuit électrique, cyan & vert néon",
   },
 ];
 

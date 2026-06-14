@@ -33,7 +33,7 @@ export default function Home() {
   const playerApi                               = useAudioPlayer();
   const { favorites, isFavorite, toggleFavorite } = useFavorites();
   const logoMap                                 = useStationLogos(STATIONS);
-  const { defaultStationId }                    = useTheme();
+  const { defaultStationId, theme }             = useTheme();
 
   // Honour tab from URL params (e.g. after Spotify OAuth redirect)
   useEffect(() => {
@@ -75,6 +75,11 @@ export default function Home() {
 
   return (
     <div className="min-h-screen flex flex-col">
+
+      {/* ── Cosmic starfield (only in cosmic theme) ── */}
+      {theme === "cosmic" && (
+        <div className="cosmic-starfield fixed inset-0 pointer-events-none z-0" aria-hidden />
+      )}
 
       {/* ── Decorative SVG background ── */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0" aria-hidden>
