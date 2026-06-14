@@ -25,23 +25,31 @@ export interface RSSEpisode {
 // ── iTunes RSS episode fetcher ──────────────────────────────────────────
 export async function getRSSEpisodes(feedUrl: string): Promise<RSSEpisode[]> {
   if (!feedUrl) return [];
-  // Use our own server-side proxy — much faster than allorigins.win, avoids CORS
-  const res = await fetch(`/api/rss?url=${encodeURIComponent(feedUrl)}`, {
-    signal: AbortSignal.timeout(10000),
-  });
-  if (!res.ok) return [];
-  const xml = await res.text();
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(xml, "text/xml");
-  const items = Array.from(doc.querySelectorAll("item")).slice(0, 12);
-  return items.map(item => ({
-    title:       item.querySelector("title")?.textContent ?? "",
-    pubDate:     item.querySelector("pubDate")?.textContent?.slice(0, 16) ?? "",
-    duration:    item.querySelector("duration")?.textContent ?? "",
-    description: item.querySelector("description")?.textContent?.replace(/<[^>]*>/g, "").slice(0, 140) ?? "",
-    audioUrl:    item.querySelector("enclosure")?.getAttribute("url") ?? "",
-    fileSize:    parseInt(item.querySelector("enclosure")?.getAttribute("length") ?? "0", 10),
-  })).filter(ep => ep.audioUrl);
+  try {
+    // AbortSignal.timeout may not exist in older browsers — fall back to no timeout
+    const signal = typeof AbortSignal !== "undefined" && AbortSignal.timeout
+      ? AbortSignal.timeout(10000)
+      : undefined;
+    // Use our own server-side proxy — much faster than allorigins.win, avoids CORS
+    const res = await fetch(`/api/rss?url=${encodeURIComponent(feedUrl)}`, { signal });
+    if (!res.ok) return [];
+    const xml = await res.text();
+    // DOMParser is browser-only; guard for safety
+    if (typeof DOMParser === "undefined") return [];
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(xml, "text/xml");
+    const items = Array.from(doc.querySelectorAll("item")).slice(0, 12);
+    return items.map(item => ({
+      title:       item.querySelector("title")?.textContent ?? "",
+      pubDate:     item.querySelector("pubDate")?.textContent?.slice(0, 16) ?? "",
+      duration:    item.querySelector("duration")?.textContent ?? "",
+      description: item.querySelector("description")?.textContent?.replace(/<[^>]*>/g, "").slice(0, 140) ?? "",
+      audioUrl:    item.querySelector("enclosure")?.getAttribute("url") ?? "",
+      fileSize:    parseInt(item.querySelector("enclosure")?.getAttribute("length") ?? "0", 10),
+    })).filter(ep => ep.audioUrl);
+  } catch {
+    return [];
+  }
 }
 
 // ── iTunes lookup (resolves feedUrl for chart-feed podcasts) ─────────────

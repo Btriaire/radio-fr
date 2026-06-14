@@ -196,16 +196,17 @@ export function useAudioPlayer() {
     // Apply immediately to the live BiquadFilter node
     const f = filtersRef.current[index];
     if (f) {
-      f.gain.setTargetAtTime(gain, ctxRef.current?.currentTime ?? 0, 0.01);
+      // Use direct value assignment — most reliable across browsers
+      // setTargetAtTime can be unreliable when AudioContext currentTime is early/zero
+      f.gain.value = gain;
     }
   }, []);
 
   const applyPreset = useCallback((gains: number[]) => {
-    const now = ctxRef.current?.currentTime ?? 0;
     setBands((prev) => prev.map((b, i) => ({ ...b, gain: gains[i] ?? 0 })));
     gains.forEach((g, i) => {
       const f = filtersRef.current[i];
-      if (f) f.gain.setTargetAtTime(g, now, 0.02);
+      if (f) f.gain.value = g;
     });
   }, []);
 

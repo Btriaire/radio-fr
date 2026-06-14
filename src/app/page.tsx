@@ -289,9 +289,32 @@ export default function Home() {
       </header>
 
       {/* ── Main ── */}
-      <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-6 grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 relative z-10">
-        {/* Left */}
-        <div>
+      <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-6 grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 relative z-10 items-start">
+
+        {/* ── Player (DOM-first so it appears above content on mobile) ── */}
+        <div className={`space-y-4 lg:col-start-2 lg:row-start-1 lg:sticky lg:top-24 ${
+          (currentStation || currentPodcast) ? "order-first lg:order-none" : "lg:order-none hidden lg:block"
+        }`}>
+          <Player
+            station={currentStation}
+            podcast={currentPodcast}
+            playerApi={playerApi}
+            isFavorite={selectedStation ? isFavorite(selectedStation.id) : false}
+            onToggleFavorite={selectedStation ? () => toggleFavorite(selectedStation) : undefined}
+          />
+          {(currentStation || currentPodcast) && (
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+              <ClipVisualizer
+                analyserRef={playerApi.analyserRef}
+                isPlaying={playerApi.isPlaying}
+                color={currentStation?.color ?? "var(--accent)"}
+              />
+            </motion.div>
+          )}
+        </div>
+
+        {/* ── Left — tabs content ── */}
+        <div className="lg:col-start-1 lg:row-start-1">
           <AnimatePresence mode="wait">
 
             {tab === "radio" && (
@@ -429,27 +452,6 @@ export default function Home() {
             )}
 
           </AnimatePresence>
-        </div>
-
-        {/* Right — player */}
-        <div className="space-y-4 lg:sticky lg:top-24 lg:self-start">
-          <Player
-            station={currentStation}
-            podcast={currentPodcast}
-            playerApi={playerApi}
-            isFavorite={selectedStation ? isFavorite(selectedStation.id) : false}
-            onToggleFavorite={selectedStation ? () => toggleFavorite(selectedStation) : undefined}
-          />
-
-          {(currentStation || currentPodcast) && (
-            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-              <ClipVisualizer
-                analyserRef={playerApi.analyserRef}
-                isPlaying={playerApi.isPlaying}
-                color={currentStation?.color ?? "var(--accent)"}
-              />
-            </motion.div>
-          )}
         </div>
       </main>
 
