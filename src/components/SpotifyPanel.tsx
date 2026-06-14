@@ -38,8 +38,9 @@ export default function SpotifyPanel() {
       setShows(results);
       if (results.length === 0) setError("Aucun résultat. Essaie un autre terme.");
     } catch (e: any) {
+      console.error("[Spotify] search error:", e?.message, e);
       if (e?.message === "TOKEN_EXPIRED") {
-        // Try to refresh
+        // Try silent refresh
         const newTok = await refreshToken();
         if (newTok) {
           setToken(newTok);
@@ -47,14 +48,18 @@ export default function SpotifyPanel() {
             const results = await searchFrenchPodcasts(newTok, q);
             setShows(results);
             if (results.length === 0) setError("Aucun résultat.");
-          } catch {
-            setError("Erreur après refresh. Reconnecte-toi.");
+          } catch (e2: any) {
+            console.error("[Spotify] post-refresh error:", e2?.message);
+            setError(`Erreur après refresh : ${e2?.message ?? "inconnue"}. Reconnecte-toi.`);
           }
         } else {
-          setToken(null); // force reconnect screen
+          // No refresh token — force reconnect
+          setToken(null);
         }
       } else {
-        setError("Erreur réseau. Réessaie.");
+        // Show the real error to help debug
+        setError(`Erreur Spotify : ${e?.message ?? "inconnue"}. Reconnecte-toi.`);
+        console.error("[Spotify] full error:", e);
       }
     } finally {
       setLoading(false);
@@ -154,7 +159,17 @@ export default function SpotifyPanel() {
 
       {/* Error */}
       {error && !loading && (
-        <p className="text-sm text-red-400/80 text-center py-2">{error}</p>
+        <div className="glass rounded-2xl p-4 flex flex-col items-center gap-3 text-center border border-red-500/20">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="2">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <p className="text-sm text-red-400/90">{error}</p>
+          <a href={getSpotifyAuthUrl()}
+            className="text-xs px-4 py-1.5 rounded-full font-medium transition-all"
+            style={{ background: "#1DB954", color: "#000" }}>
+            Reconnecter Spotify
+          </a>
+        </div>
       )}
 
       {/* Results */}

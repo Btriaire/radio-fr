@@ -7,14 +7,10 @@ interface Props {
   color?: string;
 }
 
-/**
- * Compact waveform-style clip visualizer — Safari compatible (no OfflineAudioContext tricks).
- * Uses canvas 2D with oscilloscope-style time-domain rendering.
- */
 export default function ClipVisualizer({ analyserRef, isPlaying, color = "#06b6d4" }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const rafRef = useRef<number>(0);
-  const phaseRef = useRef(0);
+  const rafRef    = useRef<number>(0);
+  const phaseRef  = useRef(0);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -22,60 +18,108 @@ export default function ClipVisualizer({ analyserRef, isPlaying, color = "#06b6d
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const W = canvas.width;
-    const H = canvas.height;
-
     const draw = () => {
       rafRef.current = requestAnimationFrame(draw);
+      const W = canvas.width;
+      const H = canvas.height;
       ctx.clearRect(0, 0, W, H);
 
       const analyser = analyserRef.current;
+      phaseRef.current += isPlaying ? 0.045 : 0.015;
+      const ph = phaseRef.current;
 
-      if (!analyser || !isPlaying) {
-        // Animated idle sine
-        phaseRef.current += 0.03;
+      if (!isPlaying) {
+        // Slow idle sine
         ctx.beginPath();
-        ctx.strokeStyle = `${color}55`;
+        ctx.strokeStyle = `${color}45`;
         ctx.lineWidth = 1.5;
-        ctx.shadowBlur = 0;
         for (let x = 0; x < W; x++) {
-          const y = H / 2 + Math.sin((x / W) * Math.PI * 4 + phaseRef.current) * 3;
-          if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+          const y = H / 2 + Math.sin((x / W) * Math.PI * 3 + ph) * 3;
+          x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
         }
         ctx.stroke();
         return;
       }
 
-      const bufLen = analyser.fftSize;
-      const data = new Uint8Array(bufLen);
-      analyser.getByteTimeDomainData(data);
-
-      // Find first rising zero crossing for stable display
-      let start = 0;
-      for (let i = 1; i < bufLen - 1; i++) {
-        if (data[i - 1] < 128 && data[i] >= 128) { start = i; break; }
+      // Try real time-domain data
+      let useReal = false;
+      let timeDomain: Uint8Array | null = null;
+      if (analyser) {
+        const buf = new Uint8Array(analyser.fftSize);
+        analyser.getByteTimeDomainData(buf);
+        // Check if there's real audio (not all 128)
+        let silent = true;
+        for (let i = 0; i < buf.length; i += 8) {
+          if (Math.abs(buf[i] - 128) > 2) { silent = false; break; }
+        }
+        if (!silent) { timeDomain = buf; useReal = true; }
       }
 
-      ctx.beginPath();
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 1.5;
-      ctx.shadowColor = color;
-      ctx.shadowBlur = 6;
-      ctx.lineJoin = "round";
+      if (useReal && timeDomain) {
+        // Real oscilloscope — find zero crossing for stability
+        let start = 0;
+        for (let i = 1; i < timeDomain.length - 1; i++) {
+          if (timeDomain[i - 1] < 128 && timeDomain[i] >= 128) { start = i; break; }
+        }
+        ctx.beginPath();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1.5;
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 6;
+        ctx.lineJoin = "round";
+        const sliceW = W / Math.min(timeDomain.length - start, W);
+        for (let i = 0; i < W && start + i < timeDomain.length; i++) {
+          const v = (timeDomain[start + i] - 128) / 128;
+          const y = H / 2 + v * (H / 2 - 4);
+          i === 0 ? ctx.moveTo(0, y) : ctx.lineTo(i * sliceW, y);
+        }
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+      } else {
+        // Simulated waveform — multi-sine composite looks organic
+        ctx.beginPath();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1.5;
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 4;
+        ctx.lineJoin = "round";
+        for (let x = 0; x < W; x++) {
+          const t  = (x / W) * Math.PI * 2;
+          const y  = H / 2
+            + Math.sin(t * 3 + ph)       * H * 0.18
+            + Math.sin(t * 7 + ph * 1.3) * H * 0.08
+            + Math.sin(t * 13 + ph * 0.7)* H * 0.04
+            + Math.sin(t * 2  + ph * 0.5)* H * 0.12;
+          x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+        ctx.shadowBlur = 0;
 
-      const sliceW = W / Math.min(bufLen - start, W);
-      for (let i = 0; i < W && start + i < bufLen; i++) {
-        const v = (data[start + i] - 128) / 128;
-        const y = (H / 2) + v * (H / 2 - 4);
-        if (i === 0) ctx.moveTo(0, y); else ctx.lineTo(i * sliceW, y);
+        // Faint fill
+        ctx.beginPath();
+        for (let x = 0; x < W; x++) {
+          const t = (x / W) * Math.PI * 2;
+          const y = H / 2
+            + Math.sin(t * 3 + ph)       * H * 0.18
+            + Math.sin(t * 7 + ph * 1.3) * H * 0.08
+            + Math.sin(t * 13 + ph * 0.7)* H * 0.04
+            + Math.sin(t * 2  + ph * 0.5)* H * 0.12;
+          x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+        }
+        ctx.lineTo(W, H / 2);
+        ctx.lineTo(0, H / 2);
+        ctx.closePath();
+        const grad = ctx.createLinearGradient(0, 0, 0, H);
+        grad.addColorStop(0, `${color}30`);
+        grad.addColorStop(1, `${color}05`);
+        ctx.fillStyle = grad;
+        ctx.fill();
       }
-      ctx.stroke();
-      ctx.shadowBlur = 0;
     };
 
     draw();
     return () => cancelAnimationFrame(rafRef.current);
-  }, [analyserRef, isPlaying, color]);
+  }, [analyserRef, isPlaying, color]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="glass rounded-xl overflow-hidden" style={{ padding: "8px 12px" }}>
@@ -86,10 +130,10 @@ export default function ClipVisualizer({ analyserRef, isPlaying, color = "#06b6d
       </div>
       <canvas
         ref={canvasRef}
-        width={200}
-        height={40}
+        width={300}
+        height={44}
         className="w-full"
-        style={{ display: "block", height: 40 }}
+        style={{ display: "block", height: 44 }}
       />
     </div>
   );

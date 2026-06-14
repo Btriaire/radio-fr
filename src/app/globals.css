@@ -196,12 +196,33 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.25); }
 input[type=range].eq-slider {
   writing-mode: vertical-lr;
   direction: rtl;
-  width: 4px;
+  width: 28px;          /* wider hit area for touch */
   height: 100%;
+  cursor: grab;
+}
+input[type=range].eq-slider:active { cursor: grabbing; }
+input[type=range].eq-slider::-webkit-slider-runnable-track {
+  width: 4px;
+  background: transparent;
 }
 input[type=range].eq-slider::-webkit-slider-thumb {
-  margin-top: 0;
-  margin-left: -5px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--accent, #3b82f6);
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  margin-left: -9px;
+  box-shadow: 0 0 10px rgba(59,130,246,0.6), 0 2px 6px rgba(0,0,0,0.4);
+  border: 2px solid rgba(255,255,255,0.2);
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+input[type=range].eq-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.25);
+  box-shadow: 0 0 16px rgba(59,130,246,0.8), 0 2px 8px rgba(0,0,0,0.5);
+}
+input[type=range].eq-slider::-webkit-slider-thumb:active {
+  transform: scale(1.15);
 }
 
 /* Accent color driven by theme */

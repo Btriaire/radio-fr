@@ -177,9 +177,9 @@ export default function Equalizer({ bands, filtersRef, onBandChange, onApplyPres
       </div>
 
       {/* 10 band sliders */}
-      <div className="flex items-end justify-between gap-1.5">
+      <div className="flex items-end justify-between gap-1 sm:gap-1.5">
         {bands.map((band, i) => {
-          const pct = (band.gain / MAX_GAIN) * 100;
+          const pct    = (band.gain / MAX_GAIN) * 100;
           const isBoost = band.gain > 0;
           const isCut   = band.gain < 0;
           return (
@@ -192,15 +192,15 @@ export default function Equalizer({ bands, filtersRef, onBandChange, onApplyPres
               </span>
 
               {/* Slider track + thumb */}
-              <div className="relative flex flex-col items-center" style={{ height: 72 }}>
+              <div className="relative flex flex-col items-center" style={{ height: 110 }}>
                 {/* Track */}
-                <div className="absolute inset-x-1/2 -translate-x-1/2 w-0.5 rounded-full"
-                  style={{ top: 4, bottom: 4, background: "rgba(255,255,255,0.08)" }} />
+                <div className="absolute inset-x-1/2 -translate-x-1/2 w-1 rounded-full"
+                  style={{ top: 8, bottom: 8, background: "rgba(255,255,255,0.08)" }} />
 
                 {/* Fill bar */}
                 {band.gain !== 0 && (
                   <div
-                    className="absolute inset-x-1/2 -translate-x-1/2 w-0.5 rounded-full"
+                    className="absolute inset-x-1/2 -translate-x-1/2 w-1 rounded-full"
                     style={{
                       background: isBoost
                         ? "linear-gradient(to top,#3b82f6,#06b6d4)"
@@ -212,7 +212,7 @@ export default function Equalizer({ bands, filtersRef, onBandChange, onApplyPres
                   />
                 )}
 
-                {/* Native range (vertical) */}
+                {/* Native range (vertical) — bigger for touch */}
                 <input
                   type="range"
                   min={-MAX_GAIN}
@@ -221,7 +221,7 @@ export default function Equalizer({ bands, filtersRef, onBandChange, onApplyPres
                   value={band.gain}
                   onChange={(e) => onBandChange(i, Number(e.target.value))}
                   className="eq-slider"
-                  style={{ height: 72 }}
+                  style={{ height: 110, touchAction: "none" }}
                 />
               </div>
 
