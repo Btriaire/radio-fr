@@ -48,8 +48,8 @@ export default function IpodOverlay({ open, onClose, playerApi, station, station
 
   // Scale everything from a base of 220px body width
   const isMobile = winW < 540;
-  // On mobile use 88% of screen width (max 260), on desktop fixed 220px
-  const bodyW    = isMobile ? Math.min(Math.round(winW * 0.88), 260) : 220;
+  // On mobile use 95% of screen width (max 360), on desktop fixed 220px
+  const bodyW    = isMobile ? Math.min(Math.round(winW * 0.95), 360) : 220;
   const scale    = bodyW / 220;   // relative to base design
   const wheelD   = Math.round(160 * scale);
   const screenH  = Math.round(120 * scale);

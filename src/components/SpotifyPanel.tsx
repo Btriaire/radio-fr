@@ -1,6 +1,11 @@
 "use client";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+
+export interface SpotifyPanelHandle {
+  /** Pause podcast playback (called when radio starts) */
+  pause: () => void;
+}
 
 // ── iTunes Podcast API ────────────────────────────────────────────────
 interface iTunesPodcast {
@@ -60,6 +65,7 @@ interface RSSEpisode {
   duration: string;
   description: string;
   audioUrl: string;  // direct MP3/audio URL for in-app playback
+  fileSize: number;  // bytes, from enclosure length=""
 }
 
 async function getRSSEpisodes(feedUrl: string): Promise<RSSEpisode[]> {
@@ -79,6 +85,7 @@ async function getRSSEpisodes(feedUrl: string): Promise<RSSEpisode[]> {
     duration: item.querySelector("duration")?.textContent ?? "",
     description: item.querySelector("description")?.textContent?.replace(/<[^>]*>/g, "").slice(0, 140) ?? "",
     audioUrl: item.querySelector("enclosure")?.getAttribute("url") ?? "",
+    fileSize: parseInt(item.querySelector("enclosure")?.getAttribute("length") ?? "0", 10),
   })).filter(ep => ep.audioUrl);
 }
 
@@ -112,12 +119,21 @@ const QUICK_TAGS = ["France Culture", "France Inter", "Le Monde", "Binge Audio",
   "Nova", "RFI", "Slate", "Arte Radio", "Mouv", "Culturebox"];
 
 // ═══════════════════════════════════════════════════════════════════════
-export default function SpotifyPanel() {
+const SpotifyPanel = forwardRef<SpotifyPanelHandle, { onWillPlay?: () => void }>(
+function SpotifyPanel({ onWillPlay }, ref) {
   const [podcasts, setPodcasts]       = useState<iTunesPodcast[]>([]);
   const [query, setQuery]             = useState("");
   const [loading, setLoading]         = useState(true);
   const [error, setError]             = useState<string | null>(null);
   const [selected, setSelected]       = useState<iTunesPodcast | null>(null);
+
+  // Expose pause() to parent so radio player can mute us when it starts
+  useImperativeHandle(ref, () => ({
+    pause: () => {
+      audioRef.current?.pause();
+      setIsPlaying(false);
+    },
+  }));
 
   // ── In-app audio player state ──────────────────────────────────────
   const audioRef                       = useRef<HTMLAudioElement | null>(null);
@@ -178,6 +194,8 @@ export default function SpotifyPanel() {
   const playEpisode = useCallback((ep: RSSEpisode, pod: iTunesPodcast) => {
     const audio = audioRef.current;
     if (!audio || !ep.audioUrl) return;
+    // Pause the radio before starting the podcast
+    onWillPlay?.();
     audio.pause();
     audio.src = ep.audioUrl;
     audio.load();
@@ -187,7 +205,7 @@ export default function SpotifyPanel() {
     setPlayingEp(ep);
     setPlayingPod(pod);
     audio.play().catch(() => setAudioLoading(false));
-  }, []);
+  }, [onWillPlay]);
 
   const togglePlay = useCallback(() => {
     const audio = audioRef.current;
@@ -377,7 +395,10 @@ export default function SpotifyPanel() {
       </AnimatePresence>
     </div>
   );
-}
+});
+
+SpotifyPanel.displayName = "SpotifyPanel";
+export default SpotifyPanel;
 
 // ── Podcast detail sheet ─────────────────────────────────────────────
 interface DetailProps {
@@ -488,11 +509,29 @@ function PodcastDetail({ podcast, playingEp, isPlaying, onPlay, onClose }: Detai
                       {ep.duration && (
                         <span className="text-white/25 text-[10px]">· {ep.duration}</span>
                       )}
+                      {ep.fileSize > 0 && (
+                        <span className="text-white/20 text-[10px]">· {Math.round(ep.fileSize / 1024 / 1024)} Mo</span>
+                      )}
                     </div>
                     {ep.description && (
                       <p className="text-white/25 text-[10px] mt-1 line-clamp-2">{ep.description}</p>
                     )}
                   </div>
+
+                  {/* Download button */}
+                  <a
+                    href={ep.audioUrl}
+                    download={`${ep.title.slice(0, 60).replace(/[^a-zA-Z0-9\s-]/g, "")}.mp3`}
+                    onClick={e => e.stopPropagation()}
+                    title="Télécharger"
+                    className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center transition-all hover:opacity-80"
+                    style={{ background: "rgba(255,255,255,0.07)" }}>
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="2">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                      <polyline points="7 10 12 15 17 10"/>
+                      <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                  </a>
                 </motion.div>
               );
             })}

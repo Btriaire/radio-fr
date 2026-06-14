@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAudioPlayer } from "@/hooks/useAudioPlayer";
 import { useFavorites } from "@/hooks/useFavorites";
@@ -8,7 +8,7 @@ import { useTheme } from "@/context/ThemeContext";
 import { STATIONS, GENRES, Station } from "@/lib/stations";
 import Player from "@/components/Player";
 import StationCard from "@/components/StationCard";
-import SpotifyPanel from "@/components/SpotifyPanel";
+import SpotifyPanel, { SpotifyPanelHandle } from "@/components/SpotifyPanel";
 import ClipVisualizer from "@/components/ClipVisualizer";
 import RadioSearch from "@/components/RadioSearch";
 import ConfigPanel from "@/components/ConfigPanel";
@@ -31,6 +31,7 @@ export default function Home() {
   const [genre, setGenre]                       = useState("Tous");
   const [configOpen, setConfigOpen]             = useState(false);
   const [ipodOpen, setIpodOpen]                 = useState(false);
+  const spotifyPanelRef                         = useRef<SpotifyPanelHandle>(null);
 
   const playerApi                               = useAudioPlayer();
   const { favorites, isFavorite, toggleFavorite } = useFavorites();
@@ -65,6 +66,8 @@ export default function Home() {
     .map(withLogo);
 
   const handlePlay = (station: Station) => {
+    // Pause podcast if playing
+    spotifyPanelRef.current?.pause();
     if (selectedStation?.id === station.id) {
       playerApi.togglePlay();
     } else {
@@ -322,7 +325,7 @@ export default function Home() {
                 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.18 }}>
                 <WebRadioPanel
-                  onPlay={(s) => { setSelectedStation(s); playerApi.initAudio(s.streamUrl); }}
+                  onPlay={(s) => { spotifyPanelRef.current?.pause(); setSelectedStation(s); playerApi.initAudio(s.streamUrl); }}
                   currentUrl={playerApi.currentUrl}
                   isPlaying={playerApi.isPlaying}
                   isFavorite={isFavorite}
@@ -336,7 +339,7 @@ export default function Home() {
                 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.18 }}>
                 <RadioSearch
-                  onPlay={(s) => { setSelectedStation(s); playerApi.initAudio(s.streamUrl); }}
+                  onPlay={(s) => { spotifyPanelRef.current?.pause(); setSelectedStation(s); playerApi.initAudio(s.streamUrl); }}
                   onToggleFavorite={toggleFavorite}
                   isFavorite={isFavorite}
                   currentUrl={playerApi.currentUrl}
@@ -398,7 +401,10 @@ export default function Home() {
               <motion.div key="podcasts"
                 initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.18 }}>
-                <SpotifyPanel />
+                <SpotifyPanel
+                  ref={spotifyPanelRef}
+                  onWillPlay={() => { if (playerApi.isPlaying) playerApi.togglePlay(); }}
+                />
               </motion.div>
             )}
 
@@ -461,6 +467,7 @@ export default function Home() {
         station={currentStation}
         stations={STATIONS}
         onSelectStation={(s) => {
+          spotifyPanelRef.current?.pause();
           setSelectedStation(s);
           playerApi.initAudio(s.streamUrl);
         }}
