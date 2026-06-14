@@ -13,6 +13,7 @@ import ClipVisualizer from "@/components/ClipVisualizer";
 import RadioSearch from "@/components/RadioSearch";
 import ConfigPanel from "@/components/ConfigPanel";
 import WebRadioPanel from "@/components/WebRadioPanel";
+import IpodOverlay from "@/components/IpodOverlay";
 
 type Tab = "radio" | "webradio" | "search" | "favoris" | "podcasts";
 
@@ -29,6 +30,7 @@ export default function Home() {
   const [selectedStation, setSelectedStation]   = useState<Station | null>(null);
   const [genre, setGenre]                       = useState("Tous");
   const [configOpen, setConfigOpen]             = useState(false);
+  const [ipodOpen, setIpodOpen]                 = useState(false);
 
   const playerApi                               = useAudioPlayer();
   const { favorites, isFavorite, toggleFavorite } = useFavorites();
@@ -232,6 +234,23 @@ export default function Home() {
             <span className="text-xs text-white/20 hidden lg:block">
               {new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}
             </span>
+            {/* iPod button */}
+            <button
+              onClick={() => setIpodOpen(true)}
+              className="w-8 h-8 rounded-lg glass glass-hover flex items-center justify-center transition-all"
+              title="Mode iPod"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                strokeWidth="1.8" style={{ color: "var(--accent)" }}>
+                {/* iPod body */}
+                <rect x="6" y="1" width="12" height="22" rx="3" />
+                {/* Screen */}
+                <rect x="8" y="3" width="8" height="6" rx="1" />
+                {/* Click wheel */}
+                <circle cx="12" cy="16" r="4" />
+                <circle cx="12" cy="16" r="1.5" />
+              </svg>
+            </button>
             {/* Config button */}
             <button
               onClick={() => setConfigOpen(true)}
@@ -433,6 +452,19 @@ export default function Home() {
 
       {/* Config panel */}
       <ConfigPanel open={configOpen} onClose={() => setConfigOpen(false)} />
+
+      {/* iPod overlay */}
+      <IpodOverlay
+        open={ipodOpen}
+        onClose={() => setIpodOpen(false)}
+        playerApi={playerApi}
+        station={currentStation}
+        stations={STATIONS}
+        onSelectStation={(s) => {
+          setSelectedStation(s);
+          playerApi.initAudio(s.streamUrl);
+        }}
+      />
     </div>
   );
 }
