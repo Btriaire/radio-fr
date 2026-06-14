@@ -8,12 +8,13 @@ interface Props {
   onBandChange: (index: number, gain: number) => void;
   onApplyPreset: (gains: number[]) => void;
   onReset: () => void;
+  eqActive?: boolean;
 }
 
 const MAX_GAIN = 12;
 const CURVE_FREQS = 512; // frequency samples for curve
 
-export default function Equalizer({ bands, filtersRef, onBandChange, onApplyPreset, onReset }: Props) {
+export default function Equalizer({ bands, filtersRef, onBandChange, onApplyPreset, onReset, eqActive = true }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const drawCurve = useCallback(() => {
@@ -141,7 +142,19 @@ export default function Equalizer({ bands, filtersRef, onBandChange, onApplyPres
   }, [drawCurve]);
 
   return (
-    <div className="glass rounded-2xl p-4 space-y-3">
+    <div className="glass rounded-2xl p-4 space-y-3 relative">
+      {/* EQ unavailable overlay */}
+      {!eqActive && (
+        <div className="absolute inset-0 z-10 rounded-2xl flex flex-col items-center justify-center gap-2"
+          style={{ background: "rgba(0,0,0,0.72)", backdropFilter: "blur(4px)" }}>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.35)" strokeWidth="1.5">
+            <circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+          </svg>
+          <p className="text-white/50 text-xs text-center px-4">
+            EQ indisponible — ce flux audio<br/>n'autorise pas le traitement Web Audio (CORS).
+          </p>
+        </div>
+      )}
       <div className="flex items-center justify-between">
         <h3 className="text-xs font-semibold text-white/60 tracking-widest uppercase">Égaliseur 10 bandes</h3>
         <button

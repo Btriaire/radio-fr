@@ -7,22 +7,34 @@ import StationLogo from "./StationLogo";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
+interface PodcastNowPlaying {
+  episodeTitle: string;
+  audioUrl: string;
+  podcastName: string;
+  artwork: string;
+}
+
 interface Props {
   station: Station | null;
+  podcast?: PodcastNowPlaying | null;
   playerApi: ReturnType<typeof useAudioPlayer>;
   isFavorite?: boolean;
   onToggleFavorite?: () => void;
 }
 
-export default function Player({ station, playerApi, isFavorite, onToggleFavorite }: Props) {
+export default function Player({ station, podcast, playerApi, isFavorite, onToggleFavorite }: Props) {
   const [showEQ, setShowEQ] = useState(false);
   const [activeQuality, setActiveQuality] = useState<StreamQuality | null>(null);
 
   const {
     isPlaying, volume, isLoading, error, eqActive,
-    analyserRef, filtersRef, togglePlay, changeVolume,
+    currentTime, duration,
+    analyserRef, filtersRef, togglePlay, changeVolume, seekTo,
     bands, updateBand, applyPreset, resetEQ, initAudio,
   } = playerApi;
+
+  const isPodcast = !!podcast && !station;
+  const accentColor = station?.color ?? "var(--accent)";
 
   const anyBandActive = bands.some((b) => b.gain !== 0);
 
@@ -34,7 +46,7 @@ export default function Player({ station, playerApi, isFavorite, onToggleFavorit
     if (station) initAudio(q.url);
   };
 
-  if (!station) {
+  if (!station && !podcast) {
     return (
       <div className="glass-dark rounded-3xl p-6 flex flex-col items-center justify-center gap-3 min-h-[140px]">
         <div className="w-12 h-12 rounded-full glass flex items-center justify-center opacity-30">
@@ -42,12 +54,18 @@ export default function Player({ station, playerApi, isFavorite, onToggleFavorit
             <path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
           </svg>
         </div>
-        <p className="text-white/30 text-sm">Sélectionne une station</p>
+        <p className="text-white/30 text-sm">Sélectionne une station ou un podcast</p>
       </div>
     );
   }
 
-  const streams = station.streams ?? [];
+  function fmt(s: number) {
+    if (!isFinite(s) || s <= 0) return "0:00";
+    const m = Math.floor(s / 60); const sec = Math.floor(s % 60);
+    return `${m}:${sec.toString().padStart(2, "0")}`;
+  }
+
+  const streams = station?.streams ?? [];
 
   return (
     <div className="glass-dark rounded-3xl overflow-hidden shadow-glass-lg relative">
@@ -71,39 +89,61 @@ export default function Player({ station, playerApi, isFavorite, onToggleFavorit
         ))}
       </svg>
 
-      {/* Station header */}
+      {/* Header — station OR podcast */}
       <div className="px-5 pt-5 pb-3">
         <div className="flex items-center gap-4">
-          {/* Signal rings around logo */}
+          {/* Artwork / Logo */}
           <div className="relative flex-shrink-0">
             {isPlaying && (
               <svg className="absolute inset-0 -m-3 pointer-events-none" width="78" height="78" viewBox="0 0 78 78" fill="none" aria-hidden>
-                <circle cx="39" cy="39" r="34" stroke={station.color} strokeWidth="1"
+                <circle cx="39" cy="39" r="34" stroke={accentColor} strokeWidth="1"
                   strokeDasharray="4 3" opacity="0.4" />
-                <circle cx="39" cy="39" r="37" stroke={station.color} strokeWidth="0.5"
+                <circle cx="39" cy="39" r="37" stroke={accentColor} strokeWidth="0.5"
                   strokeDasharray="2 6" opacity="0.2" />
               </svg>
             )}
-            <StationLogo logo={station.logo} name={station.name} color={station.color} size="lg" />
+            {isPodcast ? (
+              podcast!.artwork
+                ? <img src={podcast!.artwork} alt={podcast!.podcastName}
+                    className="w-14 h-14 rounded-2xl object-cover"
+                    style={{ boxShadow: "0 4px 16px rgba(0,0,0,0.4)" }} />
+                : <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl"
+                    style={{ background: "rgba(255,255,255,0.08)" }}>🎙</div>
+            ) : (
+              <StationLogo logo={station!.logo} name={station!.name} color={station!.color} size="lg" />
+            )}
           </div>
 
           <div className="flex-1 min-w-0">
-            <h2 className="font-semibold text-white text-lg leading-tight truncate">{station.name}</h2>
-            <p className="text-white/50 text-sm">{station.tagline}</p>
-            {station.freq && (
-              <span className="text-xs px-2 py-0.5 rounded-full mt-1 inline-block font-medium"
-                style={{ background: `${station.color}22`, color: station.color }}>
-                {station.freq}
-              </span>
+            {isPodcast ? (
+              <>
+                <h2 className="font-semibold text-white text-sm leading-tight line-clamp-2">{podcast!.episodeTitle}</h2>
+                <p className="text-white/50 text-xs mt-0.5 truncate">{podcast!.podcastName}</p>
+              </>
+            ) : (
+              <>
+                <h2 className="font-semibold text-white text-lg leading-tight truncate">{station!.name}</h2>
+                <p className="text-white/50 text-sm">{station!.tagline}</p>
+                {station!.freq && (
+                  <span className="text-xs px-2 py-0.5 rounded-full mt-1 inline-block font-medium"
+                    style={{ background: `${station!.color}22`, color: station!.color }}>
+                    {station!.freq}
+                  </span>
+                )}
+              </>
             )}
           </div>
 
           <div className="flex flex-col items-end gap-2">
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full glass">
-              <div className={`w-2 h-2 rounded-full ${isPlaying ? "bg-red-500 animate-pulse" : "bg-white/20"}`} />
-              <span className="text-xs text-white/60 font-medium">LIVE</span>
-            </div>
-            {onToggleFavorite && (
+            {isPodcast ? (
+              <span className="text-[10px] px-2 py-1 rounded-full glass text-white/40">🎧 Podcast</span>
+            ) : (
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full glass">
+                <div className={`w-2 h-2 rounded-full ${isPlaying ? "bg-red-500 animate-pulse" : "bg-white/20"}`} />
+                <span className="text-xs text-white/60 font-medium">LIVE</span>
+              </div>
+            )}
+            {!isPodcast && onToggleFavorite && (
               <button onClick={onToggleFavorite} className="p-1.5 rounded-lg glass-hover transition-all">
                 <svg width="16" height="16" viewBox="0 0 24 24"
                   fill={isFavorite ? "currentColor" : "none"}
@@ -115,11 +155,24 @@ export default function Player({ station, playerApi, isFavorite, onToggleFavorit
             )}
           </div>
         </div>
+
+        {/* Podcast progress bar */}
+        {isPodcast && duration > 0 && (
+          <div className="mt-3 space-y-1">
+            <input type="range" min={0} max={duration} step={1} value={currentTime}
+              onChange={e => seekTo(Number(e.target.value))}
+              className="w-full" style={{ accentColor: "var(--accent)" }} />
+            <div className="flex justify-between text-[10px] text-white/30 font-mono">
+              <span>{fmt(currentTime)}</span>
+              <span>{fmt(duration)}</span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Visualizer */}
       <div className="px-5 py-2">
-        <AudioVisualizer analyserRef={analyserRef} isPlaying={isPlaying} color={station.color} />
+        <AudioVisualizer analyserRef={analyserRef} isPlaying={isPlaying} color={station?.color} />
       </div>
 
       {/* Controls */}
@@ -130,8 +183,8 @@ export default function Player({ station, playerApi, isFavorite, onToggleFavorit
             onClick={togglePlay}
             disabled={isLoading}
             className="w-12 h-12 rounded-full flex items-center justify-center transition-all active:scale-95 flex-shrink-0"
-            style={{ background: `linear-gradient(135deg, ${station.color}, ${station.color}99)`,
-              boxShadow: `0 0 16px ${station.color}55` }}
+            style={{ background: `linear-gradient(135deg, ${accentColor}, ${accentColor}99)`,
+              boxShadow: `0 0 16px ${accentColor}55` }}
           >
             {isLoading ? (
               <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -181,8 +234,8 @@ export default function Player({ station, playerApi, isFavorite, onToggleFavorit
           </button>
         </div>
 
-        {/* Quality selector */}
-        {streams.length > 1 && (
+        {/* Quality selector — radio only */}
+        {!isPodcast && streams.length > 1 && (
           <div className="flex items-center gap-2">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
               strokeWidth="2" className="text-white/30 flex-shrink-0">
@@ -191,7 +244,7 @@ export default function Player({ station, playerApi, isFavorite, onToggleFavorit
             <span className="text-xs text-white/30 flex-shrink-0">Qualité</span>
             <div className="flex gap-1 flex-wrap">
               {streams.map((q) => {
-                const isActive = (activeQuality?.url ?? station.streams?.[1]?.url ?? station.streamUrl) === q.url;
+                const isActive = (activeQuality?.url ?? station?.streams?.[1]?.url ?? station?.streamUrl) === q.url;
                 return (
                   <button
                     key={q.url}
@@ -202,9 +255,9 @@ export default function Player({ station, playerApi, isFavorite, onToggleFavorit
                         : "glass glass-hover text-white/40 hover:text-white/70"
                     }`}
                     style={isActive ? {
-                      background: `${station.color}44`,
-                      border: `1px solid ${station.color}66`,
-                      color: station.color,
+                      background: `${station?.color}44`,
+                      border: `1px solid ${station?.color}66`,
+                      color: station?.color,
                     } : {}}
                     title={q.bitrate}
                   >
@@ -238,6 +291,7 @@ export default function Player({ station, playerApi, isFavorite, onToggleFavorit
               onBandChange={updateBand}
               onApplyPreset={applyPreset}
               onReset={resetEQ}
+              eqActive={eqActive}
             />
           </motion.div>
         )}

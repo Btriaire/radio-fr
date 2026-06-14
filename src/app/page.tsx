@@ -25,9 +25,17 @@ const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: "podcasts", label: "Podcasts",  icon: "🎧" },
 ];
 
+export interface PodcastNowPlaying {
+  episodeTitle: string;
+  audioUrl: string;
+  podcastName: string;
+  artwork: string;
+}
+
 export default function Home() {
   const [tab, setTab]                           = useState<Tab>("radio");
   const [selectedStation, setSelectedStation]   = useState<Station | null>(null);
+  const [currentPodcast, setCurrentPodcast]     = useState<PodcastNowPlaying | null>(null);
   const [genre, setGenre]                       = useState("Tous");
   const [configOpen, setConfigOpen]             = useState(false);
   const [ipodOpen, setIpodOpen]                 = useState(false);
@@ -66,14 +74,24 @@ export default function Home() {
     .map(withLogo);
 
   const handlePlay = (station: Station) => {
-    // Pause podcast if playing
-    spotifyPanelRef.current?.pause();
+    setCurrentPodcast(null);
     if (selectedStation?.id === station.id) {
       playerApi.togglePlay();
     } else {
       setSelectedStation(station);
       playerApi.initAudio(station.streamUrl);
     }
+  };
+
+  const handlePlayEpisode = (ep: { title: string; audioUrl: string; duration: string; pubDate: string; fileSize: number }, pod: { trackName: string; artistName: string; artworkUrl600: string; artworkUrl100: string }) => {
+    setCurrentPodcast({
+      episodeTitle: ep.title,
+      audioUrl: ep.audioUrl,
+      podcastName: pod.trackName,
+      artwork: pod.artworkUrl600 || pod.artworkUrl100,
+    });
+    setSelectedStation(null);
+    playerApi.initAudio(ep.audioUrl);
   };
 
   const currentStation = selectedStation ? withLogo(selectedStation) : null;
@@ -325,7 +343,7 @@ export default function Home() {
                 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.18 }}>
                 <WebRadioPanel
-                  onPlay={(s) => { spotifyPanelRef.current?.pause(); setSelectedStation(s); playerApi.initAudio(s.streamUrl); }}
+                  onPlay={(s) => { setCurrentPodcast(null); setSelectedStation(s); playerApi.initAudio(s.streamUrl); }}
                   currentUrl={playerApi.currentUrl}
                   isPlaying={playerApi.isPlaying}
                   isFavorite={isFavorite}
@@ -339,7 +357,7 @@ export default function Home() {
                 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.18 }}>
                 <RadioSearch
-                  onPlay={(s) => { spotifyPanelRef.current?.pause(); setSelectedStation(s); playerApi.initAudio(s.streamUrl); }}
+                  onPlay={(s) => { setCurrentPodcast(null); setSelectedStation(s); playerApi.initAudio(s.streamUrl); }}
                   onToggleFavorite={toggleFavorite}
                   isFavorite={isFavorite}
                   currentUrl={playerApi.currentUrl}
@@ -403,7 +421,9 @@ export default function Home() {
                 exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.18 }}>
                 <SpotifyPanel
                   ref={spotifyPanelRef}
-                  onWillPlay={() => { if (playerApi.isPlaying) playerApi.togglePlay(); }}
+                  currentEpisodeUrl={currentPodcast?.audioUrl ?? null}
+                  isPlaying={playerApi.isPlaying}
+                  onPlayEpisode={handlePlayEpisode}
                 />
               </motion.div>
             )}
@@ -415,37 +435,19 @@ export default function Home() {
         <div className="space-y-4 lg:sticky lg:top-24 lg:self-start">
           <Player
             station={currentStation}
+            podcast={currentPodcast}
             playerApi={playerApi}
             isFavorite={selectedStation ? isFavorite(selectedStation.id) : false}
             onToggleFavorite={selectedStation ? () => toggleFavorite(selectedStation) : undefined}
           />
 
-          {currentStation && (
+          {(currentStation || currentPodcast) && (
             <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
               <ClipVisualizer
                 analyserRef={playerApi.analyserRef}
                 isPlaying={playerApi.isPlaying}
-                color={currentStation.color}
+                color={currentStation?.color ?? "var(--accent)"}
               />
-            </motion.div>
-          )}
-
-          {currentStation && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-              className="glass rounded-2xl px-4 py-3 flex items-center gap-3">
-              <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                playerApi.isPlaying ? "animate-pulse" : "opacity-30"
-              }`} style={{ background: "var(--accent)" }} />
-              <div className="flex-1 min-w-0">
-                <p className="text-white/70 text-xs font-medium truncate">{currentStation.name}</p>
-                <p className="text-white/30 text-[10px]">
-                  {playerApi.isLoading ? "Chargement…"
-                   : playerApi.isPlaying ? "En direct ✦ Live"
-                   : "En pause"}
-                  {!playerApi.eqActive && " · EQ indisponible (CORS)"}
-                </p>
-              </div>
-              <span className="text-xs text-white/20">{currentStation.genre}</span>
             </motion.div>
           )}
         </div>
@@ -465,12 +467,14 @@ export default function Home() {
         onClose={() => setIpodOpen(false)}
         playerApi={playerApi}
         station={currentStation}
+        currentPodcast={currentPodcast}
         stations={STATIONS}
         onSelectStation={(s) => {
-          spotifyPanelRef.current?.pause();
+          setCurrentPodcast(null);
           setSelectedStation(s);
           playerApi.initAudio(s.streamUrl);
         }}
+        onPlayEpisode={handlePlayEpisode}
       />
     </div>
   );

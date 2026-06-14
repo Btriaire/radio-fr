@@ -43,13 +43,15 @@ export function useAudioPlayer() {
   const analyserRef = useRef<AnalyserNode | null>(null);
   const eqEnabledRef = useRef(true); // false when CORS blocks Web Audio
 
-  const [isPlaying,  setIsPlaying]  = useState(false);
-  const [volume,     setVolume]     = useState(0.8);
-  const [currentUrl, setCurrentUrl] = useState<string | null>(null);
-  const [bands,      setBands]      = useState<EQBand[]>(DEFAULT_BANDS);
-  const [isLoading,  setIsLoading]  = useState(false);
-  const [error,      setError]      = useState<string | null>(null);
-  const [eqActive,   setEqActive]   = useState(true);
+  const [isPlaying,   setIsPlaying]   = useState(false);
+  const [volume,      setVolume]      = useState(0.8);
+  const [currentUrl,  setCurrentUrl]  = useState<string | null>(null);
+  const [bands,       setBands]       = useState<EQBand[]>(DEFAULT_BANDS);
+  const [isLoading,   setIsLoading]   = useState(false);
+  const [error,       setError]       = useState<string | null>(null);
+  const [eqActive,    setEqActive]    = useState(true);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration,    setDuration]    = useState(0);
 
   // ── Build the Web Audio graph ──────────────────────────────────────────────
   const buildGraph = useCallback((audio: HTMLAudioElement, currentBands: EQBand[]) => {
@@ -148,7 +150,10 @@ export function useAudioPlayer() {
 
     audio.src = url;
 
-    audio.oncanplay  = () => setIsLoading(false);
+    audio.oncanplay      = () => setIsLoading(false);
+    audio.ontimeupdate   = () => setCurrentTime(audio.currentTime);
+    audio.onloadedmetadata = () => setDuration(isFinite(audio.duration) ? audio.duration : 0);
+    audio.onended        = () => { setIsPlaying(false); setCurrentTime(0); };
     audio.onerror    = () => {
       // Try without crossOrigin if CORS failed
       if (audio.crossOrigin === "anonymous") {
@@ -206,11 +211,20 @@ export function useAudioPlayer() {
 
   const resetEQ = useCallback(() => applyPreset(Array(10).fill(0)), [applyPreset]);
 
+  const seekTo = useCallback((t: number) => {
+    if (audioRef.current && isFinite(t)) {
+      audioRef.current.currentTime = t;
+      setCurrentTime(t);
+    }
+  }, []);
+
   const stop = useCallback(() => {
     audioRef.current?.pause();
     if (audioRef.current) { audioRef.current.src = ""; audioRef.current.load(); }
     setIsPlaying(false);
     setCurrentUrl(null);
+    setCurrentTime(0);
+    setDuration(0);
   }, []);
 
   useEffect(() => () => {
@@ -220,8 +234,9 @@ export function useAudioPlayer() {
 
   return {
     isPlaying, volume, currentUrl, bands, isLoading, error, eqActive,
+    currentTime, duration,
     analyserRef, filtersRef,
-    initAudio, play, pause, togglePlay,
+    initAudio, play, pause, togglePlay, seekTo,
     changeVolume, updateBand, applyPreset, resetEQ, stop,
   };
 }
