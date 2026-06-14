@@ -12,14 +12,16 @@ import SpotifyPanel from "@/components/SpotifyPanel";
 import ClipVisualizer from "@/components/ClipVisualizer";
 import RadioSearch from "@/components/RadioSearch";
 import ConfigPanel from "@/components/ConfigPanel";
+import WebRadioPanel from "@/components/WebRadioPanel";
 
-type Tab = "radio" | "search" | "favoris" | "podcasts";
+type Tab = "radio" | "webradio" | "search" | "favoris" | "podcasts";
 
 const TABS: { id: Tab; label: string; icon: string }[] = [
-  { id: "radio",    label: "Radio",    icon: "📻" },
-  { id: "search",   label: "Chercher", icon: "🔍" },
-  { id: "favoris",  label: "Favoris",  icon: "⭐" },
-  { id: "podcasts", label: "Podcasts", icon: "🎧" },
+  { id: "radio",    label: "Radio",     icon: "📻" },
+  { id: "webradio", label: "Web Radio", icon: "🌐" },
+  { id: "search",   label: "Chercher",  icon: "🔍" },
+  { id: "favoris",  label: "Favoris",   icon: "⭐" },
+  { id: "podcasts", label: "Podcasts",  icon: "🎧" },
 ];
 
 export default function Home() {
@@ -288,6 +290,20 @@ export default function Home() {
                       onToggleFavorite={() => toggleFavorite(station)} />
                   ))}
                 </div>
+              </motion.div>
+            )}
+
+            {tab === "webradio" && (
+              <motion.div key="webradio"
+                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.18 }}>
+                <WebRadioPanel
+                  onPlay={(s) => { setSelectedStation(s); playerApi.initAudio(s.streamUrl); }}
+                  currentUrl={playerApi.currentUrl}
+                  isPlaying={playerApi.isPlaying}
+                  isFavorite={isFavorite}
+                  onToggleFavorite={toggleFavorite}
+                />
               </motion.div>
             )}
 

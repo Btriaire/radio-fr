@@ -67,8 +67,7 @@ export interface SpotifyEpisode {
   audio_preview_url: string | null;
 }
 
-// Search shows — no language filter (Spotify API doesn't support it for shows)
-// We filter client-side on languages or publisher
+// Search shows — market=FR to get French results, no language filter (too restrictive)
 export async function searchFrenchPodcasts(token: string, query: string): Promise<SpotifyShow[]> {
   const params = new URLSearchParams({
     q: query,
@@ -77,11 +76,7 @@ export async function searchFrenchPodcasts(token: string, query: string): Promis
     limit: "20",
   });
   const data = await spotifyFetch(`/search?${params}`, token);
-  const items: SpotifyShow[] = data?.shows?.items ?? [];
-  // Keep only items with at least one FR/french language, or no language data
-  return items.filter(
-    (s) => !s.languages?.length || s.languages.some((l) => l.startsWith("fr"))
-  );
+  return data?.shows?.items ?? [];
 }
 
 export async function getShowEpisodes(token: string, showId: string): Promise<SpotifyEpisode[]> {

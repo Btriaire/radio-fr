@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { Station } from "@/lib/stations";
 
-const CACHE_KEY = "radiofr_logos_v1";
+const CACHE_KEY = "radiofr_logos_v2";
 const BASE = "https://de1.api.radio-browser.info/json";
 
 async function fetchLogoForStation(name: string): Promise<string | null> {
