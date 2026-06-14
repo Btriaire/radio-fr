@@ -1,6 +1,6 @@
 "use client";
 import { useAudioPlayer } from "@/hooks/useAudioPlayer";
-import { Station } from "@/lib/stations";
+import { Station, StreamQuality } from "@/lib/stations";
 import AudioVisualizer from "./AudioVisualizer";
 import Equalizer from "./Equalizer";
 import StationLogo from "./StationLogo";
@@ -16,11 +16,23 @@ interface Props {
 
 export default function Player({ station, playerApi, isFavorite, onToggleFavorite }: Props) {
   const [showEQ, setShowEQ] = useState(false);
+  const [activeQuality, setActiveQuality] = useState<StreamQuality | null>(null);
+
   const {
-    isPlaying, volume, isLoading, error,
+    isPlaying, volume, isLoading, error, eqActive,
     analyserRef, filtersRef, togglePlay, changeVolume,
-    bands, updateBand, applyPreset, resetEQ,
+    bands, updateBand, applyPreset, resetEQ, initAudio,
   } = playerApi;
+
+  const anyBandActive = bands.some((b) => b.gain !== 0);
+
+  // Determine current stream (selected quality or station default)
+  const currentStream = activeQuality ?? (station?.streams?.[1] ?? station?.streams?.[0]);
+
+  const handleQualityChange = (q: StreamQuality) => {
+    setActiveQuality(q);
+    if (station) initAudio(q.url);
+  };
 
   if (!station) {
     return (
@@ -34,6 +46,8 @@ export default function Player({ station, playerApi, isFavorite, onToggleFavorit
       </div>
     );
   }
+
+  const streams = station.streams ?? [];
 
   return (
     <div className="glass-dark rounded-3xl overflow-hidden shadow-glass-lg">
@@ -78,14 +92,15 @@ export default function Player({ station, playerApi, isFavorite, onToggleFavorit
       </div>
 
       {/* Controls */}
-      <div className="px-5 pb-4 space-y-3">
+      <div className="px-5 pb-3 space-y-3">
         <div className="flex items-center gap-3">
           {/* Play/Pause */}
           <button
             onClick={togglePlay}
             disabled={isLoading}
-            className="w-12 h-12 rounded-full flex items-center justify-center transition-all active:scale-95 shadow-glow flex-shrink-0"
-            style={{ background: `linear-gradient(135deg, ${station.color}, ${station.color}99)` }}
+            className="w-12 h-12 rounded-full flex items-center justify-center transition-all active:scale-95 flex-shrink-0"
+            style={{ background: `linear-gradient(135deg, ${station.color}, ${station.color}99)`,
+              boxShadow: `0 0 16px ${station.color}55` }}
           >
             {isLoading ? (
               <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -103,16 +118,13 @@ export default function Player({ station, playerApi, isFavorite, onToggleFavorit
 
           {/* Volume */}
           <div className="flex items-center gap-2 flex-1">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-              className="text-white/30 flex-shrink-0">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              strokeWidth="2" className="text-white/30 flex-shrink-0">
               <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
               <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
             </svg>
-            <input
-              type="range" min={0} max={1} step={0.02} value={volume}
-              onChange={(e) => changeVolume(Number(e.target.value))}
-              className="flex-1"
-            />
+            <input type="range" min={0} max={1} step={0.02} value={volume}
+              onChange={(e) => changeVolume(Number(e.target.value))} className="flex-1" />
             <span className="text-xs text-white/30 w-7 text-right tabular-nums">
               {Math.round(volume * 100)}
             </span>
@@ -121,13 +133,60 @@ export default function Player({ station, playerApi, isFavorite, onToggleFavorit
           {/* EQ toggle */}
           <button
             onClick={() => setShowEQ((v) => !v)}
-            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all glass glass-hover ${
-              showEQ ? "text-blue-300 border-blue-500/40" : "text-white/40"
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all glass glass-hover flex items-center gap-1.5 ${
+              showEQ ? "" : "text-white/40"
             }`}
+            style={showEQ ? { color: "var(--accent)" } : {}}
+            title={!eqActive ? "EQ indisponible (CORS stream)" : "Égaliseur"}
           >
             EQ
+            {anyBandActive && eqActive && (
+              <span className="w-1.5 h-1.5 rounded-full animate-pulse"
+                style={{ background: "var(--accent)" }} />
+            )}
+            {!eqActive && (
+              <span className="text-[9px] text-white/25">off</span>
+            )}
           </button>
         </div>
+
+        {/* Quality selector */}
+        {streams.length > 1 && (
+          <div className="flex items-center gap-2">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              strokeWidth="2" className="text-white/30 flex-shrink-0">
+              <path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+            </svg>
+            <span className="text-xs text-white/30 flex-shrink-0">Qualité</span>
+            <div className="flex gap-1 flex-wrap">
+              {streams.map((q) => {
+                const isActive = (activeQuality?.url ?? station.streams?.[1]?.url ?? station.streamUrl) === q.url;
+                return (
+                  <button
+                    key={q.url}
+                    onClick={() => handleQualityChange(q)}
+                    className={`text-xs px-2 py-0.5 rounded-full transition-all font-medium ${
+                      isActive
+                        ? "text-white"
+                        : "glass glass-hover text-white/40 hover:text-white/70"
+                    }`}
+                    style={isActive ? {
+                      background: `${station.color}44`,
+                      border: `1px solid ${station.color}66`,
+                      color: station.color,
+                    } : {}}
+                    title={q.bitrate}
+                  >
+                    {q.label}
+                  </button>
+                );
+              })}
+            </div>
+            {currentStream && (
+              <span className="text-[10px] text-white/20 ml-auto tabular-nums">{currentStream.bitrate}</span>
+            )}
+          </div>
+        )}
 
         {error && <p className="text-xs text-red-400/80 text-center">{error}</p>}
       </div>

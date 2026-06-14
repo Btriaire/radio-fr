@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { ThemeProvider } from "@/context/ThemeContext";
 
 export const metadata: Metadata = {
   title: "RadioFR — Radios & Podcasts Français",
@@ -18,15 +19,22 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           rel="stylesheet"
         />
       </head>
-      <body className="min-h-screen bg-navy-950 antialiased">
-        {/* Ambient background blobs */}
-        <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
-          <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] rounded-full bg-blue-900/20 blur-[120px]" />
-          <div className="absolute top-[30%] right-[-15%] w-[500px] h-[500px] rounded-full bg-cyan-900/15 blur-[100px]" />
-          <div className="absolute bottom-[-10%] left-[20%] w-[400px] h-[400px] rounded-full bg-purple-900/15 blur-[120px]" />
-          <div className="absolute inset-0 bg-noise opacity-30" />
-        </div>
-        {children}
+      <body className="min-h-screen antialiased" style={{ background: "var(--bg-0)" }}>
+        <ThemeProvider>
+          {/* Ambient blobs */}
+          <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
+            <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] rounded-full blur-[120px] transition-colors duration-700"
+              style={{ background: "var(--blob-1)" }} />
+            <div className="absolute top-[30%] right-[-15%] w-[500px] h-[500px] rounded-full blur-[100px] transition-colors duration-700"
+              style={{ background: "var(--blob-2)" }} />
+            <div className="absolute bottom-[-10%] left-[20%] w-[400px] h-[400px] rounded-full blur-[120px] transition-colors duration-700"
+              style={{ background: "var(--blob-3)" }} />
+            {/* Metal texture overlay */}
+            <div className="absolute inset-0 metal-texture opacity-100" />
+            <div className="absolute inset-0 bg-noise opacity-40" />
+          </div>
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );

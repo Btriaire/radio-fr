@@ -1,14 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getSpotifyRedirectUri } from "@/lib/spotify";
 
 export async function GET(req: NextRequest) {
-  const code = req.nextUrl.searchParams.get("code");
+  const code  = req.nextUrl.searchParams.get("code");
   const error = req.nextUrl.searchParams.get("error");
 
   if (error || !code) {
     return NextResponse.redirect(new URL("/?spotify_error=1", req.url));
   }
 
-  const redirectUri = `${req.nextUrl.origin}/api/spotify/callback`;
+  // Use the same redirect URI logic — must match what was sent to Spotify
+  const redirectUri =
+    process.env.NEXT_PUBLIC_SPOTIFY_REDIRECT_URI ||
+    `${req.nextUrl.origin}/api/spotify/callback`;
 
   const body = new URLSearchParams({
     code,
@@ -28,27 +32,28 @@ export async function GET(req: NextRequest) {
   });
 
   if (!res.ok) {
-    return NextResponse.redirect(new URL("/?spotify_error=1", req.url));
+    const detail = await res.text().catch(() => "");
+    return NextResponse.redirect(
+      new URL(`/?spotify_error=1&detail=${encodeURIComponent(detail)}`, req.url)
+    );
   }
 
   const data = await res.json();
-  const expiresAt = Date.now() + data.expires_in * 1000;
 
   const response = NextResponse.redirect(new URL("/?tab=podcasts", req.url));
   response.cookies.set("spotify_access_token", data.access_token, {
     httpOnly: false,
     maxAge: data.expires_in,
     path: "/",
+    sameSite: "lax",
   });
-  response.cookies.set("spotify_refresh_token", data.refresh_token || "", {
-    httpOnly: true,
-    maxAge: 60 * 60 * 24 * 30,
-    path: "/",
-  });
-  response.cookies.set("spotify_expires_at", String(expiresAt), {
-    httpOnly: false,
-    maxAge: data.expires_in,
-    path: "/",
-  });
+  if (data.refresh_token) {
+    response.cookies.set("spotify_refresh_token", data.refresh_token, {
+      httpOnly: true,
+      maxAge: 60 * 60 * 24 * 30,
+      path: "/",
+      sameSite: "lax",
+    });
+  }
   return response;
 }

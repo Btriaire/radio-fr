@@ -1,8 +1,16 @@
 export const SPOTIFY_CLIENT_ID = process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID || "";
-export const SPOTIFY_REDIRECT_URI =
-  typeof window !== "undefined"
-    ? `${window.location.origin}/api/spotify/callback`
-    : "http://localhost:3000/api/spotify/callback";
+
+// Must match EXACTLY what's registered in Spotify Developer Dashboard.
+// Set NEXT_PUBLIC_SPOTIFY_REDIRECT_URI in .env.local (and Vercel env vars).
+export function getSpotifyRedirectUri(): string {
+  if (process.env.NEXT_PUBLIC_SPOTIFY_REDIRECT_URI) {
+    return process.env.NEXT_PUBLIC_SPOTIFY_REDIRECT_URI;
+  }
+  if (typeof window !== "undefined") {
+    return `${window.location.origin}/api/spotify/callback`;
+  }
+  return "http://localhost:3002/api/spotify/callback";
+}
 
 const SCOPES = [
   "streaming",
@@ -14,11 +22,11 @@ const SCOPES = [
   "playlist-read-private",
 ].join(" ");
 
-export function getSpotifyAuthUrl() {
+export function getSpotifyAuthUrl(): string {
   const params = new URLSearchParams({
     client_id: SPOTIFY_CLIENT_ID,
     response_type: "code",
-    redirect_uri: SPOTIFY_REDIRECT_URI,
+    redirect_uri: getSpotifyRedirectUri(),
     scope: SCOPES,
     show_dialog: "true",
   });
@@ -38,7 +46,7 @@ export async function fetchSpotifyAPI(
       ...options.headers,
     },
   });
-  if (!res.ok) throw new Error(`Spotify API error: ${res.status}`);
+  if (!res.ok) throw new Error(`Spotify API ${res.status}`);
   if (res.status === 204) return null;
   return res.json();
 }
