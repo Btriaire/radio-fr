@@ -1,7 +1,5 @@
 export const SPOTIFY_CLIENT_ID = process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID || "";
 
-// Must match EXACTLY what's registered in Spotify Developer Dashboard.
-// Set NEXT_PUBLIC_SPOTIFY_REDIRECT_URI in .env.local (and Vercel env vars).
 export function getSpotifyRedirectUri(): string {
   if (process.env.NEXT_PUBLIC_SPOTIFY_REDIRECT_URI) {
     return process.env.NEXT_PUBLIC_SPOTIFY_REDIRECT_URI;
@@ -33,21 +31,16 @@ export function getSpotifyAuthUrl(): string {
   return `https://accounts.spotify.com/authorize?${params}`;
 }
 
-export async function fetchSpotifyAPI(
-  endpoint: string,
-  token: string,
-  options: RequestInit = {}
-) {
+async function spotifyFetch(endpoint: string, token: string) {
   const res = await fetch(`https://api.spotify.com/v1${endpoint}`, {
-    ...options,
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
   });
-  if (!res.ok) throw new Error(`Spotify API ${res.status}`);
+  if (res.status === 401) throw new Error("TOKEN_EXPIRED");
   if (res.status === 204) return null;
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`Spotify ${res.status}: ${body}`);
+  }
   return res.json();
 }
 
@@ -59,6 +52,7 @@ export interface SpotifyShow {
   images: { url: string }[];
   total_episodes: number;
   external_urls: { spotify: string };
+  languages: string[];
 }
 
 export interface SpotifyEpisode {
@@ -70,26 +64,47 @@ export interface SpotifyEpisode {
   images: { url: string }[];
   uri: string;
   external_urls: { spotify: string };
+  audio_preview_url: string | null;
 }
 
-export async function searchFrenchPodcasts(token: string, query = "france") {
-  const data = await fetchSpotifyAPI(
-    `/search?q=${encodeURIComponent(query)}&type=show&market=FR&limit=20`,
-    token
+// Search shows — no language filter (Spotify API doesn't support it for shows)
+// We filter client-side on languages or publisher
+export async function searchFrenchPodcasts(token: string, query: string): Promise<SpotifyShow[]> {
+  const params = new URLSearchParams({
+    q: query,
+    type: "show",
+    market: "FR",
+    limit: "20",
+  });
+  const data = await spotifyFetch(`/search?${params}`, token);
+  const items: SpotifyShow[] = data?.shows?.items ?? [];
+  // Keep only items with at least one FR/french language, or no language data
+  return items.filter(
+    (s) => !s.languages?.length || s.languages.some((l) => l.startsWith("fr"))
   );
-  return (data?.shows?.items ?? []) as SpotifyShow[];
 }
 
-export async function getShowEpisodes(token: string, showId: string) {
-  const data = await fetchSpotifyAPI(
-    `/shows/${showId}/episodes?market=FR&limit=10`,
-    token
+export async function getShowEpisodes(token: string, showId: string): Promise<SpotifyEpisode[]> {
+  const data = await spotifyFetch(`/shows/${showId}/episodes?market=FR&limit=10`, token);
+  return data?.items ?? [];
+}
+
+export async function getFeaturedFrenchShows(token: string): Promise<SpotifyShow[]> {
+  // Use curated French podcast query terms
+  const queries = ["france culture podcast", "france inter", "france info podcast"];
+  const results = await Promise.all(
+    queries.map((q) => searchFrenchPodcasts(token, q).catch(() => []))
   );
-  return (data?.items ?? []) as SpotifyEpisode[];
+  const seen = new Set<string>();
+  return results
+    .flat()
+    .filter((s) => { if (seen.has(s.id)) return false; seen.add(s.id); return true; })
+    .slice(0, 20);
 }
 
 export function formatDuration(ms: number) {
-  const m = Math.floor(ms / 60000);
+  const h = Math.floor(ms / 3600000);
+  const m = Math.floor((ms % 3600000) / 60000);
   const s = Math.floor((ms % 60000) / 1000);
-  return `${m}:${s.toString().padStart(2, "0")}`;
+  return h > 0 ? `${h}h${m.toString().padStart(2,"0")}` : `${m}:${s.toString().padStart(2, "0")}`;
 }

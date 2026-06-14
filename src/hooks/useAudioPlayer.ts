@@ -118,11 +118,18 @@ export function useAudioPlayer() {
       return;
     }
 
-    // Stop & release previous
+    // Stop & release previous — null ALL handlers first or onerror fires
+    // and re-sets the src, causing the old stream to restart on top of the new one
     if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.src = "";
-      audioRef.current.load();
+      const old = audioRef.current;
+      old.oncanplay  = null;
+      old.onerror    = null;
+      old.onplaying  = null;
+      old.onpause    = null;
+      old.onwaiting  = null;
+      old.pause();
+      old.src = "";
+      old.load();      // abort any in-flight HTTP request
     }
 
     setError(null);
