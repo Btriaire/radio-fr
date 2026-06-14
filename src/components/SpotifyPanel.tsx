@@ -64,12 +64,14 @@ interface RSSEpisode {
 
 async function getRSSEpisodes(feedUrl: string): Promise<RSSEpisode[]> {
   if (!feedUrl) return [];
-  const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(feedUrl)}`;
-  const res = await fetch(proxy);
+  // Use our own server-side proxy — much faster than allorigins.win
+  const res = await fetch(`/api/rss?url=${encodeURIComponent(feedUrl)}`, {
+    signal: AbortSignal.timeout(10000),
+  });
   if (!res.ok) return [];
-  const json = await res.json();
+  const xml = await res.text();
   const parser = new DOMParser();
-  const doc = parser.parseFromString(json.contents, "text/xml");
+  const doc = parser.parseFromString(xml, "text/xml");
   const items = Array.from(doc.querySelectorAll("item")).slice(0, 12);
   return items.map(item => ({
     title: item.querySelector("title")?.textContent ?? "",
@@ -77,7 +79,7 @@ async function getRSSEpisodes(feedUrl: string): Promise<RSSEpisode[]> {
     duration: item.querySelector("duration")?.textContent ?? "",
     description: item.querySelector("description")?.textContent?.replace(/<[^>]*>/g, "").slice(0, 140) ?? "",
     audioUrl: item.querySelector("enclosure")?.getAttribute("url") ?? "",
-  })).filter(ep => ep.audioUrl);   // only keep playable episodes
+  })).filter(ep => ep.audioUrl);
 }
 
 function fmt(secs: number) {
@@ -85,6 +87,25 @@ function fmt(secs: number) {
   const m = Math.floor(secs / 60);
   const s = Math.floor(secs % 60);
   return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
+// Simple in-memory cache for episode lists (key = feedUrl or collectionId)
+const episodeCache = new Map<string, RSSEpisode[]>();
+
+async function getEpisodesForPodcast(podcast: iTunesPodcast): Promise<RSSEpisode[]> {
+  const cacheKey = podcast.feedUrl || String(podcast.collectionId);
+  if (episodeCache.has(cacheKey)) return episodeCache.get(cacheKey)!;
+
+  let feedUrl = podcast.feedUrl;
+  if (!feedUrl && podcast.collectionId) {
+    const full = await lookupPodcast(podcast.collectionId);
+    feedUrl = full?.feedUrl ?? "";
+  }
+  if (!feedUrl) return [];
+
+  const eps = await getRSSEpisodes(feedUrl);
+  if (eps.length > 0) episodeCache.set(cacheKey, eps);
+  return eps;
 }
 
 const QUICK_TAGS = ["France Culture", "France Inter", "Le Monde", "Binge Audio",
@@ -309,6 +330,8 @@ export default function SpotifyPanel() {
               initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
               transition={{ delay: Math.min(i, 8) * 0.04 }}
               className="glass glass-hover rounded-2xl p-2.5 flex flex-col gap-2 cursor-pointer"
+              onMouseEnter={() => getEpisodesForPodcast(p)}   /* prefetch on hover */
+              onTouchStart={() => getEpisodesForPodcast(p)}   /* prefetch on touch */
               onClick={() => setSelected(p)}>
               <div className="relative">
                 {p.artworkUrl100 || p.artworkUrl600
@@ -373,25 +396,15 @@ function PodcastDetail({ podcast, playingEp, isPlaying, onPlay, onClose }: Detai
   useEffect(() => {
     setLoading(true); setFeedError(false); setEpisodes([]);
 
-    async function load() {
-      let feedUrl = podcast.feedUrl;
-
-      // Top charts don't include feedUrl — lookup via iTunes
-      if (!feedUrl && podcast.collectionId) {
-        const full = await lookupPodcast(podcast.collectionId);
-        feedUrl = full?.feedUrl ?? "";
-      }
-
-      if (!feedUrl) { setFeedError(true); setLoading(false); return; }
-
-      const eps = await getRSSEpisodes(feedUrl);
+    getEpisodesForPodcast(podcast).then(eps => {
       if (eps.length === 0) setFeedError(true);
       setEpisodes(eps);
       setLoading(false);
-    }
-
-    load();
-  }, [podcast.feedUrl, podcast.collectionId]);
+    }).catch(() => {
+      setFeedError(true);
+      setLoading(false);
+    });
+  }, [podcast.feedUrl, podcast.collectionId]); // eslint-disable-line
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
