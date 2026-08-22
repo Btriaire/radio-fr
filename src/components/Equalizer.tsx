@@ -11,7 +11,7 @@ interface Props {
   eqActive?: boolean;
 }
 
-const MAX_GAIN = 12;
+const MAX_GAIN = 18;
 const CURVE_FREQS = 512; // frequency samples for curve
 
 export default function Equalizer({ bands, filtersRef, onBandChange, onApplyPreset, onReset, eqActive = true }: Props) {
@@ -30,8 +30,8 @@ export default function Equalizer({ bands, filtersRef, onBandChange, onApplyPres
     // Background grid
     ctx.strokeStyle = "rgba(255,255,255,0.04)";
     ctx.lineWidth = 1;
-    // Horizontal lines at -12, -6, 0, +6, +12 dB
-    for (const db of [-12, -6, 0, 6, 12]) {
+    // Horizontal lines at -18, -12, -6, 0, +6, +12, +18 dB
+    for (const db of [-18, -12, -6, 0, 6, 12, 18]) {
       const y = H / 2 - (db / MAX_GAIN) * (H / 2 - 8);
       ctx.beginPath();
       ctx.moveTo(0, y);

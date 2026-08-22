@@ -1,5 +1,5 @@
 "use client";
-import { Station } from "@/lib/stations";
+import { Station, isEqCompatible } from "@/lib/stations";
 import { motion } from "framer-motion";
 import AudioVisualizer from "./AudioVisualizer";
 import StationLogo from "./StationLogo";
@@ -56,6 +56,19 @@ export default function StationCard({
       <div className="flex-1 min-w-0 relative z-10">
         <div className="flex items-center gap-2">
           <span className="font-medium text-white text-sm truncate">{station.name}</span>
+          {isEqCompatible(station.streamUrl) && (
+            <span
+              title="Égaliseur disponible (EQ compatible)"
+              className="flex items-center gap-0.5 text-[9px] font-bold px-1 py-0.5 rounded-md flex-shrink-0"
+              style={{ background: `${station.color}22`, color: station.color }}
+            >
+              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
+                <line x1="6" y1="3" x2="6" y2="21" /><line x1="12" y1="8" x2="12" y2="21" /><line x1="18" y1="14" x2="18" y2="21" />
+                <line x1="3" y1="9" x2="9" y2="9" /><line x1="9" y1="14" x2="15" y2="14" /><line x1="15" y1="6" x2="21" y2="6" />
+              </svg>
+              EQ
+            </span>
+          )}
           {isActive && isPlaying && (
             <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse flex-shrink-0" />
           )}

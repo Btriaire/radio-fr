@@ -126,6 +126,115 @@
   --text-primary:#e0faff;
 }
 
+/* ─── Synthwave Grid (retro-futuristic outrun horizon) ──────────── */
+[data-theme="synthwave"] {
+  --bg-0:        #0a0014;
+  --bg-1:        #170025;
+  --bg-2:        #22003a;
+  --accent:      #ff2ec4;
+  --accent-2:    #05d9e8;
+  --blob-1:      rgba(255,46,196,0.28);
+  --blob-2:      rgba(5,217,232,0.2);
+  --blob-3:      rgba(120,0,200,0.3);
+  --glass-bg:    rgba(255,46,196,0.07);
+  --glass-bg-d:  rgba(10,0,20,0.88);
+  --glass-border:rgba(255,46,196,0.18);
+  --metal-hi:    rgba(5,217,232,0.18);
+  --metal-lo:    rgba(10,0,15,0.6);
+  --text-primary:#fce8ff;
+}
+
+/* Faint scanlines, same trick as the neon theme */
+[data-theme="synthwave"] body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(255,46,196,0.012) 2px,
+    rgba(255,46,196,0.012) 4px
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+@keyframes synthwaveGridScroll {
+  from { background-position: 0 0, 0 0; }
+  to   { background-position: 0 48px, 0 0; }
+}
+
+/* Retro sun + perspective floor grid — rendered inside a fixed inset-0
+   wrapper (see .synthwave-grid usage in page.tsx); kept as pseudo-elements
+   so this rule never fights the Tailwind `fixed inset-0` utility classes
+   applied to that wrapper for positioning. */
+.synthwave-grid::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 6%;
+  width: 300px;
+  height: 300px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: linear-gradient(to top, #ff2ec4 0%, #ff7ad9 40%, #05d9e8 100%);
+  box-shadow: 0 0 120px rgba(255,46,196,0.45), 0 0 220px rgba(5,217,232,0.2);
+  opacity: 0.3;
+  filter: blur(1px);
+}
+.synthwave-grid::after {
+  content: "";
+  position: absolute;
+  left: -50%;
+  right: -50%;
+  bottom: -5%;
+  height: 55%;
+  background-image:
+    linear-gradient(rgba(5,217,232,0.32) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,46,196,0.32) 1px, transparent 1px);
+  background-size: 100% 48px, 64px 100%;
+  transform: perspective(260px) rotateX(68deg);
+  transform-origin: bottom;
+  opacity: 0.45;
+  animation: synthwaveGridScroll 5s linear infinite;
+}
+
+/* ─── Bois Vintage (warm carved-wood finish) ────────────────────── */
+[data-theme="wood"] {
+  --bg-0:        #1c1108;
+  --bg-1:        #2c1a0e;
+  --bg-2:        #3d2414;
+  --accent:      #c9812f;
+  --accent-2:    #e8b374;
+  --blob-1:      rgba(160,100,40,0.4);
+  --blob-2:      rgba(120,70,20,0.3);
+  --blob-3:      rgba(90,50,10,0.3);
+  --glass-bg:    rgba(200,140,70,0.07);
+  --glass-bg-d:  rgba(20,12,6,0.88);
+  --glass-border:rgba(200,140,70,0.16);
+  --metal-hi:    rgba(255,200,140,0.16);
+  --metal-lo:    rgba(15,8,2,0.55);
+  --text-primary:#f5e6d3;
+}
+
+/* Photoreal wood grain — procedural SVG (feTurbulence + feDisplacementMap
+   warping a striped gradient into streaks, plus two knots and a varnish
+   sheen), pre-rendered as a static asset so the browser paints it once.
+   Fixed + cover + no-repeat: a single generously-sized image standing in
+   for wallpaper, not a repeating tile — repeating it produced a visible
+   seam where the displacement warp crosses the tile edge. */
+[data-theme="wood"] .ambient-bg {
+  /* body itself carries an inline `style="background: var(--bg-0)"`, which
+     beats any external stylesheet rule — so the texture goes on this wrapper
+     (behind the blobs/metal-texture/noise layers, which is exactly where a
+     wallpaper belongs) instead of on body. */
+  background-image: url("/textures/wood-grain.svg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
 /* ─── Starfield animation (Cosmic theme) ───────────────────────── */
 @keyframes twinkle {
   0%,100% { opacity: 0.15; }

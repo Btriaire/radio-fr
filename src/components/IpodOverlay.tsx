@@ -3,12 +3,14 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Station } from "@/lib/stations";
 import { getEpisodesForPodcast, iTunesPodcast, RSSEpisode } from "@/lib/podcastUtils";
+import { IPOD_SKINS, useTheme } from "@/context/ThemeContext";
 
 interface PodcastNowPlaying {
   episodeTitle: string;
   audioUrl: string;
   podcastName: string;
   artwork: string;
+  isVideo?: boolean;
 }
 
 interface PlayerApi {
@@ -19,6 +21,7 @@ interface PlayerApi {
   togglePlay: () => void;
   initAudio: (url: string) => void;
   currentUrl: string | null;
+  mediaElRef: React.MutableRefObject<HTMLMediaElement | null>;
 }
 
 interface Props {
@@ -63,6 +66,9 @@ async function fetchTopPodcasts(genreId?: number): Promise<iTunesPodcast[]> {
 export default function IpodOverlay({
   open, onClose, playerApi, station, currentPodcast, stations, onSelectStation, onPlayEpisode,
 }: Props) {
+  const { ipodSkin } = useTheme();
+  const skin = IPOD_SKINS.find((s) => s.id === ipodSkin) ?? IPOD_SKINS[0];
+
   const [screen, setScreen]           = useState<IpodScreen>("nowplaying");
   const [menuIdx, setMenuIdx]         = useState(0);
   const [stationIdx, setStationIdx]   = useState(0);
@@ -252,6 +258,22 @@ export default function IpodOverlay({
 
   const vol = playerApi.volume;
   const isPlayingPodcast = !!currentPodcast && !station;
+  const isVideoPodcast = isPlayingPodcast && !!currentPodcast?.isVideo;
+
+  // Mount the shared <video> element into the iPod screen for video podcasts.
+  // While the iPod is open it "owns" the element (the Player behind it is hidden
+  // and yields ownership via its `ipodOpen` prop); on close the Player reclaims it.
+  const ipodVideoBoxRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const box = ipodVideoBoxRef.current;
+    const el = playerApi.mediaElRef?.current as HTMLVideoElement | null;
+    const show = open && isVideoPodcast && screen === "nowplaying";
+    if (!box || !el || !show) return;
+    el.style.width = "100%"; el.style.height = "100%";
+    el.style.objectFit = "cover"; el.style.display = "block";
+    box.appendChild(el);
+    return () => { if (el.parentNode === box) box.removeChild(el); };
+  }, [open, screen, isVideoPodcast, currentPodcast?.audioUrl, playerApi.mediaElRef]);
 
   // ── List renderer (shared for stations / podcasts / episodes) ──────
   function renderList<T>(
@@ -327,7 +349,7 @@ export default function IpodOverlay({
             {/* ── iPod shell ── */}
             <div style={{
               width: bodyW,
-              background: "linear-gradient(160deg, #f6f6f1 0%, #e9e9e4 40%, #d2d2cc 100%)",
+              background: skin.shell,
               borderRadius: Math.round(32 * scale),
               padding: `${pad}px ${pad}px ${padB}px`,
               boxShadow: `0 ${Math.round(40*scale)}px ${Math.round(80*scale)}px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.35), inset 0 1px 0 rgba(255,255,255,0.85), inset 0 -2px 4px rgba(0,0,0,0.12)`,
@@ -339,9 +361,9 @@ export default function IpodOverlay({
                 style={{
                   position: "absolute", top: Math.round(10*scale), right: Math.round(10*scale),
                   width: Math.round(22*scale), height: Math.round(22*scale), borderRadius: "50%",
-                  background: "rgba(0,0,0,0.13)", border: "none", cursor: "pointer",
+                  background: skin.closeBg, border: "none", cursor: "pointer",
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  color: "#555", fontSize: fs(9), lineHeight: 1,
+                  color: skin.closeColor, fontSize: fs(9), lineHeight: 1,
                 }}>✕</button>
 
               {/* ── Screen bezel ── */}
@@ -389,13 +411,15 @@ export default function IpodOverlay({
                           boxShadow: `0 ${Math.round(2*scale)}px ${Math.round(8*scale)}px rgba(0,0,0,0.3)`,
                           overflow: "hidden", position: "relative",
                         }}>
-                          {isPlayingPodcast && currentPodcast?.artwork
+                          {isVideoPodcast
+                            ? <div ref={ipodVideoBoxRef} style={{ width: "100%", height: "100%", background: "#000" }} />
+                            : isPlayingPodcast && currentPodcast?.artwork
                             ? <img src={currentPodcast.artwork} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                             : station?.logo
                               ? <img src={station.logo} alt="" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
                               : <span style={{ fontSize: fs(18) }}>🎙</span>
                           }
-                          {playerApi.isPlaying && (
+                          {playerApi.isPlaying && !isVideoPodcast && (
                             <div style={{
                               position: "absolute", inset: 0, background: "rgba(0,0,0,0.18)",
                               display: "flex", alignItems: "flex-end", justifyContent: "center",
@@ -516,11 +540,11 @@ export default function IpodOverlay({
               <div ref={wheelRef} onMouseDown={handleWheelDown} onTouchStart={handleWheelDown}
                 style={{
                   width: wheelD, height: wheelD, borderRadius: "50%", margin: "0 auto", position: "relative",
-                  background: "linear-gradient(145deg, #e9e9e4 0%, #d2d2cc 50%, #c2c2bc 100%)",
+                  background: skin.wheel,
                   boxShadow: `0 ${Math.round(4*scale)}px ${Math.round(12*scale)}px rgba(0,0,0,0.22), inset 0 ${Math.round(2*scale)}px ${Math.round(4*scale)}px rgba(255,255,255,0.65), inset 0 -${Math.round(2*scale)}px ${Math.round(4*scale)}px rgba(0,0,0,0.12)`,
                   cursor: "grab", userSelect: "none", touchAction: "none",
                 }}>
-                <div style={{ position: "absolute", inset: Math.round(8*scale), borderRadius: "50%", border: "1px solid rgba(0,0,0,0.07)", background: "linear-gradient(145deg, #dcdcd7 0%, #cacacc 100%)" }} />
+                <div style={{ position: "absolute", inset: Math.round(8*scale), borderRadius: "50%", border: "1px solid rgba(0,0,0,0.07)", background: skin.wheelRing }} />
 
                 {/* MENU */}
                 {renderWheelBtn("menu", "MENU", { top: Math.round(14*scale), left: "50%", transform: "translateX(-50%)" }, fs(8), handleMenu)}
@@ -537,15 +561,15 @@ export default function IpodOverlay({
                   style={{
                     position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)",
                     width: Math.round(58*scale), height: Math.round(58*scale), borderRadius: "50%",
-                    background: "linear-gradient(145deg, #f0f0eb 0%, #dcdcd7 100%)", border: "none", cursor: "pointer",
+                    background: skin.centerOuter, border: "none", cursor: "pointer",
                     boxShadow: `0 ${Math.round(2*scale)}px ${Math.round(8*scale)}px rgba(0,0,0,0.18), inset 0 1px ${Math.round(2*scale)}px rgba(255,255,255,0.85), inset 0 -1px ${Math.round(2*scale)}px rgba(0,0,0,0.1)`,
                     display: "flex", alignItems: "center", justifyContent: "center", WebkitTapHighlightColor: "transparent",
                   }}>
-                  <div style={{ width: Math.round(38*scale), height: Math.round(38*scale), borderRadius: "50%", background: "linear-gradient(145deg, #e8e8e3, #d8d8d3)", boxShadow: `inset 0 1px ${Math.round(3*scale)}px rgba(0,0,0,0.1)` }} />
+                  <div style={{ width: Math.round(38*scale), height: Math.round(38*scale), borderRadius: "50%", background: skin.centerInner, boxShadow: `inset 0 1px ${Math.round(3*scale)}px rgba(0,0,0,0.1)` }} />
                 </button>
               </div>
 
-              <p style={{ textAlign: "center", marginTop: Math.round(10*scale), fontSize: fs(7), color: "#999", letterSpacing: 0.5, fontFamily: "system-ui" }}>RadioFR iPod</p>
+              <p style={{ textAlign: "center", marginTop: Math.round(10*scale), fontSize: fs(7), color: skin.footColor, letterSpacing: 0.5, fontFamily: "system-ui" }}>RadioFR iPod</p>
             </div>
           </motion.div>
 
@@ -565,7 +589,7 @@ export default function IpodOverlay({
         style={{
           position: "absolute", ...pos,
           background: "none", border: "none", cursor: "pointer",
-          fontSize: size, color: "#444", fontFamily: "system-ui",
+          fontSize: size, color: skin.btnColor, fontFamily: "system-ui",
           fontWeight: id === "menu" ? 700 : 400, letterSpacing: id === "menu" ? 1 : 0,
           padding: `${Math.round(4*scale)}px ${Math.round(6*scale)}px`,
           opacity: pressed === id ? 0.45 : 1, transition: "opacity 0.08s",

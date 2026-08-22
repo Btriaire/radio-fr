@@ -7,16 +7,55 @@ interface Props {
   color?: string;
 }
 
-export default function ClipVisualizer({ analyserRef, isPlaying, color = "#06b6d4" }: Props) {
+// Canvas APIs (addColorStop/strokeStyle gradients) reject CSS custom properties
+// like "var(--accent)" — and our `${color}30` alpha trick only works on 6-digit
+// hex. So resolve a var() to its computed hex at runtime (keeps theming) and
+// fall back to a safe hex for anything else.
+function resolveHex(c: string): string {
+  let v = (c || "").trim();
+  const m = v.match(/^var\(\s*(--[\w-]+)\s*(?:,\s*([^)]+))?\)$/);
+  if (m && typeof window !== "undefined") {
+    const resolved = getComputedStyle(document.documentElement)
+      .getPropertyValue(m[1]).trim();
+    v = resolved || (m[2]?.trim() ?? "");
+  }
+  return /^#[0-9a-f]{6}$/i.test(v) ? v : "#06b6d4";
+}
+
+export default function ClipVisualizer({ analyserRef, isPlaying, color: rawColor = "#06b6d4" }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef    = useRef<number>(0);
   const phaseRef  = useRef(0);
+
+  // Mode "Économie de batterie": always treated as idle — no rAF loop.
+  let lowBattery = false;
+  try { lowBattery = localStorage.getItem("radiofr_low_battery") === "1"; } catch {}
+  const effectivePlaying = isPlaying && !lowBattery;
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
+
+    const color = resolveHex(rawColor);
+
+    if (!effectivePlaying) {
+      // Draw one idle frame and stop — an endless 60fps rAF loop just to
+      // animate a decorative idle sine wave is pure battery waste while
+      // nothing is playing.
+      cancelAnimationFrame(rafRef.current);
+      const W = canvas.width;
+      const H = canvas.height;
+      ctx.clearRect(0, 0, W, H);
+      ctx.beginPath();
+      ctx.strokeStyle = `${color}45`;
+      ctx.lineWidth = 1.5;
+      ctx.moveTo(0, H / 2);
+      ctx.lineTo(W, H / 2);
+      ctx.stroke();
+      return;
+    }
 
     const draw = () => {
       rafRef.current = requestAnimationFrame(draw);
@@ -25,21 +64,8 @@ export default function ClipVisualizer({ analyserRef, isPlaying, color = "#06b6d
       ctx.clearRect(0, 0, W, H);
 
       const analyser = analyserRef.current;
-      phaseRef.current += isPlaying ? 0.045 : 0.015;
+      phaseRef.current += 0.045;
       const ph = phaseRef.current;
-
-      if (!isPlaying) {
-        // Slow idle sine
-        ctx.beginPath();
-        ctx.strokeStyle = `${color}45`;
-        ctx.lineWidth = 1.5;
-        for (let x = 0; x < W; x++) {
-          const y = H / 2 + Math.sin((x / W) * Math.PI * 3 + ph) * 3;
-          x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-        }
-        ctx.stroke();
-        return;
-      }
 
       // Try real time-domain data
       let useReal = false;
@@ -119,13 +145,13 @@ export default function ClipVisualizer({ analyserRef, isPlaying, color = "#06b6d
 
     draw();
     return () => cancelAnimationFrame(rafRef.current);
-  }, [analyserRef, isPlaying, color]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [analyserRef, effectivePlaying, rawColor]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="glass rounded-xl overflow-hidden" style={{ padding: "8px 12px" }}>
       <div className="flex items-center gap-2 mb-1">
         <div className={`w-1.5 h-1.5 rounded-full ${isPlaying ? "animate-pulse" : "opacity-30"}`}
-          style={{ background: color }} />
+          style={{ background: rawColor }} />
         <span className="text-[10px] text-white/40 uppercase tracking-widest font-medium">Waveform</span>
       </div>
       <canvas

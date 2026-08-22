@@ -2,7 +2,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { RBStation, rbStationToStation } from "@/lib/radiobrowser";
-import { Station } from "@/lib/stations";
+import { Station, isEqCompatible } from "@/lib/stations";
 import StationLogo from "./StationLogo";
 
 const BASE = "https://de1.api.radio-browser.info/json";
@@ -57,6 +57,7 @@ export default function WebRadioPanel({ onPlay, currentUrl, isPlaying, isFavorit
   const [hasMore, setHasMore]   = useState(true);
   const [search, setSearch]     = useState("");
   const [error, setError]       = useState<string | null>(null);
+  const [corsOnly, setCorsOnly] = useState(false);
 
   const load = async (tag: string, reset = true) => {
     if (reset) { setLoading(true); setStations([]); setHasMore(true); }
@@ -78,13 +79,24 @@ export default function WebRadioPanel({ onPlay, currentUrl, isPlaying, isFavorit
   useEffect(() => { load(genre); }, [genre]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const filtered = useMemo(() => {
-    if (!search.trim()) return stations;
-    const q = search.toLowerCase();
-    return stations.filter(s =>
-      s.name.toLowerCase().includes(q) ||
-      s.tags?.toLowerCase().includes(q)
+    const q = search.trim().toLowerCase();
+    let list = q
+      ? stations.filter(s =>
+          s.name.toLowerCase().includes(q) ||
+          s.tags?.toLowerCase().includes(q))
+      : stations;
+    if (corsOnly) list = list.filter(s => isEqCompatible(s.url_resolved));
+    // Favoriser les flux compatibles EQ (CORS) : ils remontent en tête,
+    // l'ordre relatif (clickcount) restant préservé dans chaque groupe.
+    return [...list].sort((a, b) =>
+      (isEqCompatible(a.url_resolved) ? 0 : 1) - (isEqCompatible(b.url_resolved) ? 0 : 1)
     );
-  }, [stations, search]);
+  }, [stations, search, corsOnly]);
+
+  const corsCount = useMemo(
+    () => stations.filter(s => isEqCompatible(s.url_resolved)).length,
+    [stations]
+  );
 
   return (
     <div className="space-y-4">
@@ -119,7 +131,7 @@ export default function WebRadioPanel({ onPlay, currentUrl, isPlaying, isFavorit
       </div>
 
       {/* Genre pills */}
-      <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+      <div className="flex flex-wrap gap-1.5">
         {WEB_GENRES.map(g => (
           <button key={g} onClick={() => setGenre(g)}
             className={`px-3 py-1.5 rounded-full text-xs font-medium flex-shrink-0 transition-all ${
@@ -133,11 +145,26 @@ export default function WebRadioPanel({ onPlay, currentUrl, isPlaying, isFavorit
 
       {error && <p className="text-red-400/80 text-sm text-center">{error}</p>}
 
-      {/* Count */}
-      {!loading && filtered.length > 0 && (
-        <p className="text-white/25 text-xs">
-          {filtered.length}{hasMore && "+"} station{filtered.length > 1 ? "s" : ""} trouvée{filtered.length > 1 ? "s" : ""}
-        </p>
+      {/* Count + CORS filter */}
+      {!loading && (
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-white/25 text-xs">
+            {filtered.length}{hasMore && !corsOnly && "+"} station{filtered.length > 1 ? "s" : ""}
+            {corsOnly ? " compatible EQ" : " trouvée" + (filtered.length > 1 ? "s" : "")}
+          </p>
+          <button onClick={() => setCorsOnly(v => !v)}
+            title="N'afficher que les radios dont l'égaliseur fonctionne (CORS)"
+            className={`flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-full flex-shrink-0 transition-all ${
+              corsOnly ? "text-white" : "glass glass-hover text-white/55 hover:text-white"
+            }`}
+            style={corsOnly ? { background: "var(--accent)" } : {}}>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
+              <line x1="6" y1="3" x2="6" y2="21" /><line x1="12" y1="8" x2="12" y2="21" /><line x1="18" y1="14" x2="18" y2="21" />
+              <line x1="3" y1="9" x2="9" y2="9" /><line x1="9" y1="14" x2="15" y2="14" /><line x1="15" y1="6" x2="21" y2="6" />
+            </svg>
+            EQ seul {!corsOnly && corsCount > 0 && <span className="opacity-60">({corsCount})</span>}
+          </button>
+        </div>
       )}
 
       {/* Station grid */}
@@ -181,6 +208,17 @@ export default function WebRadioPanel({ onPlay, currentUrl, isPlaying, isFavorit
                   <div className="flex-1 min-w-0 relative z-10">
                     <div className="flex items-center gap-2">
                       <span className="font-medium text-white text-sm truncate">{s.name}</span>
+                      {isEqCompatible(rb.url_resolved) && (
+                        <span title="Égaliseur disponible (CORS compatible)"
+                          className="flex items-center gap-0.5 text-[9px] font-bold px-1 py-0.5 rounded-md flex-shrink-0"
+                          style={{ background: `${s.color}22`, color: s.color }}>
+                          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
+                            <line x1="6" y1="3" x2="6" y2="21" /><line x1="12" y1="8" x2="12" y2="21" /><line x1="18" y1="14" x2="18" y2="21" />
+                            <line x1="3" y1="9" x2="9" y2="9" /><line x1="9" y1="14" x2="15" y2="14" /><line x1="15" y1="6" x2="21" y2="6" />
+                          </svg>
+                          EQ
+                        </span>
+                      )}
                       {active && isPlaying && (
                         <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse flex-shrink-0" />
                       )}

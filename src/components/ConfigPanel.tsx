@@ -1,6 +1,7 @@
 "use client";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { THEMES, useTheme } from "@/context/ThemeContext";
+import { THEMES, IPOD_SKINS, useTheme } from "@/context/ThemeContext";
 import { STATIONS } from "@/lib/stations";
 
 interface Props {
@@ -9,7 +10,50 @@ interface Props {
 }
 
 export default function ConfigPanel({ open, onClose }: Props) {
-  const { theme, setTheme, defaultStationId, setDefaultStationId } = useTheme();
+  const { theme, setTheme, defaultStationId, setDefaultStationId, ipodSkin, setIpodSkin } = useTheme();
+
+  // iOS-only: opt into the Web Audio EQ on iPhone. It enables the equalizer on
+  // mobile but the sound stops when the screen locks (Web Audio gets suspended).
+  // Off by default → live radio keeps playing in the background.
+  const [iosEq, setIosEq] = useState(false);
+  useEffect(() => {
+    try { setIosEq(localStorage.getItem("radiofr_ios_eq") === "1"); } catch {}
+  }, []);
+  const toggleIosEq = () => {
+    setIosEq((v) => {
+      const next = !v;
+      try { localStorage.setItem("radiofr_ios_eq", next ? "1" : "0"); } catch {}
+      return next;
+    });
+  };
+
+  // Mode "Économie de données" — always play the lowest-bitrate tier a station
+  // offers (see preferredStreamUrl in lib/stations.ts).
+  const [lowBandwidth, setLowBandwidth] = useState(false);
+  useEffect(() => {
+    try { setLowBandwidth(localStorage.getItem("radiofr_low_bandwidth") === "1"); } catch {}
+  }, []);
+  const toggleLowBandwidth = () => {
+    setLowBandwidth((v) => {
+      const next = !v;
+      try { localStorage.setItem("radiofr_low_bandwidth", next ? "1" : "0"); } catch {}
+      return next;
+    });
+  };
+
+  // Mode "Économie de batterie" — skips the Web Audio graph (EQ + analyser)
+  // and freezes the visualizers, the two real CPU/battery costs of playback.
+  const [lowBattery, setLowBattery] = useState(false);
+  useEffect(() => {
+    try { setLowBattery(localStorage.getItem("radiofr_low_battery") === "1"); } catch {}
+  }, []);
+  const toggleLowBattery = () => {
+    setLowBattery((v) => {
+      const next = !v;
+      try { localStorage.setItem("radiofr_low_battery", next ? "1" : "0"); } catch {}
+      return next;
+    });
+  };
 
   return (
     <AnimatePresence>
@@ -96,6 +140,29 @@ export default function ConfigPanel({ open, onClose }: Props) {
                             <div className="absolute bottom-1 left-1 right-1 h-0.5 rounded-full"
                               style={{ background: `linear-gradient(to right, ${t.swatch[2]}, ${t.swatch[1]})`, boxShadow: `0 0 6px ${t.swatch[1]}` }} />
                           </>
+                        ) : t.id === "synthwave" ? (
+                          /* Synthwave: retro sun + perspective grid */
+                          <>
+                            <div className="absolute inset-0"
+                              style={{ background: `radial-gradient(circle at 50% 25%, ${t.swatch[1]}90, transparent 55%)` }} />
+                            <div className="absolute inset-x-0 bottom-0 h-1/2"
+                              style={{
+                                backgroundImage: `linear-gradient(${t.swatch[2]}80 1px, transparent 1px), linear-gradient(90deg, ${t.swatch[1]}80 1px, transparent 1px)`,
+                                backgroundSize: "6px 6px",
+                                transform: "perspective(40px) rotateX(50deg)",
+                                transformOrigin: "bottom",
+                              }} />
+                          </>
+                        ) : t.id === "wood" ? (
+                          /* Wood: vertical grain streaks + warm knot glow */
+                          <>
+                            <div className="absolute inset-0"
+                              style={{ backgroundImage: `repeating-linear-gradient(179deg, rgba(0,0,0,0.18) 0px, rgba(0,0,0,0.18) 1px, transparent 1px, transparent 3px)` }} />
+                            <div className="absolute inset-0"
+                              style={{ background: `radial-gradient(ellipse 60% 40% at 60% 55%, ${t.swatch[2]}70, transparent 70%)` }} />
+                            <div className="absolute inset-x-0 top-0 h-1/3"
+                              style={{ background: "linear-gradient(to bottom, rgba(255,220,180,0.18), transparent)" }} />
+                          </>
                         ) : (
                           /* Metal: brushed lines + shine */
                           <>
@@ -123,6 +190,40 @@ export default function ConfigPanel({ open, onClose }: Props) {
                           <polyline points="20 6 9 17 4 12" />
                         </svg>
                       )}
+                    </button>
+                  ))}
+                </div>
+              </section>
+
+              {/* ── iPod color ── */}
+              <section className="space-y-3">
+                <h3 className="text-xs font-semibold tracking-widest uppercase"
+                  style={{ color: "var(--accent)" }}>
+                  Couleur de l&apos;iPod
+                </h3>
+                <p className="text-white/30 text-xs">Habillage du lecteur iPod.</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {IPOD_SKINS.map((sk) => (
+                    <button
+                      key={sk.id}
+                      onClick={() => setIpodSkin(sk.id)}
+                      className="flex flex-col items-center gap-2 p-3 rounded-xl transition-all glass glass-hover"
+                      style={ipodSkin === sk.id ? {
+                        borderColor: "var(--accent)",
+                        boxShadow: "0 0 14px var(--accent)",
+                      } : {}}
+                    >
+                      {/* Mini iPod preview */}
+                      <div className="w-9 h-12 rounded-lg flex flex-col items-center justify-end pb-1 relative overflow-hidden"
+                        style={{ background: `linear-gradient(160deg, ${sk.preview[0]}, ${sk.preview[1]})`, border: "1px solid rgba(255,255,255,0.15)" }}>
+                        <div className="w-6 h-3 rounded-[2px] mb-1 mt-1"
+                          style={{ background: "linear-gradient(180deg, #b2ccec, #d2e6ff)" }} />
+                        <div className="w-5 h-5 rounded-full"
+                          style={{ background: sk.wheelRing, border: "1px solid rgba(0,0,0,0.12)" }} />
+                      </div>
+                      <span className={`text-[11px] font-medium ${ipodSkin === sk.id ? "text-white" : "text-white/55"}`}>
+                        {sk.name}
+                      </span>
                     </button>
                   ))}
                 </div>
@@ -179,6 +280,73 @@ export default function ConfigPanel({ open, onClose }: Props) {
                     </button>
                   ))}
                 </div>
+              </section>
+
+              {/* ── Modes économie ── */}
+              <section className="space-y-3">
+                <h3 className="text-xs font-semibold tracking-widest uppercase"
+                  style={{ color: "var(--accent)" }}>
+                  Modes économie
+                </h3>
+
+                <button onClick={toggleLowBandwidth}
+                  className="w-full glass glass-hover rounded-xl p-3 flex items-center gap-3 text-left transition-all">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white/80 text-sm font-medium">Économie de données</p>
+                    <p className="text-white/40 text-[11px] mt-0.5 leading-snug">
+                      {lowBandwidth
+                        ? "Activé — lecture systématique en qualité basse (≈32-56 kbps)."
+                        : "Désactivé — qualité standard par défaut."}
+                    </p>
+                  </div>
+                  <span className="relative flex-shrink-0 w-11 h-6 rounded-full transition-all"
+                    style={{ background: lowBandwidth ? "var(--accent)" : "rgba(255,255,255,0.15)" }}>
+                    <span className="absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all"
+                      style={{ left: lowBandwidth ? "22px" : "2px" }} />
+                  </span>
+                </button>
+
+                <button onClick={toggleLowBattery}
+                  className="w-full glass glass-hover rounded-xl p-3 flex items-center gap-3 text-left transition-all">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white/80 text-sm font-medium">Économie de batterie</p>
+                    <p className="text-white/40 text-[11px] mt-0.5 leading-snug">
+                      {lowBattery
+                        ? "Activé — égaliseur et visualiseurs désactivés."
+                        : "Désactivé — égaliseur et animations actifs."}
+                    </p>
+                  </div>
+                  <span className="relative flex-shrink-0 w-11 h-6 rounded-full transition-all"
+                    style={{ background: lowBattery ? "var(--accent)" : "rgba(255,255,255,0.15)" }}>
+                    <span className="absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all"
+                      style={{ left: lowBattery ? "22px" : "2px" }} />
+                  </span>
+                </button>
+              </section>
+
+              {/* ── Lecture mobile (iOS) ── */}
+              <section className="space-y-3">
+                <h3 className="text-xs font-semibold tracking-widest uppercase"
+                  style={{ color: "var(--accent)" }}>
+                  Lecture mobile
+                </h3>
+                <button onClick={toggleIosEq}
+                  className="w-full glass glass-hover rounded-xl p-3 flex items-center gap-3 text-left transition-all">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white/80 text-sm font-medium">Égaliseur sur iPhone</p>
+                    <p className="text-white/40 text-[11px] mt-0.5 leading-snug">
+                      {iosEq
+                        ? "Activé — le son se coupe quand l'écran se verrouille."
+                        : "Désactivé — la radio continue écran éteint (recommandé)."}
+                    </p>
+                  </div>
+                  {/* Switch */}
+                  <span className="relative flex-shrink-0 w-11 h-6 rounded-full transition-all"
+                    style={{ background: iosEq ? "var(--accent)" : "rgba(255,255,255,0.15)" }}>
+                    <span className="absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all"
+                      style={{ left: iosEq ? "22px" : "2px" }} />
+                  </span>
+                </button>
               </section>
 
               {/* ── Spotify config hint ── */}

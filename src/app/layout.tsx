@@ -1,11 +1,21 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { ThemeProvider } from "@/context/ThemeContext";
 
 export const metadata: Metadata = {
   title: "RadioFR — Radios & Podcasts Français",
   description: "Écoute les meilleures radios et podcasts français avec égaliseur intégré.",
-  icons: { icon: "/favicon.svg" },
+  icons: { icon: "/favicon.svg", apple: "/favicon.svg" },
+  applicationName: "RadioFR",
+  appleWebApp: { capable: true, title: "RadioFR", statusBarStyle: "black-translucent" },
+  formatDetection: { telephone: false },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#060a14",
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -22,7 +32,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-screen antialiased" style={{ background: "var(--bg-0)" }}>
         <ThemeProvider>
           {/* Ambient blobs */}
-          <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
+          <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10 ambient-bg">
             <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] rounded-full blur-[120px] transition-colors duration-700"
               style={{ background: "var(--blob-1)" }} />
             <div className="absolute top-[30%] right-[-15%] w-[500px] h-[500px] rounded-full blur-[100px] transition-colors duration-700"

@@ -1,28 +1,38 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAudioPlayer } from "@/hooks/useAudioPlayer";
 import { useFavorites } from "@/hooks/useFavorites";
 import { useStationLogos } from "@/hooks/useStationLogos";
 import { useTheme } from "@/context/ThemeContext";
-import { STATIONS, GENRES, Station } from "@/lib/stations";
+import { STATIONS, GENRES, Station, isEqCompatible, preferredStreamUrl } from "@/lib/stations";
+import { playableUrl, MusicTrack } from "@/lib/musicSearch";
 import Player from "@/components/Player";
 import StationCard from "@/components/StationCard";
-import SpotifyPanel, { SpotifyPanelHandle } from "@/components/SpotifyPanel";
+import SpotifyPanel, { SpotifyPanelHandle, AudiusView, RSSEpisode, iTunesPodcast } from "@/components/SpotifyPanel";
+import { usePlayedEpisodes } from "@/hooks/usePlayedEpisodes";
 import ClipVisualizer from "@/components/ClipVisualizer";
 import RadioSearch from "@/components/RadioSearch";
 import ConfigPanel from "@/components/ConfigPanel";
 import WebRadioPanel from "@/components/WebRadioPanel";
 import IpodOverlay from "@/components/IpodOverlay";
+import DjMode from "@/components/DjMode";
+import YouTubeMiniPlayer from "@/components/YouTubeMiniPlayer";
+import ZenBackground from "@/components/ZenBackground";
+import StationLogo from "@/components/StationLogo";
+import SplashScreen from "@/components/SplashScreen";
+import HubScreen, { HubChoice } from "@/components/HubScreen";
+import { useMediaSession } from "@/hooks/useMediaSession";
 
-type Tab = "radio" | "webradio" | "search" | "favoris" | "podcasts";
+type Tab = "radio" | "webradio" | "search" | "favoris" | "podcasts" | "audius";
 
 const TABS: { id: Tab; label: string; icon: string }[] = [
+  { id: "favoris",  label: "Favoris",   icon: "⭐" },
   { id: "radio",    label: "Radio",     icon: "📻" },
   { id: "webradio", label: "Web Radio", icon: "🌐" },
   { id: "search",   label: "Chercher",  icon: "🔍" },
-  { id: "favoris",  label: "Favoris",   icon: "⭐" },
   { id: "podcasts", label: "Podcasts",  icon: "🎧" },
+  { id: "audius",   label: "SongPOD",   icon: "🎶" },
 ];
 
 export interface PodcastNowPlaying {
@@ -30,27 +40,84 @@ export interface PodcastNowPlaying {
   audioUrl: string;
   podcastName: string;
   artwork: string;
+  isVideo?: boolean;
+  kind?: "music" | "podcast";
+}
+
+// ── Crisp SVG icons for the nav tabs (replaces the emoji set) ──────────────
+function TabIcon({ id, size = 18 }: { id: Tab; size?: number }) {
+  const p = {
+    width: size, height: size, viewBox: "0 0 24 24", fill: "none",
+    stroke: "currentColor", strokeWidth: 1.9,
+    strokeLinecap: "round" as const, strokeLinejoin: "round" as const,
+  };
+  switch (id) {
+    case "radio": // boombox / radio set
+      return (<svg {...p}><path d="M3 11 18 4" /><rect x="2" y="9" width="20" height="12" rx="2" />
+        <circle cx="8" cy="15" r="3" /><line x1="16" y1="13" x2="19" y2="13" /><line x1="16" y1="17" x2="19" y2="17" /></svg>);
+    case "webradio": // globe
+      return (<svg {...p}><circle cx="12" cy="12" r="9" /><path d="M3 12h18" />
+        <path d="M12 3a14 14 0 0 1 0 18 14 14 0 0 1 0-18Z" /></svg>);
+    case "search": // magnifier
+      return (<svg {...p}><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" /></svg>);
+    case "favoris": // star
+      return (<svg {...p}><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 17l-5.2 2.6 1-5.8-4.3-4.1 5.9-.9z" /></svg>);
+    case "podcasts": // mic
+      return (<svg {...p}><rect x="9" y="2" width="6" height="11" rx="3" /><path d="M5 11a7 7 0 0 0 14 0" />
+        <line x1="12" y1="18" x2="12" y2="22" /><line x1="8" y1="22" x2="16" y2="22" /></svg>);
+    case "audius": // music note + waves
+      return (<svg {...p}><path d="M9 17V5l10-2v12" /><circle cx="6" cy="17" r="3" /><circle cx="16" cy="15" r="3" /></svg>);
+  }
 }
 
 export default function Home() {
   const [tab, setTab]                           = useState<Tab>("radio");
   const [selectedStation, setSelectedStation]   = useState<Station | null>(null);
   const [currentPodcast, setCurrentPodcast]     = useState<PodcastNowPlaying | null>(null);
+  const [youtubeTrack, setYoutubeTrack]         = useState<MusicTrack | null>(null);
   const [genre, setGenre]                       = useState("Tous");
+  const [stationView, setStationView]           = useState<"list" | "grid">("list");
   const [configOpen, setConfigOpen]             = useState(false);
   const [ipodOpen, setIpodOpen]                 = useState(false);
+  const [djOpen, setDjOpen]                      = useState(false);
+  const [hubOpen, setHubOpen]                   = useState(true);
   const spotifyPanelRef                         = useRef<SpotifyPanelHandle>(null);
 
   const playerApi                               = useAudioPlayer();
   const { favorites, isFavorite, toggleFavorite } = useFavorites();
   const logoMap                                 = useStationLogos(STATIONS);
   const { defaultStationId, theme }             = useTheme();
+  const { markPlayed }                          = usePlayedEpisodes();
+
+  // Podcast play-queue for automatic episode chaining (enchaînement auto).
+  const episodeQueueRef = useRef<{ episodes: RSSEpisode[]; podcast: iTunesPodcast; index: number } | null>(null);
 
   // Honour tab from URL params (e.g. after Spotify OAuth redirect)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get("tab") === "podcasts") setTab("podcasts");
+    if (params.get("tab") === "podcasts") { setTab("podcasts"); setHubOpen(false); }
+    try {
+      const sv = localStorage.getItem("radiofr_station_view");
+      if (sv === "grid" || sv === "list") setStationView(sv);
+      // Show the hub only once per browser session.
+      if (sessionStorage.getItem("radiofr_hub_seen")) setHubOpen(false);
+    } catch {}
   }, []);
+
+  // Jump from the hub landing into the chosen view.
+  const handleHubChoice = useCallback((c: HubChoice) => {
+    try { sessionStorage.setItem("radiofr_hub_seen", "1"); } catch {}
+    setHubOpen(false);
+    if (c === "radio") setTab("radio");
+    else if (c === "podcasts") setTab("podcasts");
+    else if (c === "audius") setTab("audius");
+    else if (c === "ipod") setIpodOpen(true);
+  }, []);
+
+  // Persist station list view preference
+  useEffect(() => {
+    try { localStorage.setItem("radiofr_station_view", stationView); } catch {}
+  }, [stationView]);
 
   // Auto-play default station on first load
   useEffect(() => {
@@ -59,53 +126,163 @@ export default function Home() {
     if (station && !selectedStation) {
       setSelectedStation(station);
       // Small delay to ensure AudioContext is allowed after user gesture on revisit
-      const id = setTimeout(() => playerApi.initAudio(station.streamUrl), 300);
+      const id = setTimeout(() => playerApi.initAudio(preferredStreamUrl(station)), 300);
       return () => clearTimeout(id);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [defaultStationId]);
 
+  // Curated Google-favicon logo is authoritative (consistent & crisp). The
+  // radio-browser fetch is only a fallback for any future station without one.
   const withLogo = (s: Station): Station => ({
     ...s,
-    logo: logoMap[s.id] || s.logo,
+    logo: s.logo || logoMap[s.id],
   });
 
   const filteredStations = (genre === "Tous" ? STATIONS : STATIONS.filter((s) => s.genre === genre))
     .map(withLogo);
 
+  // YouTube tracks can't run through the media-element pipeline (cross-origin),
+  // so they play in a separate hidden IFrame mini-player. Starting one stops any
+  // other media, and starting any other media (below) clears the YouTube track.
+  const handlePlayYouTube = (t: MusicTrack) => {
+    playerApi.pause();
+    setSelectedStation(null);
+    setCurrentPodcast(null);
+    setYoutubeTrack(t);
+  };
+
   const handlePlay = (station: Station) => {
     setCurrentPodcast(null);
+    setYoutubeTrack(null);
     if (selectedStation?.id === station.id) {
       playerApi.togglePlay();
     } else {
       setSelectedStation(station);
-      playerApi.initAudio(station.streamUrl);
+      playerApi.initAudio(preferredStreamUrl(station));
     }
   };
 
-  const handlePlayEpisode = (ep: { title: string; audioUrl: string; duration: string; pubDate: string; fileSize: number }, pod: { trackName: string; artistName: string; artworkUrl600: string; artworkUrl100: string }) => {
+  const handlePlayEpisode = useCallback((ep: { title: string; audioUrl: string; duration: string; pubDate: string; fileSize: number; isVideo?: boolean }, pod: { trackName: string; artistName: string; artworkUrl600: string; artworkUrl100: string }, opts?: { kind?: "music" | "podcast"; queue?: { episodes: RSSEpisode[]; index: number } }) => {
     setCurrentPodcast({
       episodeTitle: ep.title,
       audioUrl: ep.audioUrl,
       podcastName: pod.trackName,
       artwork: pod.artworkUrl600 || pod.artworkUrl100,
+      isVideo: ep.isVideo,
+      kind: opts?.kind ?? "podcast",
     });
     setSelectedStation(null);
-    playerApi.initAudio(ep.audioUrl);
-  };
+    setYoutubeTrack(null);
+    // Remember the episode queue so playback can auto-advance to the next one.
+    // A play without a queue (e.g. a single SongPOD track) clears it → no chaining.
+    episodeQueueRef.current = opts?.queue
+      ? { episodes: opts.queue.episodes, podcast: pod as iTunesPodcast, index: opts.queue.index }
+      : null;
+    // Route audio through our same-origin proxy: fixes http:// mixed-content
+    // blocks and missing CORS headers on podcast CDNs (the reason in-browser
+    // playback fails where native podcast apps succeed). EXCEPTION (handled by
+    // playableUrl): archive.org blocks Vercel's IPs, so its CORS-enabled
+    // datanodes are fetched directly by the browser. data:/blob: pass through.
+    const playUrl = playableUrl(ep.audioUrl);
+    playerApi.initAudio(playUrl, { live: false, video: !!ep.isVideo });
+  }, [playerApi]);
+
+  // Latest play handler kept in a ref so the (once-registered) ended callback
+  // and lock-screen next/prev always invoke the current closure.
+  const playEpisodeRef = useRef(handlePlayEpisode);
+  playEpisodeRef.current = handlePlayEpisode;
+
+  // Jump to another episode in the current queue (used by auto-advance + keys).
+  const playQueueEpisode = useCallback((dir: 1 | -1) => {
+    const q = episodeQueueRef.current;
+    if (!q) return false;
+    const idx = q.index + dir;
+    if (idx < 0 || idx >= q.episodes.length) return false;
+    playEpisodeRef.current(q.episodes[idx], q.podcast, { kind: "podcast", queue: { episodes: q.episodes, index: idx } });
+    return true;
+  }, []);
+
+  // Auto-advance when an episode finishes (enchaînement automatique).
+  useEffect(() => {
+    playerApi.setOnEnded(() => {
+      const q = episodeQueueRef.current;
+      if (!q) return;
+      markPlayed(q.episodes[q.index]?.audioUrl);     // the finished episode → écouté
+      let on = true;
+      try { on = localStorage.getItem("radiofr_autoplay_next") !== "0"; } catch {}
+      if (on) playQueueEpisode(1);
+    });
+    return () => playerApi.setOnEnded(null);
+  }, [playerApi, markPlayed, playQueueEpisode]);
 
   const currentStation = selectedStation ? withLogo(selectedStation) : null;
 
+  // Skip to the adjacent station (used by lock-screen / headphone next-prev).
+  const playAdjacentStation = useCallback((dir: 1 | -1) => {
+    setSelectedStation((prev) => {
+      const base = prev ?? STATIONS[0];
+      const idx = STATIONS.findIndex((s) => s.id === base.id);
+      const next = STATIONS[(idx + dir + STATIONS.length) % STATIONS.length];
+      setCurrentPodcast(null);
+      playerApi.initAudio(preferredStreamUrl(next));
+      return withLogo(next);
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [playerApi]);
+
+  // OS Media Session — lock screen / notification / hardware media keys.
+  useMediaSession({
+    title: currentPodcast ? currentPodcast.episodeTitle : currentStation?.name ?? null,
+    artist: currentPodcast ? currentPodcast.podcastName : (currentStation?.tagline ?? "RadioFR"),
+    album: "RadioFR",
+    artwork: currentPodcast ? currentPodcast.artwork : currentStation?.logo,
+    isPlaying: playerApi.isPlaying,
+    // Position/scrub only for finite content (podcasts & SongPOD music); live
+    // radio leaves these undefined so the lock screen shows no fake progress bar.
+    currentTime: currentPodcast ? playerApi.currentTime : undefined,
+    duration: currentPodcast ? playerApi.duration : undefined,
+    onPlay: () => playerApi.play(),
+    onPause: () => playerApi.pause(),
+    onNext: currentStation
+      ? () => playAdjacentStation(1)
+      : (currentPodcast ? () => playQueueEpisode(1) : undefined),
+    onPrev: currentStation
+      ? () => playAdjacentStation(-1)
+      : (currentPodcast ? () => playQueueEpisode(-1) : undefined),
+    onSeek: currentPodcast ? (t: number) => playerApi.seekTo(t) : undefined,
+  });
+
   return (
     <div className="min-h-screen flex flex-col">
+
+      {/* ── Animated SVG splash (first load) ── */}
+      <SplashScreen />
+
+      {/* ── Landing hub (Radio / Podcasts / iPod) ── */}
+      <AnimatePresence>
+        {hubOpen && (
+          <motion.div key="hub" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }} className="fixed inset-0 z-[150]">
+            <HubScreen onChoose={handleHubChoice} />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ── Cosmic starfield (only in cosmic theme) ── */}
       {theme === "cosmic" && (
         <div className="cosmic-starfield fixed inset-0 pointer-events-none z-0" aria-hidden />
       )}
 
+      {/* ── Synthwave sun + perspective grid (only in synthwave theme) ── */}
+      {theme === "synthwave" && (
+        <div className="synthwave-grid fixed inset-0 pointer-events-none z-0 overflow-hidden" aria-hidden />
+      )}
+
       {/* ── Decorative SVG background ── */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0" aria-hidden>
+        {genre === "Zen" && <ZenBackground />}
+        {genre !== "Zen" && (<>
         {/* Large radio-wave arcs — bottom left */}
         <svg className="absolute -bottom-32 -left-32 opacity-[0.06]" width="600" height="600" viewBox="0 0 600 600" fill="none">
           {[80,160,240,320,400,480].map((r, i) => (
@@ -188,102 +365,128 @@ export default function Home() {
             ))
           )}
         </svg>
+        </>)}
       </div>
 
       {/* ── Header ── */}
       <header className="sticky top-0 z-40 glass-dark border-b metal-texture relative"
-        style={{ borderColor: "var(--glass-border)" }}>
-        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
-          {/* Brand */}
-          <div className="flex items-center gap-2.5 flex-shrink-0">
-            <div className="relative">
-              <div className="w-8 h-8 rounded-xl flex items-center justify-center shadow-md"
-                style={{ background: "linear-gradient(135deg, var(--accent), var(--accent-2))" }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
-                  <path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
+        style={{ borderColor: "var(--glass-border)", paddingTop: "env(safe-area-inset-top)" }}>
+        <div className="max-w-5xl mx-auto px-4 py-3 flex flex-col gap-2.5">
+
+          {/* ── Line 1 — brand + glassy control banner ── */}
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            {/* Brand */}
+            <div className="flex items-center gap-3 flex-shrink-0">
+              <div className="relative">
+                <div className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg"
+                  style={{ background: "linear-gradient(135deg, var(--accent), var(--accent-2))" }}>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+                    <path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
+                  </svg>
+                </div>
+                {/* Signal arcs */}
+                <svg className="absolute -right-2 -top-2 pointer-events-none" width="20" height="20" viewBox="0 0 18 18" fill="none" aria-hidden>
+                  <path d="M2 16 Q2 2 16 2" stroke="var(--accent)" strokeWidth="1.4" fill="none" opacity="0.6" />
+                  <path d="M5 16 Q5 5 16 5" stroke="var(--accent-2)" strokeWidth="1" fill="none" opacity="0.4" />
+                  <circle cx="16" cy="2" r="1.6" fill="var(--accent)" opacity="0.8" />
                 </svg>
               </div>
-              {/* Tiny signal arcs */}
-              <svg className="absolute -right-2 -top-2 pointer-events-none" width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
-                <path d="M2 16 Q2 2 16 2" stroke="var(--accent)" strokeWidth="1.2" fill="none" opacity="0.6" />
-                <path d="M5 16 Q5 5 16 5" stroke="var(--accent-2)" strokeWidth="0.8" fill="none" opacity="0.4" />
-                <circle cx="16" cy="2" r="1.5" fill="var(--accent)" opacity="0.8" />
-              </svg>
+              <div>
+                <h1 className="font-bold text-xl sm:text-2xl leading-none text-gradient">RadioFR</h1>
+                <p className="text-white/35 text-[11px] leading-none mt-1">Radios & Podcasts</p>
+              </div>
+              {/* Mini EQ bars decoration */}
+              <div className="hidden md:flex items-end gap-0.5 h-6 ml-1.5">
+                {[40,70,55,80,45,65,35,75,50,60].map((h, i) => (
+                  <div key={i} className="w-[3px] rounded-sm flex-shrink-0"
+                    style={{
+                      height: `${h}%`,
+                      background: `var(--accent)`,
+                      opacity: 0.25 + i * 0.03,
+                    }} />
+                ))}
+              </div>
             </div>
-            <div className="hidden sm:block">
-              <h1 className="font-bold text-lg leading-none text-gradient">RadioFR</h1>
-              <p className="text-white/30 text-[10px] leading-none mt-0.5">Radios & Podcasts</p>
-            </div>
-            {/* Mini EQ bars decoration */}
-            <div className="hidden lg:flex items-end gap-0.5 h-5 ml-1">
-              {[40,70,55,80,45,65,35,75,50,60].map((h, i) => (
-                <div key={i} className="w-[3px] rounded-sm flex-shrink-0"
-                  style={{
-                    height: `${h}%`,
-                    background: `var(--accent)`,
-                    opacity: 0.25 + i * 0.03,
-                  }} />
-              ))}
+
+            {/* Glassy control banner — bigger icons */}
+            <div className="flex items-center gap-1 sm:gap-2 glass rounded-2xl p-1.5 sm:p-2"
+              style={{ border: "1px solid var(--glass-border)" }}>
+              {/* Home / hub button */}
+              <button
+                onClick={() => setHubOpen(true)}
+                className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl glass-hover flex items-center justify-center transition-all active:scale-90"
+                title="Accueil" aria-label="Revenir à l'accueil"
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--accent)" }}>
+                  <path d="M3 10.5 12 3l9 7.5" /><path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5" />
+                  <path d="M9.5 21v-6h5v6" />
+                </svg>
+              </button>
+              {/* iPod button */}
+              <button
+                onClick={() => setIpodOpen(true)}
+                className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl glass-hover flex items-center justify-center transition-all active:scale-90"
+                title="Mode iPod" aria-label="Ouvrir le mode iPod"
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--accent)" }}>
+                  <rect x="6" y="1" width="12" height="22" rx="3" />
+                  <rect x="8" y="3" width="8" height="6" rx="1" />
+                  <circle cx="12" cy="16" r="4" />
+                  <circle cx="12" cy="16" r="1.5" />
+                </svg>
+              </button>
+              {/* DJ button */}
+              <button
+                onClick={() => { playerApi.pause(); setDjOpen(true); }}
+                className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl glass-hover flex items-center justify-center transition-all active:scale-90"
+                title="Mode DJ" aria-label="Ouvrir le mode DJ"
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--accent)" }}>
+                  <circle cx="7" cy="12" r="3" /><circle cx="7" cy="12" r="0.5" fill="currentColor" />
+                  <circle cx="17" cy="12" r="3" /><circle cx="17" cy="12" r="0.5" fill="currentColor" />
+                  <path d="M2 19h20M4 19v-3M20 19v-3" />
+                </svg>
+              </button>
+              {/* Config button */}
+              <button
+                onClick={() => setConfigOpen(true)}
+                className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl glass-hover flex items-center justify-center transition-all active:scale-90"
+                title="Configuration" aria-label="Ouvrir la configuration"
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--accent)" }}>
+                  <circle cx="12" cy="12" r="3.2" />
+                  <path d="M12 2.5v2.4M12 19.1v2.4M21.5 12h-2.4M4.9 12H2.5M18.7 5.3l-1.7 1.7M7 17l-1.7 1.7M18.7 18.7 17 17M7 7 5.3 5.3" />
+                </svg>
+              </button>
             </div>
           </div>
 
-          {/* Tabs */}
-          <div className="flex glass rounded-xl p-1 gap-0.5 overflow-x-auto">
+          {/* ── Line 2 — nav tabs (SVG icons, full width) ── */}
+          <div className="flex flex-wrap glass rounded-2xl p-1 gap-0.5">
             {TABS.map((t) => (
               <button key={t.id} onClick={() => setTab(t.id)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap flex items-center gap-1.5 ${
-                  tab === t.id ? "text-white" : "text-white/50 hover:text-white/80"
+                aria-label={t.label} aria-current={tab === t.id ? "page" : undefined}
+                className={`flex-1 min-w-fit px-3 py-2.5 rounded-xl text-xs font-semibold transition-all whitespace-nowrap flex items-center justify-center gap-1.5 ${
+                  tab === t.id ? "text-white" : "text-white/45 hover:text-white/80"
                 }`}
                 style={tab === t.id ? {
                   background: "var(--accent)",
-                  boxShadow: "0 0 12px rgba(59,130,246,0.5)",
+                  boxShadow: "0 0 14px rgba(59,130,246,0.5)",
                 } : {}}>
-                <span>{t.icon}</span>
-                <span className="hidden sm:inline">{t.label}</span>
+                <TabIcon id={t.id} size={18} />
+                <span>{t.label}</span>
                 {t.id === "favoris" && favorites.length > 0 && (
-                  <span className="text-[9px] rounded-full px-1 py-0.5 leading-none"
-                    style={{ background: "rgba(255,255,255,0.15)", color: "var(--accent)" }}>
+                  <span className="text-[9px] rounded-full px-1.5 py-0.5 leading-none"
+                    style={{ background: "rgba(255,255,255,0.18)", color: tab === t.id ? "white" : "var(--accent)" }}>
                     {favorites.length}
                   </span>
                 )}
               </button>
             ))}
-          </div>
-
-          {/* Right side */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-white/20 hidden lg:block">
-              {new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}
-            </span>
-            {/* iPod button */}
-            <button
-              onClick={() => setIpodOpen(true)}
-              className="w-8 h-8 rounded-lg glass glass-hover flex items-center justify-center transition-all"
-              title="Mode iPod"
-            >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                strokeWidth="1.8" style={{ color: "var(--accent)" }}>
-                {/* iPod body */}
-                <rect x="6" y="1" width="12" height="22" rx="3" />
-                {/* Screen */}
-                <rect x="8" y="3" width="8" height="6" rx="1" />
-                {/* Click wheel */}
-                <circle cx="12" cy="16" r="4" />
-                <circle cx="12" cy="16" r="1.5" />
-              </svg>
-            </button>
-            {/* Config button */}
-            <button
-              onClick={() => setConfigOpen(true)}
-              className="w-8 h-8 rounded-lg glass glass-hover flex items-center justify-center transition-all"
-              title="Configuration"
-            >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                strokeWidth="2" style={{ color: "var(--accent)" }}>
-                <circle cx="12" cy="12" r="3" />
-                <path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14" />
-              </svg>
-            </button>
           </div>
         </div>
       </header>
@@ -293,15 +496,21 @@ export default function Home() {
 
         {/* ── Player (DOM-first so it appears above content on mobile) ── */}
         <div className={`space-y-4 lg:col-start-2 lg:row-start-1 lg:sticky lg:top-24 ${
-          (currentStation || currentPodcast) ? "order-first lg:order-none" : "lg:order-none hidden lg:block"
+          (currentStation || currentPodcast || youtubeTrack) ? "order-first lg:order-none" : "lg:order-none hidden lg:block"
         }`}>
-          <Player
-            station={currentStation}
-            podcast={currentPodcast}
-            playerApi={playerApi}
-            isFavorite={selectedStation ? isFavorite(selectedStation.id) : false}
-            onToggleFavorite={selectedStation ? () => toggleFavorite(selectedStation) : undefined}
-          />
+          {youtubeTrack && (
+            <YouTubeMiniPlayer track={youtubeTrack} onClose={() => setYoutubeTrack(null)} />
+          )}
+          {!youtubeTrack && (
+            <Player
+              station={currentStation}
+              podcast={currentPodcast}
+              playerApi={playerApi}
+              ipodOpen={ipodOpen}
+              isFavorite={selectedStation ? isFavorite(selectedStation.id) : false}
+              onToggleFavorite={selectedStation ? () => toggleFavorite(selectedStation) : undefined}
+            />
+          )}
           {(currentStation || currentPodcast) && (
             <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
               <ClipVisualizer
@@ -321,43 +530,95 @@ export default function Home() {
               <motion.div key="radio"
                 initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 16 }} transition={{ duration: 0.18 }}>
-                <div className="flex gap-2 overflow-x-auto pb-2 mb-4">
-                  {GENRES.map((g) => (
-                    <button key={g} onClick={() => setGenre(g)}
-                      className={`px-3 py-1.5 rounded-full text-xs font-medium flex-shrink-0 transition-all ${
-                        genre === g ? "text-white" : "glass glass-hover text-white/60 hover:text-white"
-                      }`}
-                      style={genre === g ? {
-                        background: "var(--accent)",
-                        boxShadow: "0 0 10px rgba(59,130,246,0.4)",
-                      } : {}}>
-                      {g}
-                    </button>
-                  ))}
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {GENRES.map((g) => {
+                    const isZen = g === "Zen";
+                    const on = genre === g;
+                    return (
+                      <button key={g} onClick={() => setGenre(g)}
+                        className={`px-3 py-1.5 rounded-full text-xs font-medium flex-shrink-0 transition-all ${
+                          on ? "text-white" : isZen
+                            ? "glass glass-hover text-emerald-300/80 hover:text-emerald-200"
+                            : "glass glass-hover text-white/60 hover:text-white"
+                        }`}
+                        style={on ? (isZen ? {
+                          background: "linear-gradient(135deg,#10b981,#5eead4)",
+                          boxShadow: "0 0 12px rgba(94,234,212,0.5)",
+                        } : {
+                          background: "var(--accent)",
+                          boxShadow: "0 0 10px rgba(59,130,246,0.4)",
+                        }) : {}}>
+                        {isZen ? "🧘 Zen" : g}
+                      </button>
+                    );
+                  })}
                 </div>
-                {/* Section header decoration */}
-                <div className="flex items-center gap-3 mb-3 opacity-40">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="1.5">
-                    <path d="M1 6c0 0 4-2 7 2s7 2 7 2" />
-                    <path d="M1 12c0 0 4-2 7 2s7 2 7 2" />
-                    <path d="M1 18c0 0 4-2 7 2s7 2 7 2" />
-                  </svg>
-                  <div className="flex-1 h-px" style={{ background: "linear-gradient(to right, var(--accent), transparent)" }} />
-                  <span className="text-[10px] font-medium" style={{ color: "var(--accent)" }}>
+                {/* Section header decoration + view toggle */}
+                <div className="flex items-center gap-3 mb-3">
+                  <span className="text-[10px] font-medium opacity-40" style={{ color: "var(--accent)" }}>
                     {filteredStations.length} STATION{filteredStations.length > 1 ? "S" : ""}
                   </span>
+                  <div className="flex-1 h-px opacity-40" style={{ background: "linear-gradient(to right, var(--accent), transparent)" }} />
+                  {/* List / Grid toggle */}
+                  <div className="flex items-center gap-1 glass rounded-lg p-0.5">
+                    <button onClick={() => setStationView("list")} title="Liste détaillée"
+                      className={`p-1.5 rounded-md transition-all ${stationView === "list" ? "text-white" : "text-white/40 hover:text-white/70"}`}
+                      style={stationView === "list" ? { background: "var(--accent)" } : {}}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" />
+                        <line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" />
+                      </svg>
+                    </button>
+                    <button onClick={() => setStationView("grid")} title="Grille de logos"
+                      className={`p-1.5 rounded-md transition-all ${stationView === "grid" ? "text-white" : "text-white/40 hover:text-white/70"}`}
+                      style={stationView === "grid" ? { background: "var(--accent)" } : {}}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" />
+                        <rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  {filteredStations.map((station) => (
-                    <StationCard key={station.id} station={station}
-                      isActive={selectedStation?.id === station.id}
-                      isPlaying={selectedStation?.id === station.id && playerApi.isPlaying}
-                      analyserRef={playerApi.analyserRef}
-                      isFavorite={isFavorite(station.id)}
-                      onClick={() => handlePlay(station)}
-                      onToggleFavorite={() => toggleFavorite(station)} />
-                  ))}
-                </div>
+                {stationView === "grid" ? (
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
+                    {filteredStations.map((station) => {
+                      const active = selectedStation?.id === station.id;
+                      const playing = active && playerApi.isPlaying;
+                      return (
+                        <button key={station.id} onClick={() => handlePlay(station)} title={station.name}
+                          className="relative aspect-square rounded-2xl glass glass-hover flex items-center justify-center transition-all active:scale-95"
+                          style={active ? { boxShadow: `0 0 0 2px ${station.color}, 0 0 18px ${station.color}66` } : {}}>
+                          <StationLogo logo={station.logo} name={station.name} color={station.color} size="lg" />
+                          {isEqCompatible(station.streamUrl) && (
+                            <span title="Égaliseur disponible"
+                              className="absolute bottom-1.5 left-1.5 flex items-center justify-center rounded-md"
+                              style={{ background: `${station.color}dd`, color: "#fff", padding: "1px 3px" }}>
+                              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round">
+                                <line x1="6" y1="3" x2="6" y2="21" /><line x1="12" y1="8" x2="12" y2="21" /><line x1="18" y1="14" x2="18" y2="21" />
+                                <line x1="3" y1="9" x2="9" y2="9" /><line x1="9" y1="14" x2="15" y2="14" /><line x1="15" y1="6" x2="21" y2="6" />
+                              </svg>
+                            </span>
+                          )}
+                          {playing && (
+                            <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {filteredStations.map((station) => (
+                      <StationCard key={station.id} station={station}
+                        isActive={selectedStation?.id === station.id}
+                        isPlaying={selectedStation?.id === station.id && playerApi.isPlaying}
+                        analyserRef={playerApi.analyserRef}
+                        isFavorite={isFavorite(station.id)}
+                        onClick={() => handlePlay(station)}
+                        onToggleFavorite={() => toggleFavorite(station)} />
+                    ))}
+                  </div>
+                )}
               </motion.div>
             )}
 
@@ -366,7 +627,7 @@ export default function Home() {
                 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.18 }}>
                 <WebRadioPanel
-                  onPlay={(s) => { setCurrentPodcast(null); setSelectedStation(s); playerApi.initAudio(s.streamUrl); }}
+                  onPlay={(s) => { setCurrentPodcast(null); setSelectedStation(s); playerApi.initAudio(preferredStreamUrl(s)); }}
                   currentUrl={playerApi.currentUrl}
                   isPlaying={playerApi.isPlaying}
                   isFavorite={isFavorite}
@@ -380,7 +641,7 @@ export default function Home() {
                 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.18 }}>
                 <RadioSearch
-                  onPlay={(s) => { setCurrentPodcast(null); setSelectedStation(s); playerApi.initAudio(s.streamUrl); }}
+                  onPlay={(s) => { setCurrentPodcast(null); setSelectedStation(s); playerApi.initAudio(preferredStreamUrl(s)); }}
                   onToggleFavorite={toggleFavorite}
                   isFavorite={isFavorite}
                   currentUrl={playerApi.currentUrl}
@@ -451,6 +712,20 @@ export default function Home() {
               </motion.div>
             )}
 
+            {tab === "audius" && (
+              <motion.div key="audius"
+                initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.18 }}>
+                <AudiusView
+                  currentEpisodeUrl={currentPodcast?.audioUrl ?? null}
+                  isPlaying={playerApi.isPlaying}
+                  onPlayEpisode={handlePlayEpisode}
+                  onPlayYouTube={handlePlayYouTube}
+                  youtubeTrackId={youtubeTrack?.id ?? null}
+                />
+              </motion.div>
+            )}
+
           </AnimatePresence>
         </div>
       </main>
@@ -474,10 +749,13 @@ export default function Home() {
         onSelectStation={(s) => {
           setCurrentPodcast(null);
           setSelectedStation(s);
-          playerApi.initAudio(s.streamUrl);
+          playerApi.initAudio(preferredStreamUrl(s));
         }}
         onPlayEpisode={handlePlayEpisode}
       />
+
+      {/* DJ mode */}
+      <DjMode open={djOpen} onClose={() => setDjOpen(false)} />
     </div>
   );
 }

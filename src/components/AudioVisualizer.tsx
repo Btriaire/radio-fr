@@ -8,12 +8,32 @@ interface Props {
   small?: boolean;
 }
 
-export default function AudioVisualizer({ analyserRef, isPlaying, color = "#3b82f6", small = false }: Props) {
+// Canvas gradients reject CSS custom properties like "var(--accent)" (and our
+// `${color}20` alpha trick needs 6-digit hex). Resolve a var() to its computed
+// hex at runtime; fall back to a safe hex otherwise.
+function resolveHex(c: string): string {
+  let v = (c || "").trim();
+  const m = v.match(/^var\(\s*(--[\w-]+)\s*(?:,\s*([^)]+))?\)$/);
+  if (m && typeof window !== "undefined") {
+    const resolved = getComputedStyle(document.documentElement)
+      .getPropertyValue(m[1]).trim();
+    v = resolved || (m[2]?.trim() ?? "");
+  }
+  return /^#[0-9a-f]{6}$/i.test(v) ? v : "#3b82f6";
+}
+
+export default function AudioVisualizer({ analyserRef, isPlaying, color: rawColor = "#3b82f6", small = false }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef    = useRef<number>(0);
   const phaseRef  = useRef(0);
   // Simulated bars amplitudes (random-ish, stable per instance)
   const simRef    = useRef<number[]>([]);
+
+  // Mode "Économie de batterie": treat the visualizer as always-idle so it
+  // never runs its 60fps rAF loop, regardless of playback state.
+  let lowBattery = false;
+  try { lowBattery = localStorage.getItem("radiofr_low_battery") === "1"; } catch {}
+  const effectivePlaying = isPlaying && !lowBattery;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -21,8 +41,7 @@ export default function AudioVisualizer({ analyserRef, isPlaying, color = "#3b82
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const W = canvas.width;
-    const H = canvas.height;
+    const color = resolveHex(rawColor);
 
     // Init simulated bar targets
     if (!simRef.current.length) {
@@ -33,23 +52,28 @@ export default function AudioVisualizer({ analyserRef, isPlaying, color = "#3b82
     const simAmps  = simRef.current;
     const simSpeed = Array.from({ length: 40 }, (_, i) => 0.6 + i * 0.03);
 
+    if (!effectivePlaying) {
+      // Draw the static flat line ONCE and stop — no point burning a 60fps
+      // rAF loop (CPU/battery) to keep redrawing a line that never changes.
+      cancelAnimationFrame(rafRef.current);
+      const W = canvas.width;
+      const H = canvas.height;
+      ctx.clearRect(0, 0, W, H);
+      ctx.beginPath();
+      ctx.strokeStyle = `${color}40`;
+      ctx.lineWidth = 1.5;
+      ctx.moveTo(0, H / 2);
+      ctx.lineTo(W, H / 2);
+      ctx.stroke();
+      return;
+    }
+
     const draw = () => {
       rafRef.current = requestAnimationFrame(draw);
       const analyser = analyserRef.current;
       const W = canvas.width;
       const H = canvas.height;
       ctx.clearRect(0, 0, W, H);
-
-      if (!isPlaying) {
-        // Static flat line
-        ctx.beginPath();
-        ctx.strokeStyle = `${color}40`;
-        ctx.lineWidth = 1.5;
-        ctx.moveTo(0, H / 2);
-        ctx.lineTo(W, H / 2);
-        ctx.stroke();
-        return;
-      }
 
       // Try to read real data from analyser
       let useReal = false;
@@ -112,7 +136,7 @@ export default function AudioVisualizer({ analyserRef, isPlaying, color = "#3b82
 
     draw();
     return () => cancelAnimationFrame(rafRef.current);
-  }, [analyserRef, isPlaying, color]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [analyserRef, effectivePlaying, rawColor]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <canvas

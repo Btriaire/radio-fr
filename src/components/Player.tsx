@@ -1,10 +1,11 @@
 "use client";
-import { useAudioPlayer } from "@/hooks/useAudioPlayer";
+import { useAudioPlayer, BASS_BOOSTER, VOICE_ISOLATION } from "@/hooks/useAudioPlayer";
 import { Station, StreamQuality } from "@/lib/stations";
 import AudioVisualizer from "./AudioVisualizer";
 import Equalizer from "./Equalizer";
 import StationLogo from "./StationLogo";
-import { useState } from "react";
+import TascamPlayer from "./TascamPlayer";
+import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface PodcastNowPlaying {
@@ -12,6 +13,8 @@ interface PodcastNowPlaying {
   audioUrl: string;
   podcastName: string;
   artwork: string;
+  isVideo?: boolean;
+  kind?: "music" | "podcast";
 }
 
 interface Props {
@@ -20,26 +23,62 @@ interface Props {
   playerApi: ReturnType<typeof useAudioPlayer>;
   isFavorite?: boolean;
   onToggleFavorite?: () => void;
+  ipodOpen?: boolean;
 }
 
-export default function Player({ station, podcast, playerApi, isFavorite, onToggleFavorite }: Props) {
+export default function Player({ station, podcast, playerApi, isFavorite, onToggleFavorite, ipodOpen }: Props) {
   const [showEQ, setShowEQ] = useState(false);
   const [activeQuality, setActiveQuality] = useState<StreamQuality | null>(null);
 
   const {
     isPlaying, volume, isLoading, error, eqActive,
     currentTime, duration,
-    analyserRef, filtersRef, togglePlay, changeVolume, seekTo,
+    reconnecting, reconnectAttempt, offline, retry,
+    analyserRef, filtersRef, mediaElRef, togglePlay, play, pause, changeVolume, seekTo,
     bands, updateBand, applyPreset, resetEQ, initAudio,
   } = playerApi;
 
   const isPodcast = !!podcast && !station;
+  const isVideo   = isPodcast && !!podcast?.isVideo;
+  const isMusic   = isPodcast && podcast?.kind === "music";
+
+  // Mount the shared <video> media element into a tiny viewport for video
+  // podcasts. It's the SAME element that plays the audio, so there's no double
+  // playback — we just reveal its picture. Re-runs when the episode changes
+  // (a fresh element is created per episode) so the new frame attaches.
+  const videoBoxRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const box = videoBoxRef.current;
+    const el = mediaElRef.current as HTMLVideoElement | null;
+    if (!box || !el || !isVideo) return;
+    if (ipodOpen) return;   // iPod overlay owns the element while it's open
+    el.style.width = "100%";
+    el.style.height = "100%";
+    el.style.objectFit = "contain";
+    el.style.display = "block";
+    el.style.background = "#000";
+    box.appendChild(el);
+    return () => { if (el.parentNode === box) box.removeChild(el); };
+  }, [isVideo, podcast?.audioUrl, mediaElRef, ipodOpen]);
   const accentColor = station?.color ?? "var(--accent)";
 
   const anyBandActive = bands.some((b) => b.gain !== 0);
 
-  // Determine current stream (selected quality or station default)
-  const currentStream = activeQuality ?? (station?.streams?.[1] ?? station?.streams?.[0]);
+  // Derived active state for one-tap modes (compare current bands to preset)
+  const matchesPreset = (preset: number[]) => bands.every((b, i) => b.gain === preset[i]);
+  const bassOn  = matchesPreset(BASS_BOOSTER);
+  const voiceOn = matchesPreset(VOICE_ISOLATION);
+  const toggleMode = (preset: number[], on: boolean) =>
+    on ? resetEQ() : applyPreset(preset);
+
+  // Determine current stream (selected quality, else station default — the
+  // lowest-bitrate tier when "Économie de données" is on, matching what
+  // page.tsx actually loaded via preferredStreamUrl()).
+  let lowBandwidth = false;
+  try { lowBandwidth = localStorage.getItem("radiofr_low_bandwidth") === "1"; } catch {}
+  const currentStream = activeQuality ?? (lowBandwidth
+    ? (station?.streams?.[0] ?? station?.streams?.[1])
+    : (station?.streams?.[1] ?? station?.streams?.[0]));
 
   const handleQualityChange = (q: StreamQuality) => {
     setActiveQuality(q);
@@ -144,7 +183,9 @@ export default function Player({ station, podcast, playerApi, isFavorite, onTogg
               </div>
             )}
             {!isPodcast && onToggleFavorite && (
-              <button onClick={onToggleFavorite} className="p-1.5 rounded-lg glass-hover transition-all">
+              <button onClick={onToggleFavorite} className="p-1.5 rounded-lg glass-hover transition-all"
+                aria-label={isFavorite ? "Retirer des favoris" : "Ajouter aux favoris"}
+                aria-pressed={isFavorite} title={isFavorite ? "Retirer des favoris" : "Ajouter aux favoris"}>
                 <svg width="16" height="16" viewBox="0 0 24 24"
                   fill={isFavorite ? "currentColor" : "none"}
                   stroke="currentColor" strokeWidth="2"
@@ -170,6 +211,37 @@ export default function Player({ station, podcast, playerApi, isFavorite, onTogg
         )}
       </div>
 
+      {/* Tiny video viewport — only for video podcasts */}
+      {isVideo && (
+        <div className="px-5 pb-1">
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <span className="text-[9px] px-1.5 py-0.5 rounded-full font-semibold tracking-wide"
+              style={{ background: "var(--accent)22", color: "var(--accent)" }}>● VIDÉO</span>
+          </div>
+          <div ref={videoBoxRef}
+            className="mx-auto rounded-xl overflow-hidden glass"
+            style={{ width: 132, aspectRatio: "16/9", border: "1px solid var(--glass-border)" }} />
+        </div>
+      )}
+
+      {/* TASCAM CD-200 rack deck — only for music tracks */}
+      {isMusic && (
+        <div className="px-5 pb-1 pt-1">
+          <TascamPlayer
+            title={podcast!.episodeTitle}
+            artist={podcast!.podcastName}
+            isPlaying={isPlaying}
+            isLoading={isLoading}
+            currentTime={currentTime}
+            duration={duration}
+            onPlay={() => (isPlaying ? pause() : play())}
+            onPause={pause}
+            onSeek={seekTo}
+            accent={accentColor}
+          />
+        </div>
+      )}
+
       {/* Visualizer */}
       <div className="px-5 py-2">
         <AudioVisualizer analyserRef={analyserRef} isPlaying={isPlaying} color={station?.color} />
@@ -182,11 +254,12 @@ export default function Player({ station, podcast, playerApi, isFavorite, onTogg
           <button
             onClick={togglePlay}
             disabled={isLoading}
+            aria-label={isPlaying ? "Pause" : "Lecture"}
             className="w-12 h-12 rounded-full flex items-center justify-center transition-all active:scale-95 flex-shrink-0"
             style={{ background: `linear-gradient(135deg, ${accentColor}, ${accentColor}99)`,
               boxShadow: `0 0 16px ${accentColor}55` }}
           >
-            {isLoading ? (
+            {(isLoading || reconnecting) ? (
               <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
             ) : isPlaying ? (
               <svg width="18" height="18" viewBox="0 0 24 24" fill="white">
@@ -208,7 +281,9 @@ export default function Player({ station, podcast, playerApi, isFavorite, onTogg
               <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
             </svg>
             <input type="range" min={0} max={1} step={0.02} value={volume}
-              onChange={(e) => changeVolume(Number(e.target.value))} className="flex-1" />
+              onChange={(e) => changeVolume(Number(e.target.value))}
+              aria-label="Volume" title={`Volume ${Math.round(volume * 100)}%`}
+              className="flex-1" style={{ accentColor: "var(--accent)" }} />
             <span className="text-xs text-white/30 w-7 text-right tabular-nums">
               {Math.round(volume * 100)}
             </span>
@@ -217,6 +292,7 @@ export default function Player({ station, podcast, playerApi, isFavorite, onTogg
           {/* EQ toggle */}
           <button
             onClick={() => setShowEQ((v) => !v)}
+            aria-label="Afficher l'égaliseur" aria-expanded={showEQ}
             className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all glass glass-hover flex items-center gap-1.5 ${
               showEQ ? "" : "text-white/40"
             }`}
@@ -230,6 +306,38 @@ export default function Player({ station, podcast, playerApi, isFavorite, onTogg
             )}
             {!eqActive && (
               <span className="text-[9px] text-white/25">off</span>
+            )}
+          </button>
+        </div>
+
+        {/* One-tap audio modes */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => toggleMode(BASS_BOOSTER, bassOn)}
+            disabled={!eqActive}
+            className={`flex-1 px-3 py-2 rounded-xl text-xs font-semibold transition-all glass glass-hover flex items-center justify-center gap-1.5 disabled:opacity-30 disabled:cursor-not-allowed ${
+              bassOn ? "" : "text-white/45"
+            }`}
+            style={bassOn ? { color: "var(--accent)", background: "var(--accent)22", border: "1px solid var(--accent)55" } : {}}
+            title={!eqActive ? "Indisponible (CORS stream)" : "Bass Booster"}
+          >
+            🔊 Bass Booster
+            {bassOn && (
+              <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: "var(--accent)" }} />
+            )}
+          </button>
+          <button
+            onClick={() => toggleMode(VOICE_ISOLATION, voiceOn)}
+            disabled={!eqActive}
+            className={`flex-1 px-3 py-2 rounded-xl text-xs font-semibold transition-all glass glass-hover flex items-center justify-center gap-1.5 disabled:opacity-30 disabled:cursor-not-allowed ${
+              voiceOn ? "" : "text-white/45"
+            }`}
+            style={voiceOn ? { color: "var(--accent)", background: "var(--accent)22", border: "1px solid var(--accent)55" } : {}}
+            title={!eqActive ? "Indisponible (CORS stream)" : "Voice Isolation"}
+          >
+            🎙️ Voice Isolation
+            {voiceOn && (
+              <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: "var(--accent)" }} />
             )}
           </button>
         </div>
@@ -272,7 +380,24 @@ export default function Player({ station, podcast, playerApi, isFavorite, onTogg
           </div>
         )}
 
-        {error && <p className="text-xs text-red-400/80 text-center">{error}</p>}
+        {/* Connection status: offline / reconnecting / error (with Retry). */}
+        {offline ? (
+          <p className="text-xs text-amber-400/90 text-center">Connexion perdue…</p>
+        ) : reconnecting ? (
+          <p className="text-xs text-amber-400/90 text-center">
+            Reconnexion…{reconnectAttempt > 0 ? ` (${reconnectAttempt})` : ""}
+          </p>
+        ) : error ? (
+          <div className="flex flex-col items-center gap-1.5">
+            <p className="text-xs text-red-400/80 text-center">{error}</p>
+            <button
+              onClick={retry}
+              className="text-xs px-3 py-1 rounded-full bg-white/10 hover:bg-white/20 text-white/90 transition-colors"
+            >
+              Réessayer
+            </button>
+          </div>
+        ) : null}
       </div>
 
       {/* Equalizer — expandable */}
