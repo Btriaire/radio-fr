@@ -323,6 +323,15 @@ export function useAudioPlayer() {
     stallCountRef.current = 0;
     lastProgressRef.current = { t: audioRef.current?.currentTime ?? 0, at: Date.now() };
     watchdogRef.current = setInterval(() => {
+      // Browsers are free to auto-suspend an AudioContext to save power
+      // (backgrounded tab/app, long idle). The <audio> element itself keeps
+      // downloading/decoding when this happens — currentTime keeps advancing
+      // and nothing errors — but the graph downstream of it is silent. That's
+      // a "stream that looks alive but makes no sound" drop the stall check
+      // below can never catch (it only watches currentTime). Nudge it back.
+      if (wantPlayingRef.current && ctxRef.current?.state === "suspended") {
+        ctxRef.current.resume().catch(() => {});
+      }
       const audio = audioRef.current;
       if (!audio || !wantPlayingRef.current || modeRef.current !== "element") return;
       if (audio.paused) { stallCountRef.current = 0; return; } // reset if deliberately paused
@@ -470,7 +479,24 @@ export function useAudioPlayer() {
         setTimeout(() => checkGraphSilent(0), 1500);
       }
     };
-    audio.onpause   = () => setIsPlaying(false);
+    audio.onpause   = () => {
+      setIsPlaying(false);
+      // Only our own pause()/stop() flip wantPlayingRef to false. If it's still
+      // true here, something else paused the element out from under us — a
+      // phone call, Siri, another app grabbing the audio focus, a Bluetooth
+      // route change, headphones unplugged. The OS doesn't resume these for
+      // us, so without this the stream just sits silently paused forever and
+      // it looks to the user like a random dropout. One delayed retry covers
+      // the common short interruptions; the visibilitychange handler below
+      // covers longer ones (phone call) once the user comes back to the tab.
+      if (wantPlayingRef.current) {
+        setTimeout(() => {
+          if (wantPlayingRef.current && audioRef.current === audio && audio.paused) {
+            audio.play().catch(() => {});
+          }
+        }, 1200);
+      }
+    };
     audio.onwaiting = () => setIsLoading(true);
 
     ctxRef.current?.resume();
@@ -782,6 +808,26 @@ export function useAudioPlayer() {
       window.removeEventListener("online", onOnline);
     };
   }, [clearReconnect, stopWatchdog, clearConnectTimer, reconnectNow]);
+
+  // ── Resume after coming back to the foreground ─────────────────────────────
+  // A longer interruption (phone call, screen-off power saving, another app
+  // holding the audio focus for a while) can leave the element paused or the
+  // AudioContext suspended well past the single delayed retry in onpause. The
+  // moment the tab/app is visible again is the reliable signal that whatever
+  // held the focus has let go — worth one more attempt right then instead of
+  // waiting on the next watchdog tick or making the user tap Play themselves.
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const onVisible = () => {
+      if (document.visibilityState !== "visible" || !wantPlayingRef.current) return;
+      if (ctxRef.current?.state === "suspended") ctxRef.current.resume().catch(() => {});
+      if (modeRef.current === "element" && audioRef.current?.paused) {
+        audioRef.current.play().catch(() => {});
+      }
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, []);
 
   useEffect(() => () => {
     clearReconnect();
