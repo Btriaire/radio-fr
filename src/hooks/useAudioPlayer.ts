@@ -25,6 +25,44 @@ function lowBatteryMode(): boolean {
   try { return localStorage.getItem("radiofr_low_battery") === "1"; } catch { return false; }
 }
 
+// Mode "Sommeil" — auto-pauses playback during a configured daily time window
+// (e.g. bedtime) so the radio doesn't keep playing all night unattended.
+function readSleepSchedule(): { enabled: boolean; start: string; end: string } {
+  try {
+    return {
+      enabled: localStorage.getItem("radiofr_sleep_enabled") === "1",
+      start: localStorage.getItem("radiofr_sleep_start") || "23:00",
+      end: localStorage.getItem("radiofr_sleep_end") || "07:00",
+    };
+  } catch {
+    return { enabled: false, start: "23:00", end: "07:00" };
+  }
+}
+
+// "HH:MM" → minutes past midnight → range check that wraps past midnight
+// (e.g. 23:00 → 07:00 covers 23:00-23:59 AND 00:00-06:59).
+function isWithinSleepWindow(start: string, end: string): boolean {
+  const [sh, sm] = start.split(":").map(Number);
+  const [eh, em] = end.split(":").map(Number);
+  if ([sh, sm, eh, em].some((n) => Number.isNaN(n))) return false;
+  const startMin = sh * 60 + sm;
+  const endMin = eh * 60 + em;
+  if (startMin === endMin) return false; // degenerate (e.g. same time twice) → never
+  const now = new Date();
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  return startMin < endMin
+    ? nowMin >= startMin && nowMin < endMin
+    : nowMin >= startMin || nowMin < endMin;
+}
+
+// Shared guard: is the sleep schedule currently telling us to stay quiet?
+// Used both to trigger the auto-pause and to stop the interruption-recovery
+// logic below from fighting it (e.g. resuming right as bedtime starts).
+function isSleepingNow(): boolean {
+  const { enabled, start, end } = readSleepSchedule();
+  return enabled && isWithinSleepWindow(start, end);
+}
+
 export interface EQBand {
   label: string;
   freq: number;
@@ -489,9 +527,9 @@ export function useAudioPlayer() {
       // it looks to the user like a random dropout. One delayed retry covers
       // the common short interruptions; the visibilitychange handler below
       // covers longer ones (phone call) once the user comes back to the tab.
-      if (wantPlayingRef.current) {
+      if (wantPlayingRef.current && !isSleepingNow()) {
         setTimeout(() => {
-          if (wantPlayingRef.current && audioRef.current === audio && audio.paused) {
+          if (wantPlayingRef.current && audioRef.current === audio && audio.paused && !isSleepingNow()) {
             audio.play().catch(() => {});
           }
         }, 1200);
@@ -820,6 +858,7 @@ export function useAudioPlayer() {
     if (typeof document === "undefined") return;
     const onVisible = () => {
       if (document.visibilityState !== "visible" || !wantPlayingRef.current) return;
+      if (isSleepingNow()) return; // e.g. a call ends mid-bedtime → stay paused
       if (ctxRef.current?.state === "suspended") ctxRef.current.resume().catch(() => {});
       if (modeRef.current === "element" && audioRef.current?.paused) {
         audioRef.current.play().catch(() => {});
@@ -828,6 +867,29 @@ export function useAudioPlayer() {
     document.addEventListener("visibilitychange", onVisible);
     return () => document.removeEventListener("visibilitychange", onVisible);
   }, []);
+
+  // ── Sleep schedule ("Mode Sommeil") ─────────────────────────────────────────
+  // Polls rather than scheduling a single timeout at the boundary because the
+  // window (and whether it's even enabled) can change anytime from Settings,
+  // and a plain interval trivially handles that without re-arming timers.
+  // Edge-triggered on purpose: wasSleepingRef only lets the pause fire once per
+  // false→true transition into the window. Without it, a user who manually
+  // hits Play to override the sleep mode would just get paused again on the
+  // very next 20s tick (still "sleeping" == true) — the interval would fight
+  // its own promised escape hatch. Only a later false→true transition (i.e.
+  // tomorrow night) auto-pauses again.
+  const wasSleepingRef = useRef(false);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const check = () => {
+      const sleeping = isSleepingNow();
+      if (sleeping && !wasSleepingRef.current && wantPlayingRef.current) pause();
+      wasSleepingRef.current = sleeping;
+    };
+    check(); // covers opening the app while already inside the window
+    const id = setInterval(check, 20000);
+    return () => clearInterval(id);
+  }, [pause]);
 
   useEffect(() => () => {
     clearReconnect();

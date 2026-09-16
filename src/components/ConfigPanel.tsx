@@ -55,6 +55,36 @@ export default function ConfigPanel({ open, onClose }: Props) {
     });
   };
 
+  // Mode "Sommeil" — auto-pauses playback during a daily time window (e.g.
+  // bedtime) so the radio doesn't keep playing all night unattended. Only the
+  // transition into the window triggers a pause (see useAudioPlayer.ts) — the
+  // user can still tap Play to override it if they actually want sound then.
+  const [sleepEnabled, setSleepEnabled] = useState(false);
+  const [sleepStart, setSleepStart] = useState("23:00");
+  const [sleepEnd, setSleepEnd] = useState("07:00");
+  useEffect(() => {
+    try {
+      setSleepEnabled(localStorage.getItem("radiofr_sleep_enabled") === "1");
+      setSleepStart(localStorage.getItem("radiofr_sleep_start") || "23:00");
+      setSleepEnd(localStorage.getItem("radiofr_sleep_end") || "07:00");
+    } catch {}
+  }, []);
+  const toggleSleep = () => {
+    setSleepEnabled((v) => {
+      const next = !v;
+      try { localStorage.setItem("radiofr_sleep_enabled", next ? "1" : "0"); } catch {}
+      return next;
+    });
+  };
+  const updateSleepStart = (v: string) => {
+    setSleepStart(v);
+    try { localStorage.setItem("radiofr_sleep_start", v); } catch {}
+  };
+  const updateSleepEnd = (v: string) => {
+    setSleepEnd(v);
+    try { localStorage.setItem("radiofr_sleep_end", v); } catch {}
+  };
+
   return (
     <AnimatePresence>
       {open && (
@@ -322,6 +352,52 @@ export default function ConfigPanel({ open, onClose }: Props) {
                       style={{ left: lowBattery ? "22px" : "2px" }} />
                   </span>
                 </button>
+              </section>
+
+              {/* ── Mode Sommeil ── */}
+              <section className="space-y-3">
+                <h3 className="text-xs font-semibold tracking-widest uppercase"
+                  style={{ color: "var(--accent)" }}>
+                  Mode Sommeil
+                </h3>
+                <div className="glass rounded-xl p-3 space-y-3">
+                  <button onClick={toggleSleep}
+                    className="w-full flex items-center gap-3 text-left transition-all">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white/80 text-sm font-medium">Pause automatique</p>
+                      <p className="text-white/40 text-[11px] mt-0.5 leading-snug">
+                        {sleepEnabled
+                          ? `Activé — coupe la lecture tous les jours entre ${sleepStart} et ${sleepEnd}.`
+                          : "Désactivé — la radio joue à toute heure."}
+                      </p>
+                    </div>
+                    <span className="relative flex-shrink-0 w-11 h-6 rounded-full transition-all"
+                      style={{ background: sleepEnabled ? "var(--accent)" : "rgba(255,255,255,0.15)" }}>
+                      <span className="absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all"
+                        style={{ left: sleepEnabled ? "22px" : "2px" }} />
+                    </span>
+                  </button>
+
+                  {sleepEnabled && (
+                    <div className="flex items-center gap-3 pt-3"
+                      style={{ borderTop: "1px solid var(--glass-border)" }}>
+                      <label className="flex-1 flex flex-col gap-1">
+                        <span className="text-white/40 text-[10px] uppercase tracking-wide">De</span>
+                        <input type="time" value={sleepStart}
+                          onChange={(e) => updateSleepStart(e.target.value)}
+                          className="bg-transparent border rounded-lg px-2 py-1.5 text-white/80 text-sm w-full"
+                          style={{ borderColor: "var(--glass-border)", colorScheme: "dark" }} />
+                      </label>
+                      <label className="flex-1 flex flex-col gap-1">
+                        <span className="text-white/40 text-[10px] uppercase tracking-wide">À</span>
+                        <input type="time" value={sleepEnd}
+                          onChange={(e) => updateSleepEnd(e.target.value)}
+                          className="bg-transparent border rounded-lg px-2 py-1.5 text-white/80 text-sm w-full"
+                          style={{ borderColor: "var(--glass-border)", colorScheme: "dark" }} />
+                      </label>
+                    </div>
+                  )}
+                </div>
               </section>
 
               {/* ── Lecture mobile (iOS) ── */}
