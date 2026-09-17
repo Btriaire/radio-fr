@@ -23,6 +23,8 @@ import StationLogo from "@/components/StationLogo";
 import SplashScreen from "@/components/SplashScreen";
 import HubScreen, { HubChoice } from "@/components/HubScreen";
 import { useMediaSession } from "@/hooks/useMediaSession";
+import MobileMiniPlayer from "@/components/MobileMiniPlayer";
+import { useNowPlaying } from "@/hooks/useNowPlaying";
 
 type Tab = "radio" | "webradio" | "search" | "favoris" | "podcasts" | "audius";
 
@@ -81,9 +83,11 @@ export default function Home() {
   const [ipodOpen, setIpodOpen]                 = useState(false);
   const [djOpen, setDjOpen]                      = useState(false);
   const [hubOpen, setHubOpen]                   = useState(true);
+  const [mobilePlayerExpanded, setMobilePlayerExpanded] = useState(false);
   const spotifyPanelRef                         = useRef<SpotifyPanelHandle>(null);
 
   const playerApi                               = useAudioPlayer();
+  const nowPlaying                              = useNowPlaying(selectedStation, playerApi.isPlaying);
   const { favorites, isFavorite, toggleFavorite } = useFavorites();
   const logoMap                                 = useStationLogos(STATIONS);
   const { defaultStationId, theme }             = useTheme();
@@ -232,10 +236,20 @@ export default function Home() {
   }, [playerApi]);
 
   // OS Media Session — lock screen / notification / hardware media keys.
+  const mediaTitle = currentPodcast
+    ? currentPodcast.episodeTitle
+    : (nowPlaying.songTitle || currentStation?.name || null);
+
+  const mediaArtist = currentPodcast
+    ? currentPodcast.podcastName
+    : (nowPlaying.songArtist
+        ? `${nowPlaying.songArtist} • ${currentStation?.name ?? "RadioFR"}`
+        : (currentStation?.tagline ?? "RadioFR"));
+
   useMediaSession({
-    title: currentPodcast ? currentPodcast.episodeTitle : currentStation?.name ?? null,
-    artist: currentPodcast ? currentPodcast.podcastName : (currentStation?.tagline ?? "RadioFR"),
-    album: "RadioFR",
+    title: mediaTitle,
+    artist: mediaArtist,
+    album: currentStation?.name ?? "RadioFR",
     artwork: currentPodcast ? currentPodcast.artwork : currentStation?.logo,
     isPlaying: playerApi.isPlaying,
     // Position/scrub only for finite content (podcasts & SongPOD music); live
@@ -492,12 +506,10 @@ export default function Home() {
       </header>
 
       {/* ── Main ── */}
-      <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-6 grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 relative z-10 items-start">
+      <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-6 grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 relative z-10 items-start pb-28 lg:pb-8">
 
-        {/* ── Player (DOM-first so it appears above content on mobile) ── */}
-        <div className={`space-y-4 lg:col-start-2 lg:row-start-1 lg:sticky lg:top-24 ${
-          (currentStation || currentPodcast || youtubeTrack) ? "order-first lg:order-none" : "lg:order-none hidden lg:block"
-        }`}>
+        {/* ── Player desktop (hidden on mobile, sticky on lg) ── */}
+        <div className="hidden lg:block lg:col-start-2 lg:row-start-1 lg:sticky lg:top-24 space-y-4">
           {youtubeTrack && (
             <YouTubeMiniPlayer track={youtubeTrack} onClose={() => setYoutubeTrack(null)} />
           )}
@@ -509,6 +521,7 @@ export default function Home() {
               ipodOpen={ipodOpen}
               isFavorite={selectedStation ? isFavorite(selectedStation.id) : false}
               onToggleFavorite={selectedStation ? () => toggleFavorite(selectedStation) : undefined}
+              nowPlaying={nowPlaying}
             />
           )}
           {(currentStation || currentPodcast) && (
@@ -734,6 +747,61 @@ export default function Home() {
         style={{ color: "rgba(255,255,255,0.12)", borderColor: "var(--glass-border)" }}>
         RadioFR · Radios & Podcasts Français · 2026
       </footer>
+
+      {/* ── Mobile Floating Mini Player (docked at bottom) ── */}
+      <AnimatePresence>
+        {(currentStation || currentPodcast) && !mobilePlayerExpanded && (
+          <MobileMiniPlayer
+            station={currentStation}
+            podcast={currentPodcast}
+            isPlaying={playerApi.isPlaying}
+            isLoading={playerApi.isLoading}
+            onTogglePlay={playerApi.togglePlay}
+            onExpand={() => setMobilePlayerExpanded(true)}
+            isFavorite={selectedStation ? isFavorite(selectedStation.id) : false}
+            onToggleFavorite={selectedStation ? () => toggleFavorite(selectedStation) : undefined}
+            nowPlaying={nowPlaying}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* ── Mobile Expandable Bottom Sheet / Drawer ── */}
+      <AnimatePresence>
+        {mobilePlayerExpanded && (currentStation || currentPodcast) && (
+          <div className="fixed inset-0 z-50 lg:hidden flex flex-col justify-end">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setMobilePlayerExpanded(false)}
+              className="fixed inset-0 bg-black/75 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 28, stiffness: 280 }}
+              className="relative z-10 max-h-[92vh] overflow-y-auto rounded-t-[32px] bg-[#0c1322] border-t border-white/15 p-3 pb-8 shadow-2xl space-y-4"
+            >
+              <Player
+                station={currentStation}
+                podcast={currentPodcast}
+                playerApi={playerApi}
+                ipodOpen={ipodOpen}
+                isFavorite={selectedStation ? isFavorite(selectedStation.id) : false}
+                onToggleFavorite={selectedStation ? () => toggleFavorite(selectedStation) : undefined}
+                nowPlaying={nowPlaying}
+                onClose={() => setMobilePlayerExpanded(false)}
+              />
+              <ClipVisualizer
+                analyserRef={playerApi.analyserRef}
+                isPlaying={playerApi.isPlaying}
+                color={currentStation?.color ?? "var(--accent)"}
+              />
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Config panel */}
       <ConfigPanel open={configOpen} onClose={() => setConfigOpen(false)} />

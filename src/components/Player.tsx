@@ -8,6 +8,8 @@ import TascamPlayer from "./TascamPlayer";
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
+import { NowPlayingInfo } from "@/hooks/useNowPlaying";
+
 interface PodcastNowPlaying {
   episodeTitle: string;
   audioUrl: string;
@@ -24,9 +26,20 @@ interface Props {
   isFavorite?: boolean;
   onToggleFavorite?: () => void;
   ipodOpen?: boolean;
+  nowPlaying?: NowPlayingInfo;
+  onClose?: () => void;
 }
 
-export default function Player({ station, podcast, playerApi, isFavorite, onToggleFavorite, ipodOpen }: Props) {
+export default function Player({
+  station,
+  podcast,
+  playerApi,
+  isFavorite,
+  onToggleFavorite,
+  ipodOpen,
+  nowPlaying,
+  onClose,
+}: Props) {
   const [showEQ, setShowEQ] = useState(false);
   const [showSleepTimer, setShowSleepTimer] = useState(false);
   const [activeQuality, setActiveQuality] = useState<StreamQuality | null>(null);
@@ -138,6 +151,24 @@ export default function Player({ station, podcast, playerApi, isFavorite, onTogg
         ))}
       </svg>
 
+      {/* Optional top handle / close bar for mobile modal sheet */}
+      {onClose && (
+        <div className="flex items-center justify-between px-5 pt-3.5 pb-1 lg:hidden">
+          <div className="w-8" />
+          <div className="w-12 h-1 bg-white/20 rounded-full" />
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-full glass-hover flex items-center justify-center text-white/50 hover:text-white"
+            title="Réduire"
+            aria-label="Réduire le lecteur"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="m6 9 6 6 6-6" />
+            </svg>
+          </button>
+        </div>
+      )}
+
       {/* Header — station OR podcast */}
       <div className="px-5 pt-5 pb-3">
         <div className="flex items-center gap-4">
@@ -178,6 +209,26 @@ export default function Player({ station, podcast, playerApi, isFavorite, onTogg
                     style={{ background: `${station!.color}22`, color: station!.color }}>
                     {station!.freq}
                   </span>
+                )}
+                {/* Live now playing track info */}
+                {!isPodcast && nowPlaying?.songTitle && (
+                  <div className="mt-2.5 flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-white/[0.07] border border-white/10">
+                    <div className="flex items-end gap-0.5 h-3 flex-shrink-0">
+                      <span className="w-0.5 rounded-full animate-[pulse_0.7s_ease-in-out_infinite] h-full" style={{ background: accentColor }} />
+                      <span className="w-0.5 rounded-full animate-[pulse_0.9s_ease-in-out_0.2s_infinite] h-2/3" style={{ background: accentColor }} />
+                      <span className="w-0.5 rounded-full animate-[pulse_0.8s_ease-in-out_0.4s_infinite] h-4/5" style={{ background: accentColor }} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[11px] font-semibold text-white truncate leading-tight">
+                        {nowPlaying.songTitle}
+                      </p>
+                      {nowPlaying.songArtist && (
+                        <p className="text-[10px] text-white/60 truncate leading-tight mt-0.5">
+                          {nowPlaying.songArtist}
+                        </p>
+                      )}
+                    </div>
+                  </div>
                 )}
               </>
             )}

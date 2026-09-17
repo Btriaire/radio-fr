@@ -383,14 +383,23 @@ export function useAudioPlayer() {
       if (audio.paused) { stallCountRef.current = 0; return; } // reset if deliberately paused
       const now = Date.now();
       const t = audio.currentTime;
+      const isIOS = detectIOS();
+      const stallThreshold = isIOS ? 8000 : STALL_TIMEOUT_MS;
+
+      // Immediate reconnect if the stream lost its source (e.g. WiFi to 4G drop)
+      if (audio.networkState === 3 /* NETWORK_NO_SOURCE */) {
+        scheduleReconnect("network-no-source");
+        return;
+      }
+
       if (t > lastProgressRef.current.t + 0.05) {
         // Time moved → reset stall counter (good progress)
         lastProgressRef.current = { t, at: now };
         stallCountRef.current = 0;
-      } else if (now - lastProgressRef.current.at > STALL_TIMEOUT_MS) {
+      } else if (now - lastProgressRef.current.at > stallThreshold) {
         // Time frozen → increment stall counter
         stallCountRef.current++;
-        if (stallCountRef.current >= STALL_CONSISTENCY) {
+        if (stallCountRef.current >= (isIOS ? 1 : STALL_CONSISTENCY)) {
           scheduleReconnect("stall");
           stallCountRef.current = 0;
         }
@@ -456,7 +465,14 @@ export function useAudioPlayer() {
     // Set src FIRST, then build the Web Audio graph. iOS Safari binds
     // createMediaElementSource to silence if the element has no source loaded
     // yet, so the element must already point at a stream before we tap it.
-    audio.src = url;
+    // On forced reconnect of live radio, append a cache-buster query parameter so
+    // iOS Safari / Chrome doesn't replay stale or stalled byte segments from internal cache.
+    let playUrl = url;
+    if (force && liveRef.current && !url.startsWith("blob:") && !url.startsWith("data:")) {
+      const sep = url.includes("?") ? "&" : "?";
+      playUrl = `${url}${sep}_t=${Date.now()}`;
+    }
+    audio.src = playUrl;
     buildGraph(audio, bands);
 
     audio.oncanplay      = () => setIsLoading(false);
@@ -903,7 +919,13 @@ export function useAudioPlayer() {
       }
     };
     document.addEventListener("visibilitychange", onVisible);
-    return () => document.removeEventListener("visibilitychange", onVisible);
+    window.addEventListener("pageshow", onVisible);
+    window.addEventListener("focus", onVisible);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("pageshow", onVisible);
+      window.removeEventListener("focus", onVisible);
+    };
   }, []);
 
   // ── Sleep schedule ("Mode Sommeil") ─────────────────────────────────────────
