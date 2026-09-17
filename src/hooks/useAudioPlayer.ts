@@ -168,6 +168,14 @@ export function useAudioPlayer() {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration,    setDuration]    = useState(0);
 
+  // ── Sleep timer (countdown, distinct from the "Mode Sommeil" clock-time
+  // schedule above) — seconds left, or null when no timer is armed. Exposed
+  // as state (not a ref) purely for the live "Arrêt dans MM:SS" display.
+  const [sleepTimerRemaining, setSleepTimerRemaining] = useState<number | null>(null);
+  const sleepTimerEndAtRef = useRef<number | null>(null);
+  const sleepTimeoutRef    = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const sleepTickRef       = useRef<ReturnType<typeof setInterval> | null>(null);
+
   // True when the current source is an actual video podcast (we then use a
   // <video> element). For audio-only content we use an <audio> element, because
   // iOS Safari PAUSES <video> playback the moment the screen locks / the tab
@@ -731,6 +739,36 @@ export function useAudioPlayer() {
     try { ctxRef.current?.suspend(); } catch {}
   }, [clearReconnect, stopWatchdog, clearConnectTimer]);
 
+  // ── Sleep timer ─────────────────────────────────────────────────────────────
+  // A one-off countdown ("stop in N minutes") for falling asleep to the radio —
+  // distinct from "Mode Sommeil" above, which is a recurring daily clock-time
+  // window. cancelSleepTimer clears it; addSleepMinutes both arms a fresh timer
+  // and *extends* a running one (tapping +10 twice = 20 min), which is why it
+  // reads the real end timestamp from a ref rather than the rounded display
+  // value in state.
+  const cancelSleepTimer = useCallback(() => {
+    if (sleepTimeoutRef.current) { clearTimeout(sleepTimeoutRef.current); sleepTimeoutRef.current = null; }
+    if (sleepTickRef.current) { clearInterval(sleepTickRef.current); sleepTickRef.current = null; }
+    sleepTimerEndAtRef.current = null;
+    setSleepTimerRemaining(null);
+  }, []);
+
+  const armSleepTimer = useCallback((endAt: number) => {
+    if (sleepTimeoutRef.current) clearTimeout(sleepTimeoutRef.current);
+    if (sleepTickRef.current) clearInterval(sleepTickRef.current);
+    sleepTimerEndAtRef.current = endAt;
+    const tick = () => setSleepTimerRemaining(Math.max(0, Math.round((endAt - Date.now()) / 1000)));
+    tick();
+    sleepTickRef.current = setInterval(tick, 1000);
+    sleepTimeoutRef.current = setTimeout(() => { pause(); cancelSleepTimer(); }, Math.max(0, endAt - Date.now()));
+  }, [pause, cancelSleepTimer]);
+
+  const addSleepMinutes = useCallback((minutes: number) => {
+    const now = Date.now();
+    const base = sleepTimerEndAtRef.current && sleepTimerEndAtRef.current > now ? sleepTimerEndAtRef.current : now;
+    armSleepTimer(base + minutes * 60000);
+  }, [armSleepTimer]);
+
   const togglePlay = useCallback(() => { if (isPlaying) pause(); else play(); }, [isPlaying, play, pause]);
 
   const changeVolume = useCallback((v: number) => {
@@ -895,6 +933,8 @@ export function useAudioPlayer() {
     clearReconnect();
     stopWatchdog();
     clearConnectTimer();
+    if (sleepTimeoutRef.current) clearTimeout(sleepTimeoutRef.current);
+    if (sleepTickRef.current) clearInterval(sleepTickRef.current);
     try { decoderRef.current?.stop(); } catch {}
     audioRef.current?.pause();
     ctxRef.current?.close();
@@ -918,5 +958,6 @@ export function useAudioPlayer() {
     initAudio, play, pause, togglePlay, seekTo,
     changeVolume, updateBand, applyPreset, resetEQ, stop,
     setOnEnded, retry,
+    sleepTimerRemaining, addSleepMinutes, cancelSleepTimer,
   };
 }

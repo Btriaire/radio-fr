@@ -28,6 +28,7 @@ interface Props {
 
 export default function Player({ station, podcast, playerApi, isFavorite, onToggleFavorite, ipodOpen }: Props) {
   const [showEQ, setShowEQ] = useState(false);
+  const [showSleepTimer, setShowSleepTimer] = useState(false);
   const [activeQuality, setActiveQuality] = useState<StreamQuality | null>(null);
 
   const {
@@ -36,7 +37,16 @@ export default function Player({ station, podcast, playerApi, isFavorite, onTogg
     reconnecting, reconnectAttempt, offline, retry,
     analyserRef, filtersRef, mediaElRef, togglePlay, play, pause, changeVolume, seekTo,
     bands, updateBand, applyPreset, resetEQ, initAudio,
+    sleepTimerRemaining, addSleepMinutes, cancelSleepTimer,
   } = playerApi;
+
+  // "24:05" for anything under an hour, "1:04:05" past that.
+  const formatSleepRemaining = (s: number) => {
+    const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
+    const mm = String(m).padStart(h > 0 ? 2 : 1, "0");
+    const ss = String(sec).padStart(2, "0");
+    return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
+  };
 
   const isPodcast = !!podcast && !station;
   const isVideo   = isPodcast && !!podcast?.isVideo;
@@ -379,6 +389,51 @@ export default function Player({ station, podcast, playerApi, isFavorite, onTogg
             )}
           </div>
         )}
+
+        {/* Sleep timer — a one-off "stop in N minutes" countdown, distinct from
+            the recurring daily "Mode Sommeil" clock-time window in Configuration. */}
+        <div className="space-y-1.5">
+          <button
+            onClick={() => setShowSleepTimer((v) => !v)}
+            aria-label="Minuterie de sommeil" aria-expanded={showSleepTimer}
+            className={`w-full px-3 py-1.5 rounded-xl text-xs font-semibold transition-all glass glass-hover flex items-center justify-center gap-1.5 ${
+              sleepTimerRemaining != null ? "" : "text-white/40"
+            }`}
+            style={sleepTimerRemaining != null ? { color: "var(--accent)" } : {}}
+          >
+            😴 Minuterie
+            {sleepTimerRemaining != null && (
+              <span className="tabular-nums">— arrêt dans {formatSleepRemaining(sleepTimerRemaining)}</span>
+            )}
+          </button>
+
+          <AnimatePresence>
+            {showSleepTimer && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="overflow-hidden"
+              >
+                <div className="flex flex-wrap gap-1.5 pt-0.5">
+                  {[5, 10, 15, 20, 30, 45, 60].map((m) => (
+                    <button key={m} onClick={() => addSleepMinutes(m)}
+                      title={sleepTimerRemaining != null ? `Ajouter ${m} min` : undefined}
+                      className="px-2.5 py-1 rounded-full text-xs font-medium glass glass-hover text-white/60 hover:text-white transition-all">
+                      +{m} min
+                    </button>
+                  ))}
+                  {sleepTimerRemaining != null && (
+                    <button onClick={cancelSleepTimer}
+                      className="px-2.5 py-1 rounded-full text-xs font-medium bg-red-500/15 text-red-300/90 hover:bg-red-500/25 transition-all">
+                      Annuler
+                    </button>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
 
         {/* Connection status: offline / reconnecting / error (with Retry). */}
         {offline ? (
