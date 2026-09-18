@@ -181,8 +181,11 @@ export default function Equalizer({ bands, filtersRef, onBandChange, onApplyPres
         {Object.entries(EQ_PRESETS).map(([name, values]) => (
           <button
             key={name}
-            onClick={() => onApplyPreset(values)}
-            className="text-xs px-2.5 py-1 rounded-full glass glass-hover text-white/60 hover:text-white transition-all"
+            onClick={() => {
+              try { if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate(8); } catch {}
+              onApplyPreset(values);
+            }}
+            className="text-xs px-2.5 py-1 rounded-full glass glass-hover text-white/60 hover:text-white transition-all cursor-pointer"
           >
             {name}
           </button>
@@ -232,8 +235,9 @@ export default function Equalizer({ bands, filtersRef, onBandChange, onApplyPres
                   max={MAX_GAIN}
                   step={1}
                   value={band.gain}
+                  aria-label={`Bande ${band.label} : ${band.gain > 0 ? "+" : ""}${band.gain} dB`}
                   onChange={(e) => onBandChange(i, Number(e.target.value))}
-                  className="eq-slider"
+                  className="eq-slider cursor-pointer"
                   style={{ height: 110, touchAction: "none" }}
                 />
               </div>

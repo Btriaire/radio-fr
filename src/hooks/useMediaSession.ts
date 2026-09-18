@@ -107,6 +107,12 @@ export function useMediaSession(opts: MediaSessionOptions) {
           onSeek(Math.min(max, at() + (d.seekOffset || 10)));
         });
       } catch {}
+    } else {
+      try {
+        ms.setActionHandler("seekto", null);
+        ms.setActionHandler("seekbackward", null);
+        ms.setActionHandler("seekforward", null);
+      } catch {}
     }
 
     return () => {

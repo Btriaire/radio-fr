@@ -329,12 +329,7 @@ export default function Home() {
         playerApi.togglePlay();
       } else if (e.key === "m" || e.key === "M") {
         e.preventDefault();
-        if (playerApi.volume > 0) {
-          (window as any)._prevVol = playerApi.volume;
-          playerApi.changeVolume(0);
-        } else {
-          playerApi.changeVolume((window as any)._prevVol || 0.8);
-        }
+        playerApi.toggleMute();
       } else if (e.key === "ArrowRight") {
         e.preventDefault();
         if (currentPodcast || playerApi.duration > 0) {
@@ -360,6 +355,12 @@ export default function Home() {
           e.preventDefault();
           toggleFavorite(selectedStation);
         }
+      } else if (e.key === "n" || e.key === "N") {
+        e.preventDefault();
+        playerApi.toggleNightMode();
+      } else if (e.key === "l" || e.key === "L") {
+        e.preventDefault();
+        playerApi.toggleLoop();
       }
     };
 

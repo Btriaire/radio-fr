@@ -50,7 +50,8 @@ const EQ_CORS_HOSTS = [
 export function isEqCompatible(url: string | undefined | null): boolean {
   if (!url) return false;
   try {
-    return EQ_CORS_HOSTS.includes(new URL(url).hostname);
+    const host = new URL(url.trim()).hostname.toLowerCase();
+    return EQ_CORS_HOSTS.includes(host);
   } catch {
     return false;
   }

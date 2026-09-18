@@ -117,6 +117,14 @@ export default function Player({
     return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
   };
 
+  const triggerHaptic = (ms = 12) => {
+    try {
+      if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+        navigator.vibrate(ms);
+      }
+    } catch {}
+  };
+
   const isPodcast = !!podcast && !station;
   const isVideo   = isPodcast && !!podcast?.isVideo;
   const isMusic   = isPodcast && podcast?.kind === "music";
@@ -231,6 +239,11 @@ export default function Player({
           </button>
         </div>
       )}
+
+      {/* Accessible ARIA Live region for screen readers */}
+      <div className="sr-only" aria-live="polite" aria-atomic="true">
+        {isLoading ? "Chargement du flux en cours..." : isPlaying ? `Lecture en cours : ${station?.name || podcast?.episodeTitle || "Radio"}` : "Lecture en pause"}
+      </div>
 
       {/* Header — station OR podcast */}
       <div className="px-5 pt-5 pb-3">
@@ -460,10 +473,13 @@ export default function Player({
 
           {/* Play/Pause */}
           <button
-            onClick={togglePlay}
+            onClick={() => {
+              triggerHaptic(15);
+              togglePlay();
+            }}
             disabled={isLoading}
             aria-label={isPlaying ? "Pause" : "Lecture"}
-            className="w-12 h-12 rounded-full flex items-center justify-center transition-all active:scale-95 flex-shrink-0"
+            className="w-12 h-12 rounded-full flex items-center justify-center transition-all active:scale-95 flex-shrink-0 cursor-pointer"
             style={{ background: `linear-gradient(135deg, ${accentColor}, ${accentColor}99)`,
               boxShadow: `0 0 16px ${accentColor}55` }}
           >
@@ -484,10 +500,13 @@ export default function Player({
           {/* Quick Skip +30s for Podcasts / Tracks */}
           {(isPodcast || duration > 0) && (
             <button
-              onClick={() => seekRelative(30)}
+              onClick={() => {
+                triggerHaptic(8);
+                seekRelative(30);
+              }}
               aria-label="Avancer de 30 secondes"
               title="Avancer de 30 secondes"
-              className="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center glass glass-hover text-white/70 hover:text-white transition-all active:scale-90 flex-shrink-0"
+              className="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center glass glass-hover text-white/70 hover:text-white transition-all active:scale-90 flex-shrink-0 cursor-pointer"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M23 4v6h-6" />
@@ -500,10 +519,13 @@ export default function Player({
           {/* Volume with mute toggle */}
           <div className="flex items-center gap-2 flex-1">
             <button
-              onClick={toggleMute}
+              onClick={() => {
+                triggerHaptic(8);
+                toggleMute();
+              }}
               aria-label={volume === 0 ? "Activer le son" : "Couper le son"}
               title={volume === 0 ? "Activer le son" : "Couper le son"}
-              className="text-white/40 hover:text-white transition-colors flex-shrink-0"
+              className="text-white/40 hover:text-white transition-colors flex-shrink-0 cursor-pointer"
             >
               {volume === 0 ? (
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

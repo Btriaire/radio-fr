@@ -531,14 +531,19 @@ export function useAudioPlayer() {
     // and re-sets the src, causing the old stream to restart on top of the new one
     if (audioRef.current) {
       const old = audioRef.current;
-      old.oncanplay  = null;
-      old.onerror    = null;
-      old.onplaying  = null;
-      old.onpause    = null;
-      old.onwaiting  = null;
+      old.oncanplay = null;
+      old.onerror = null;
+      old.onplaying = null;
+      old.onpause = null;
+      old.onwaiting = null;
+      old.ontimeupdate = null;
+      old.onloadedmetadata = null;
+      old.onended = null;
+      old.onstalled = null;
       old.pause();
       old.src = "";
       old.load();      // abort any in-flight HTTP request
+      audioRef.current = null;
     }
     clearConnectTimer(); // a fresh connect attempt starts below — drop the old one's timer
 
@@ -934,34 +939,43 @@ export function useAudioPlayer() {
   const togglePlay = useCallback(() => { if (isPlaying) pause(); else play(); }, [isPlaying, play, pause]);
 
   const changeVolume = useCallback((v: number) => {
-    setVolume(v);
+    const safeVol = Math.max(0, Math.min(1, v));
+    setVolume(safeVol);
     const g = gainRef.current;
     const ctx = ctxRef.current;
     if (g) {
       // Web Audio path: volume lives on the GainNode; keep the element at unity.
       if (audioRef.current) audioRef.current.volume = 1;
       try {
-        if (ctx && ctx.state !== "closed") g.gain.setValueAtTime(v, ctx.currentTime);
-        else g.gain.value = v;
-      } catch { g.gain.value = v; }
+        if (ctx && ctx.state !== "closed" && ctx.currentTime > 0) {
+          g.gain.cancelScheduledValues(ctx.currentTime);
+          g.gain.setValueAtTime(g.gain.value, ctx.currentTime);
+          g.gain.linearRampToValueAtTime(safeVol, ctx.currentTime + 0.025);
+        } else {
+          g.gain.value = safeVol;
+        }
+      } catch {
+        g.gain.value = safeVol;
+      }
     } else if (audioRef.current) {
       // No graph (CORS fallback) → drive the element directly.
-      audioRef.current.volume = v;
+      audioRef.current.volume = safeVol;
     }
   }, []);
 
-  // Apply a gain change to a live BiquadFilter node.
+  // Apply a gain change to a live BiquadFilter node with smooth ramping.
   // iOS Safari does NOT recompute filter coefficients on direct `.gain.value = x`
   // assignment while the node is already connected & playing — the change is
-  // silently ignored. setValueAtTime(...) schedules it on the audio timeline and
-  // forces the recompute. We use ctx.currentTime (always > 0 on a running ctx),
-  // and fall back to direct assignment if scheduling throws.
+  // silently ignored. linearRampToValueAtTime(...) schedules it smoothly on the
+  // audio timeline, forces coefficient recompute, and eliminates zipper noise / pops.
   const setFilterGain = useCallback((f: BiquadFilterNode | undefined, gain: number) => {
     if (!f) return;
     const ctx = ctxRef.current;
     try {
-      if (ctx && ctx.state !== "closed") {
-        f.gain.setValueAtTime(gain, ctx.currentTime);
+      if (ctx && ctx.state !== "closed" && ctx.currentTime > 0) {
+        f.gain.cancelScheduledValues(ctx.currentTime);
+        f.gain.setValueAtTime(f.gain.value, ctx.currentTime);
+        f.gain.linearRampToValueAtTime(gain, ctx.currentTime + 0.03);
       } else {
         f.gain.value = gain;
       }
@@ -1066,7 +1080,13 @@ export function useAudioPlayer() {
     const ctx = ctxRef.current;
     if (panner && ctx && ctx.state !== "closed") {
       try {
-        panner.pan.setValueAtTime(clamped, ctx.currentTime);
+        if (ctx.currentTime > 0) {
+          panner.pan.cancelScheduledValues(ctx.currentTime);
+          panner.pan.setValueAtTime(panner.pan.value, ctx.currentTime);
+          panner.pan.linearRampToValueAtTime(clamped, ctx.currentTime + 0.03);
+        } else {
+          panner.pan.value = clamped;
+        }
       } catch {
         panner.pan.value = clamped;
       }
@@ -1101,8 +1121,22 @@ export function useAudioPlayer() {
     modeRef.current = "element";
     try { decoderRef.current?.stop(); } catch {}
     decoderRef.current = null;
-    audioRef.current?.pause();
-    if (audioRef.current) { audioRef.current.src = ""; audioRef.current.load(); }
+    if (audioRef.current) {
+      const old = audioRef.current;
+      old.oncanplay = null;
+      old.onerror = null;
+      old.onplaying = null;
+      old.onpause = null;
+      old.onwaiting = null;
+      old.ontimeupdate = null;
+      old.onloadedmetadata = null;
+      old.onended = null;
+      old.onstalled = null;
+      old.pause();
+      old.src = "";
+      old.load();
+      audioRef.current = null;
+    }
     setIsPlaying(false);
     setCurrentUrl(null);
     setCurrentTime(0);
@@ -1198,8 +1232,30 @@ export function useAudioPlayer() {
     if (sleepTimeoutRef.current) clearTimeout(sleepTimeoutRef.current);
     if (sleepTickRef.current) clearInterval(sleepTickRef.current);
     try { decoderRef.current?.stop(); } catch {}
-    audioRef.current?.pause();
-    ctxRef.current?.close();
+    decoderRef.current = null;
+    if (audioRef.current) {
+      const old = audioRef.current;
+      old.oncanplay = null;
+      old.onerror = null;
+      old.onplaying = null;
+      old.onpause = null;
+      old.onwaiting = null;
+      old.ontimeupdate = null;
+      old.onloadedmetadata = null;
+      old.onended = null;
+      old.onstalled = null;
+      old.pause();
+      old.src = "";
+      old.load();
+      audioRef.current = null;
+    }
+    if (sourceRef.current) {
+      try { sourceRef.current.disconnect(); } catch {}
+      sourceRef.current = null;
+    }
+    filtersRef.current.forEach((f) => { try { f.disconnect(); } catch {} });
+    filtersRef.current = [];
+    try { ctxRef.current?.close(); } catch {}
   }, [clearReconnect, stopWatchdog, clearConnectTimer]);
 
   // Manual "Réessayer" button (last resort after the budget is spent).
