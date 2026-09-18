@@ -537,45 +537,64 @@ export default function Player({
         </div>
 
         {/* One-tap audio modes */}
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => toggleMode(BASS_BOOSTER, bassOn)}
-            disabled={!eqActive}
-            className={`flex-1 px-3 py-2 rounded-xl text-xs font-semibold transition-all glass glass-hover flex items-center justify-center gap-1.5 disabled:opacity-30 disabled:cursor-not-allowed ${
-              bassOn ? "" : "text-white/45"
-            }`}
-            style={bassOn ? { color: "var(--accent)", background: "var(--accent)22", border: "1px solid var(--accent)55" } : {}}
-            title={!eqActive ? "Indisponible (CORS stream)" : "Bass Booster"}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
-              <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
-              <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
-            </svg>
-            <span>Bass Boost</span>
-            {bassOn && (
-              <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: "var(--accent)" }} />
-            )}
-          </button>
-          <button
-            onClick={() => toggleMode(VOICE_ISOLATION, voiceOn)}
-            disabled={!eqActive}
-            className={`flex-1 px-3 py-2 rounded-xl text-xs font-semibold transition-all glass glass-hover flex items-center justify-center gap-1.5 disabled:opacity-30 disabled:cursor-not-allowed ${
-              voiceOn ? "" : "text-white/45"
-            }`}
-            style={voiceOn ? { color: "var(--accent)", background: "var(--accent)22", border: "1px solid var(--accent)55" } : {}}
-            title={!eqActive ? "Indisponible (CORS stream)" : "Voice Isolation"}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
-              <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-              <line x1="12" x2="12" y1="19" y2="22" />
-            </svg>
-            <span>Voix Nette</span>
-            {voiceOn && (
-              <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: "var(--accent)" }} />
-            )}
-          </button>
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                if (!eqActive) {
+                  setSharedToast("Égaliseur indisponible sur ce flux radio (sécurité CORS du serveur)");
+                  setTimeout(() => setSharedToast(null), 3500);
+                  return;
+                }
+                toggleMode(BASS_BOOSTER, bassOn);
+              }}
+              className={`flex-1 px-3 py-2 rounded-xl text-xs font-semibold transition-all glass glass-hover flex items-center justify-center gap-1.5 ${
+                !eqActive ? "opacity-40 cursor-pointer" : ""
+              } ${bassOn ? "" : "text-white/45"}`}
+              style={bassOn ? { color: "var(--accent)", background: "var(--accent)22", border: "1px solid var(--accent)55" } : {}}
+              title={!eqActive ? "Cliquer pour plus d'infos : non supporté par ce flux" : "Bass Booster"}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+                <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+              </svg>
+              <span>Bass Boost</span>
+              {bassOn && (
+                <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: "var(--accent)" }} />
+              )}
+            </button>
+            <button
+              onClick={() => {
+                if (!eqActive) {
+                  setSharedToast("Égaliseur indisponible sur ce flux radio (sécurité CORS du serveur)");
+                  setTimeout(() => setSharedToast(null), 3500);
+                  return;
+                }
+                toggleMode(VOICE_ISOLATION, voiceOn);
+              }}
+              className={`flex-1 px-3 py-2 rounded-xl text-xs font-semibold transition-all glass glass-hover flex items-center justify-center gap-1.5 ${
+                !eqActive ? "opacity-40 cursor-pointer" : ""
+              } ${voiceOn ? "" : "text-white/45"}`}
+              style={voiceOn ? { color: "var(--accent)", background: "var(--accent)22", border: "1px solid var(--accent)55" } : {}}
+              title={!eqActive ? "Cliquer pour plus d'infos : non supporté par ce flux" : "Voice Isolation"}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+              </svg>
+              <span>Voix Nette</span>
+              {voiceOn && (
+                <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: "var(--accent)" }} />
+              )}
+            </button>
+          </div>
+
+          {!eqActive && (
+            <p className="text-[10px] text-white/40 text-center px-2">
+              Flux sans CORS : égaliseur désactivé pour éviter les coupures. Essayez France Inter, FIP, RTL ou NRJ.
+            </p>
+          )}
         </div>
 
         {/* Quality selector — radio only */}
