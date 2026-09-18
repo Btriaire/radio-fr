@@ -919,10 +919,10 @@ export default function DjMode({ open, onClose }: Props) {
         <div style={{ display: "flex", gap: 6 }}>
           {[
             { k: "cue", label: "CUE", on: d.cue != null, act: () => cueDeck(id) },
-            { k: "play", label: d.playing ? "❚❚" : "►", on: d.playing, act: () => togglePlay(id), accent: true },
+            { k: "play", label: d.playing ? "PAUSE" : "PLAY", on: d.playing, act: () => togglePlay(id), accent: true },
             { k: "loop", label: "LOOP", on: d.loop, act: () => toggleLoop(id) },
             { k: "brake", label: "BRAKE", on: false, act: () => brake(id) },
-            { k: "restart", label: "⏮", on: false, act: () => restart(id) },
+            { k: "restart", label: "|<", on: false, act: () => restart(id) },
           ].map((b) => (
             <button key={b.k} onClick={b.act}
               style={{
@@ -987,15 +987,15 @@ export default function DjMode({ open, onClose }: Props) {
               {/* Title bar */}
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <span style={{ fontSize: 18 }}>🎛️</span>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" y1="21" x2="4" y2="14" /><line x1="4" y1="10" x2="4" y2="3" /><line x1="12" y1="21" x2="12" y2="12" /><line x1="12" y1="8" x2="12" y2="3" /><line x1="20" y1="21" x2="20" y2="16" /><line x1="20" y1="12" x2="20" y2="3" /><line x1="1" y1="14" x2="7" y2="14" /><line x1="9" y1="8" x2="15" y2="8" /><line x1="17" y1="16" x2="23" y2="16" /></svg>
                   <div>
                     <h2 style={{ fontSize: 16, fontWeight: 800, color: "#fff", margin: 0, letterSpacing: 0.5 }}>DJ MIX</h2>
                     <p style={{ fontSize: 9, color: "rgba(255,255,255,0.4)", margin: 0 }}>Double platine · Audius · Jamendo · Archive · YouTube</p>
                   </div>
                 </div>
                 <button onClick={onClose}
-                  style={{ width: 30, height: 30, borderRadius: "50%", background: "rgba(255,255,255,0.1)", border: "none", color: "#fff", cursor: "pointer", fontSize: 14 }}>
-                  ✕
+                  style={{ width: 30, height: 30, borderRadius: "50%", background: "rgba(255,255,255,0.1)", border: "none", color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
                 </button>
               </div>
 
@@ -1044,7 +1044,7 @@ export default function DjMode({ open, onClose }: Props) {
                       letterSpacing: 1, border: showFx ? "1px solid #38bdf8" : "1px solid rgba(255,255,255,0.12)",
                       background: showFx ? "#38bdf833" : "rgba(255,255,255,0.05)", color: showFx ? "#38bdf8" : "rgba(255,255,255,0.8)",
                     }}>
-                    ⚙ FX {showFx ? "▾" : "▸"}
+                    FX {showFx ? "▾" : "▸"}
                   </button>
 
                   {/* FX rack — extra master effects, each with an intensity slider */}
@@ -1162,7 +1162,7 @@ function TrackPicker({ deck, color, onPick, onClose }: {
         }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <span style={{ fontSize: 13, fontWeight: 800, color }}>Charger sur DECK {deck}</span>
-          <button onClick={onClose} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.5)", fontSize: 18, cursor: "pointer" }}>✕</button>
+          <button onClick={onClose} style={{ width: 26, height: 26, borderRadius: "50%", background: "rgba(255,255,255,0.1)", border: "none", color: "rgba(255,255,255,0.8)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg></button>
         </div>
 
         <div style={{ display: "flex", gap: 8 }}>
@@ -1195,7 +1195,7 @@ function TrackPicker({ deck, color, onPick, onClose }: {
               }}>
               {t.artwork
                 ? <img src={t.artwork} alt="" style={{ width: 42, height: 42, borderRadius: 6, objectFit: "cover", flexShrink: 0 }} />
-                : <div style={{ width: 42, height: 42, borderRadius: 6, background: "rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>🎵</div>}
+                : <div style={{ width: 42, height: 42, borderRadius: 6, background: "rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white/40"><path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" /></svg></div>}
               <div style={{ flex: 1, minWidth: 0 }}>
                 <p style={{ fontSize: 12, fontWeight: 700, color: "#fff", margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.title}</p>
                 <p style={{ fontSize: 10, color: "rgba(255,255,255,0.45)", margin: "2px 0 0", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.artist}</p>

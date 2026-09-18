@@ -139,7 +139,9 @@ export default function YouTubeMiniPlayer({ track, onClose }: {
           <div className="flex items-center gap-2 px-1">
             <span style={{ fontSize: 8, fontWeight: 800, padding: "1px 5px", borderRadius: 999, background: "rgba(239,68,68,0.18)", color: "#f87171" }}>YOUTUBE</span>
             <span className="text-white/30 text-[9px] flex-1 truncate">audio caché · sans EQ</span>
-            <button onClick={onClose} className="text-white/40 hover:text-white text-lg leading-none flex-shrink-0">✕</button>
+            <button onClick={onClose} className="w-6 h-6 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/60 hover:text-white transition-all flex-shrink-0">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+            </button>
           </div>
 
           {/* TASCAM faceplate handles play/pause/seek + the time display */}
@@ -158,7 +160,7 @@ export default function YouTubeMiniPlayer({ track, onClose }: {
 
           {/* Volume */}
           <div className="glass rounded-xl p-2.5 flex items-center gap-3">
-            <span className="text-white/30 text-xs">🔊</span>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white/40"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" /><path d="M15.54 8.46a5 5 0 0 1 0 7.07" /><path d="M19.07 4.93a10 10 0 0 1 0 14.14" /></svg>
             <input type="range" min={0} max={1} step={0.01} value={volume}
               onChange={(e) => setVolume(Number(e.target.value))}
               className="flex-1" style={{ accentColor: "#f87171" }} />

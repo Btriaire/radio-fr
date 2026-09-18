@@ -113,8 +113,12 @@ export default function MobileMiniPlayer({
                 className="w-11 h-11 rounded-xl object-cover relative z-10 shadow-md"
               />
             ) : (
-              <div className="w-11 h-11 rounded-xl flex items-center justify-center text-lg bg-white/10 relative z-10">
-                🎙
+              <div className="w-11 h-11 rounded-xl flex items-center justify-center border border-white/10 relative z-10" style={{ background: "linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.03))" }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-white/70">
+                  <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                  <line x1="12" x2="12" y1="19" y2="22" />
+                </svg>
               </div>
             )
           ) : (
@@ -139,7 +143,11 @@ export default function MobileMiniPlayer({
           </div>
           <div className="flex items-center gap-1.5 mt-0.5">
             {nowPlaying?.songTitle && !isPodcast && (
-              <span className="text-[10px] text-accent flex-shrink-0">♫</span>
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-accent flex-shrink-0">
+                <path d="M9 18V5l12-2v13" />
+                <circle cx="6" cy="18" r="3" />
+                <circle cx="18" cy="16" r="3" />
+              </svg>
             )}
             <p className="text-white/60 text-xs truncate leading-tight">
               {subtitle}

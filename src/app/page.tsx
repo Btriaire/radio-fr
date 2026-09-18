@@ -28,13 +28,13 @@ import { useNowPlaying } from "@/hooks/useNowPlaying";
 
 type Tab = "radio" | "webradio" | "search" | "favoris" | "podcasts" | "audius";
 
-const TABS: { id: Tab; label: string; icon: string }[] = [
-  { id: "favoris",  label: "Favoris",   icon: "⭐" },
-  { id: "radio",    label: "Radio",     icon: "📻" },
-  { id: "webradio", label: "Web Radio", icon: "🌐" },
-  { id: "search",   label: "Chercher",  icon: "🔍" },
-  { id: "podcasts", label: "Podcasts",  icon: "🎧" },
-  { id: "audius",   label: "SongPOD",   icon: "🎶" },
+const TABS: { id: Tab; label: string }[] = [
+  { id: "favoris",  label: "Favoris" },
+  { id: "radio",    label: "Radio" },
+  { id: "webradio", label: "Web Radio" },
+  { id: "search",   label: "Chercher" },
+  { id: "podcasts", label: "Podcasts" },
+  { id: "audius",   label: "SongPOD" },
 ];
 
 export interface PodcastNowPlaying {
@@ -584,7 +584,7 @@ export default function Home() {
                           background: "var(--accent)",
                           boxShadow: "0 0 10px rgba(59,130,246,0.4)",
                         }) : {}}>
-                        {isZen ? "🧘 Zen" : g}
+                        {isZen ? "Zen" : g}
                       </button>
                     );
                   })}
@@ -718,7 +718,7 @@ export default function Home() {
                     </svg>
                     <p className="text-white/40 text-sm font-medium">Aucun favori pour l'instant</p>
                     <p className="text-white/20 text-xs max-w-xs leading-relaxed">
-                      Clique sur l'étoile ⭐ d'une station pour la sauvegarder ici.
+                      Touche l'icône étoile d'une station pour la retrouver ici en un instant.
                     </p>
                   </div>
                 ) : (

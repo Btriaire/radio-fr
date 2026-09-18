@@ -76,18 +76,18 @@ async function searchPodcasts(query: string): Promise<iTunesPodcast[]> {
 
 // iTunes genre IDs for podcasts (matching podcasts-online.org categories)
 const GENRES: { label: string; id: number | null }[] = [
-  { label: "🔥 Top FR",      id: null  },
-  { label: "🎬 TV & Cinéma", id: 1309  },
-  { label: "🎵 Musique",     id: 1310  },
-  { label: "😂 Humour",      id: 1303  },
-  { label: "📰 Actu",        id: 1311  },
-  { label: "🎓 Culture",     id: 1316  },
-  { label: "💼 Business",    id: 1321  },
-  { label: "🔬 Science",     id: 1315  },
-  { label: "🏃 Sport",       id: 1318  },
-  { label: "🎨 Arts",        id: 1301  },
-  { label: "❤️ Santé",       id: 1307  },
-  { label: "👨‍💻 Tech",        id: 1318  },
+  { label: "Top France",     id: null  },
+  { label: "TV & Cinéma",    id: 1309  },
+  { label: "Musique",        id: 1310  },
+  { label: "Humour",         id: 1303  },
+  { label: "Actualités",     id: 1311  },
+  { label: "Culture",        id: 1316  },
+  { label: "Business",       id: 1321  },
+  { label: "Sciences",       id: 1315  },
+  { label: "Sport",          id: 1318  },
+  { label: "Arts",           id: 1301  },
+  { label: "Santé",          id: 1307  },
+  { label: "Tech",           id: 1318  },
 ];
 
 async function getTopFrenchPodcasts(genreId?: number | null): Promise<iTunesPodcast[]> {
@@ -177,13 +177,25 @@ function SpotifyPanel({ currentEpisodeUrl, isPlaying, onPlayEpisode }, ref) {
     <div className="space-y-4">
       {/* Mode toggle — Podcasts (iTunes, audio) vs Chansons (Spotify) */}
       <div className="flex glass rounded-xl p-1 gap-1">
-        {([["podcasts", "🎧 Podcasts"], ["songs", "🎵 Chansons"]] as const).map(([id, label]) => (
-          <button key={id} onClick={() => setMode(id)}
-            className={`flex-1 px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
-              mode === id ? "text-white" : "text-white/50 hover:text-white/80"
+        {([
+          { id: "podcasts" as const, label: "Podcasts", icon: (
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3" />
+            </svg>
+          )},
+          { id: "songs" as const, label: "Chansons", icon: (
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
+            </svg>
+          )}
+        ]).map((item) => (
+          <button key={item.id} onClick={() => setMode(item.id)}
+            className={`flex-1 px-3 py-2 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${
+              mode === item.id ? "text-white" : "text-white/50 hover:text-white/80"
             }`}
-            style={mode === id ? { background: "var(--accent)", boxShadow: "0 0 12px rgba(59,130,246,0.4)" } : {}}>
-            {label}
+            style={mode === item.id ? { background: "var(--accent)", boxShadow: "0 0 12px rgba(59,130,246,0.4)" } : {}}>
+            {item.icon}
+            <span>{item.label}</span>
           </button>
         ))}
       </div>
@@ -194,13 +206,14 @@ function SpotifyPanel({ currentEpisodeUrl, isPlaying, onPlayEpisode }, ref) {
       <>
       {/* Genre tabs */}
       <div className="flex flex-wrap gap-1.5">
-        {/* ★ Favoris — saved podcasts */}
+        {/* Favoris — saved podcasts */}
         <button onClick={() => { setShowFavorites(true); setQuery(""); }}
           className={`text-xs px-2.5 py-1 rounded-full whitespace-nowrap transition-all font-semibold flex-shrink-0 flex items-center gap-1 ${
             showFavorites ? "text-white" : "glass glass-hover text-amber-300/80 hover:text-amber-200"
           }`}
           style={showFavorites ? { background: "linear-gradient(135deg,#f59e0b,#fbbf24)" } : {}}>
-          ★ Favoris{podFavorites.length > 0 ? ` ${podFavorites.length}` : ""}
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
+          <span>Favoris{podFavorites.length > 0 ? ` ${podFavorites.length}` : ""}</span>
         </button>
         {GENRES.map(g => {
           const active = !showFavorites && activeGenre === g.id && !query;
@@ -248,8 +261,9 @@ function SpotifyPanel({ currentEpisodeUrl, isPlaying, onPlayEpisode }, ref) {
       )}
       {query && (
         <button onClick={() => { setQuery(""); doSearch("", activeGenre); }}
-          className="text-xs px-2.5 py-1 rounded-full glass glass-hover text-white/40">
-          ✕ effacer
+          className="text-xs px-2.5 py-1 rounded-full glass glass-hover text-white/50 hover:text-white flex items-center gap-1">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+          <span>Effacer</span>
         </button>
       )}
 
@@ -265,10 +279,12 @@ function SpotifyPanel({ currentEpisodeUrl, isPlaying, onPlayEpisode }, ref) {
         </div>
       ) : showFavorites && displayList.length === 0 ? (
         <div className="flex flex-col items-center gap-3 py-12 text-center">
-          <span className="text-3xl opacity-40">★</span>
+          <div className="w-12 h-12 rounded-full flex items-center justify-center bg-white/5 border border-white/10 text-amber-400/60">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
+          </div>
           <p className="text-white/40 text-sm font-medium">Aucun podcast favori</p>
           <p className="text-white/20 text-xs max-w-xs leading-relaxed">
-            Touche l’étoile ★ sur un podcast pour l’ajouter à ta liste.
+            Touche l’icône étoile sur un podcast pour l’ajouter à ta liste.
           </p>
         </div>
       ) : (
@@ -287,8 +303,12 @@ function SpotifyPanel({ currentEpisodeUrl, isPlaying, onPlayEpisode }, ref) {
                   {p.artworkUrl100 || p.artworkUrl600
                     ? <img src={hiResArt(p)} alt={p.trackName} loading="lazy"
                         className="w-full aspect-square rounded-xl object-cover" />
-                    : <div className="w-full aspect-square rounded-xl flex items-center justify-center text-2xl"
-                        style={{ background: "rgba(255,255,255,0.05)" }}>🎙</div>
+                    : <div className="w-full aspect-square rounded-xl flex items-center justify-center border border-white/10"
+                        style={{ background: "linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02))" }}>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className="text-white/40">
+                          <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" /><path d="M19 10v2a7 7 0 0 1-14 0v-2" /><line x1="12" x2="12" y1="19" y2="22" />
+                        </svg>
+                      </div>
                   }
                   {/* Favorite star toggle */}
                   <button
@@ -434,7 +454,7 @@ function SongsView({ onPlayEpisode }: { onPlayEpisode: SpotifyPanelProps["onPlay
               {t.image
                 ? <img src={t.image} alt={t.name} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
                 : <div className="w-12 h-12 rounded-lg flex items-center justify-center text-lg flex-shrink-0"
-                    style={{ background: "rgba(255,255,255,0.05)" }}>🎵</div>}
+                    style={{ background: "rgba(255,255,255,0.05)" }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white/40"><path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" /></svg></div>}
               <div className="flex-1 min-w-0">
                 <p className="text-white text-xs font-semibold leading-tight truncate">{t.name}</p>
                 <p className="text-white/45 text-[11px] truncate">{t.artist}</p>
@@ -504,7 +524,7 @@ export function AudiusView({ onPlayEpisode, onPlayYouTube, youtubeTrackId, curre
     try {
       const picked = await generateYouTubePlaylist(t, { size: 24 });
       if (!picked.length) { setGenError("Aucun titre YouTube trouvé pour ce thème."); return; }
-      const id = lib.createPlaylist(`🤖 ${t}`, picked, true);
+      const id = lib.createPlaylist(`Mix ${t}`, picked, true);
       setOpenPl(id);
       setGenTheme("");
     } catch (e: any) {
@@ -540,7 +560,7 @@ export function AudiusView({ onPlayEpisode, onPlayYouTube, youtubeTrackId, curre
   };
 
   // Shared row renderer (used by search results, saved songs, and playlists).
-  // `onRemove`, when given, replaces the bookmark with a "remove from list" ✕.
+  // `onRemove`, when given, replaces the bookmark with a remove button.
   const renderTrack = (t: AudiusTrack, i: number, onRemove?: () => void) => {
     const active = t.source === "youtube"
       ? youtubeTrackId === t.id
@@ -556,7 +576,7 @@ export function AudiusView({ onPlayEpisode, onPlayYouTube, youtubeTrackId, curre
         {t.artwork
           ? <img src={t.artwork} alt={t.title} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
           : <div className="w-12 h-12 rounded-lg flex items-center justify-center text-lg flex-shrink-0"
-              style={{ background: "rgba(255,255,255,0.05)" }}>🎶</div>}
+              style={{ background: "rgba(255,255,255,0.05)" }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white/40"><path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" /></svg></div>}
         <div className="flex-1 min-w-0">
           <p className="text-white text-xs font-semibold leading-tight truncate">{t.title}</p>
           <p className="text-white/45 text-[11px] truncate">{t.artist}</p>
@@ -664,7 +684,7 @@ export function AudiusView({ onPlayEpisode, onPlayYouTube, youtubeTrackId, curre
           <p className="text-white/30 text-[11px] leading-snug flex items-start gap-1.5">
             <span style={{ color: "var(--accent)" }}>ℹ</span>
             SongPOD — streaming intégral gratuit et légal (sans DRM), ▶ joue le titre
-            complet ici, avec l'égaliseur. ♥ sauvegarde dans ta Bibliothèque.
+            complet ici, avec l'égaliseur. Ajoute à tes favoris pour sauvegarder.
           </p>
 
           {error && <p className="text-red-400/80 text-sm text-center">{error}</p>}
@@ -727,7 +747,7 @@ export function AudiusView({ onPlayEpisode, onPlayYouTube, youtubeTrackId, curre
                     onClick={() => setOpenPl(openPl === pl.id ? null : pl.id)}>
                     <div className="w-10 h-10 rounded-lg flex items-center justify-center text-lg flex-shrink-0"
                       style={{ background: pl.ai ? "rgba(167,139,250,0.18)" : "rgba(255,255,255,0.06)" }}>
-                      {pl.ai ? "🤖" : "🎵"}
+                      {pl.ai ? "IA" : "Mix"}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-white text-xs font-semibold truncate">{pl.name}</p>
@@ -769,7 +789,7 @@ export function AudiusView({ onPlayEpisode, onPlayYouTube, youtubeTrackId, curre
             </p>
             {lib.saved.length === 0
               ? <p className="text-white/30 text-[12px] text-center py-4">
-                  Aucun titre sauvegardé. Touche ♥ sur un résultat de recherche pour l'ajouter ici.
+                  Aucun titre sauvegardé. Touche l'icône favoris sur un résultat de recherche pour l'ajouter ici.
                 </p>
               : lib.saved.map((t, i) => renderTrack(t, i))}
           </div>
@@ -852,7 +872,9 @@ function PodcastDetail({ podcast, currentEpisodeUrl, isPlaying, onPlay, onClose,
             )}
           </div>
           <div className="flex flex-col items-center gap-2 flex-shrink-0">
-            <button onClick={onClose} className="text-white/40 hover:text-white text-xl leading-none">✕</button>
+            <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center bg-white/10 hover:bg-white/20 text-white/70 hover:text-white transition-all active:scale-95">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+            </button>
             {onToggleFav && (
               <button onClick={onToggleFav} aria-pressed={isFav}
                 aria-label={isFav ? "Retirer des favoris" : "Ajouter aux favoris"}

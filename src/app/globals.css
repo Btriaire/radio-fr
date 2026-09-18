@@ -295,27 +295,29 @@ body {
 
 /* ─── Utility classes ───────────────────────────────────────────── */
 @layer utilities {
-  /* Metallic glass panel */
+  /* iOS Modern Liquid Glass Panel */
   .glass {
     background:
-      linear-gradient(160deg, var(--metal-hi) 0%, transparent 40%),
+      linear-gradient(180deg, rgba(255,255,255,0.09) 0%, rgba(255,255,255,0.02) 100%),
       var(--glass-bg);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(24px) saturate(160%);
+    -webkit-backdrop-filter: blur(24px) saturate(160%);
+    border: 1px solid rgba(255,255,255,0.11);
+    box-shadow:
+      0 8px 32px -4px rgba(0,0,0,0.35),
+      inset 0 1px 0.5px rgba(255,255,255,0.22);
   }
 
   .glass-dark {
     background:
-      linear-gradient(160deg, var(--metal-hi) 0%, transparent 50%),
+      linear-gradient(180deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.01) 100%),
       var(--glass-bg-d);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    border: 1px solid var(--glass-border);
-    /* subtle bottom shadow for depth */
+    backdrop-filter: blur(32px) saturate(180%);
+    -webkit-backdrop-filter: blur(32px) saturate(180%);
+    border: 1px solid rgba(255,255,255,0.12);
     box-shadow:
       0 20px 60px var(--metal-lo),
-      inset 0 1px 0 var(--metal-hi);
+      inset 0 1px 0.5px rgba(255,255,255,0.25);
   }
 
   /* Horizontal brush-metal texture stripe (subtle) */
@@ -331,14 +333,16 @@ body {
   }
 
   .glass-hover {
-    transition: all 0.18s ease;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   }
   .glass-hover:hover {
     background:
-      linear-gradient(160deg, var(--metal-hi) 0%, transparent 40%),
-      rgba(255,255,255,0.09);
-    border-color: var(--accent, #3b82f6);
-    box-shadow: 0 0 0 1px rgba(59,130,246,0.2);
+      linear-gradient(180deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.04) 100%),
+      rgba(255,255,255,0.08);
+    border-color: rgba(255,255,255,0.22);
+    box-shadow:
+      0 12px 36px -6px rgba(0,0,0,0.45),
+      inset 0 1px 0.5px rgba(255,255,255,0.3);
   }
 
   .glow-accent { box-shadow: 0 0 20px color-mix(in srgb, var(--accent) 50%, transparent); }

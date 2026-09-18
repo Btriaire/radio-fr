@@ -38,10 +38,10 @@ interface Props {
 type IpodScreen = "nowplaying" | "menu" | "stations" | "podcasts" | "episodes";
 
 const MENU_ITEMS = [
-  { id: "nowplaying", label: "Now Playing", icon: "♪" },
-  { id: "stations",   label: "Stations",    icon: "📻" },
-  { id: "podcasts",   label: "Podcasts",    icon: "🎧" },
-  { id: "volume",     label: "Volume",      icon: "🔊" },
+  { id: "nowplaying", label: "Now Playing", icon: ">" },
+  { id: "stations",   label: "Stations",    icon: "FM" },
+  { id: "podcasts",   label: "Podcasts",    icon: "POD" },
+  { id: "volume",     label: "Volume",      icon: "VOL" },
 ];
 
 async function fetchTopPodcasts(genreId?: number): Promise<iTunesPodcast[]> {
@@ -363,8 +363,10 @@ export default function IpodOverlay({
                   width: Math.round(22*scale), height: Math.round(22*scale), borderRadius: "50%",
                   background: skin.closeBg, border: "none", cursor: "pointer",
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  color: skin.closeColor, fontSize: fs(9), lineHeight: 1,
-                }}>✕</button>
+                  color: skin.closeColor,
+                }}>
+                <svg width={Math.round(10*scale)} height={Math.round(10*scale)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+              </button>
 
               {/* ── Screen bezel ── */}
               <div style={{
@@ -417,7 +419,7 @@ export default function IpodOverlay({
                             ? <img src={currentPodcast.artwork} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                             : station?.logo
                               ? <img src={station.logo} alt="" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
-                              : <span style={{ fontSize: fs(18) }}>🎙</span>
+                              : <svg width={Math.round(20*scale)} height={Math.round(20*scale)} viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" /><path d="M19 10v2a7 7 0 0 1-14 0v-2" /><line x1="12" x2="12" y1="19" y2="22" /></svg>
                           }
                           {playerApi.isPlaying && !isVideoPodcast && (
                             <div style={{

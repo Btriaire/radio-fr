@@ -187,8 +187,14 @@ export default function Player({
                 ? <img src={podcast!.artwork} alt={podcast!.podcastName}
                     className="w-14 h-14 rounded-2xl object-cover"
                     style={{ boxShadow: "0 4px 16px rgba(0,0,0,0.4)" }} />
-                : <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl"
-                    style={{ background: "rgba(255,255,255,0.08)" }}>🎙</div>
+                : <div className="w-14 h-14 rounded-2xl flex items-center justify-center border border-white/10"
+                    style={{ background: "linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.03))" }}>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-white/70">
+                      <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
+                      <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                      <line x1="12" x2="12" y1="19" y2="22" />
+                    </svg>
+                  </div>
             ) : (
               <StationLogo logo={station!.logo} name={station!.name} color={station!.color} size="lg" />
             )}
@@ -236,7 +242,12 @@ export default function Player({
 
           <div className="flex flex-col items-end gap-2">
             {isPodcast ? (
-              <span className="text-[10px] px-2 py-1 rounded-full glass text-white/40">🎧 Podcast</span>
+              <span className="text-[10px] font-medium px-2 py-1 rounded-full glass text-white/60 flex items-center gap-1">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3" />
+                </svg>
+                Podcast
+              </span>
             ) : (
               <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full glass">
                 <div className={`w-2 h-2 rounded-full ${isPlaying ? "bg-red-500 animate-pulse" : "bg-white/20"}`} />
@@ -382,7 +393,12 @@ export default function Player({
             style={bassOn ? { color: "var(--accent)", background: "var(--accent)22", border: "1px solid var(--accent)55" } : {}}
             title={!eqActive ? "Indisponible (CORS stream)" : "Bass Booster"}
           >
-            🔊 Bass Booster
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+              <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+            </svg>
+            <span>Bass Boost</span>
             {bassOn && (
               <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: "var(--accent)" }} />
             )}
@@ -396,7 +412,12 @@ export default function Player({
             style={voiceOn ? { color: "var(--accent)", background: "var(--accent)22", border: "1px solid var(--accent)55" } : {}}
             title={!eqActive ? "Indisponible (CORS stream)" : "Voice Isolation"}
           >
-            🎙️ Voice Isolation
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+              <line x1="12" x2="12" y1="19" y2="22" />
+            </svg>
+            <span>Voix Nette</span>
             {voiceOn && (
               <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: "var(--accent)" }} />
             )}
@@ -452,7 +473,11 @@ export default function Player({
             }`}
             style={sleepTimerRemaining != null ? { color: "var(--accent)" } : {}}
           >
-            😴 Minuterie
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
+            </svg>
+            <span>Minuterie</span>
             {sleepTimerRemaining != null && (
               <span className="tabular-nums">— arrêt dans {formatSleepRemaining(sleepTimerRemaining)}</span>
             )}
