@@ -617,28 +617,43 @@ export default function Player({
         )}
 
         {/* Advanced Playback Options Drawer */}
-        <div className="space-y-1.5">
+        <div className="space-y-1.5 pt-0.5">
           <button
             onClick={() => setShowOptions((v) => !v)}
             aria-label="Options de lecture"
             aria-expanded={showOptions}
-            className={`w-full px-3 py-1.5 rounded-xl text-xs font-semibold transition-all glass glass-hover flex items-center justify-between ${
-              showOptions || nightMode || spatialAudio || isLooping || stereoPan !== 0 ? "" : "text-white/40"
+            className={`w-full px-3.5 py-2 rounded-2xl text-xs font-bold transition-all flex items-center justify-between border ${
+              showOptions
+                ? "bg-white/[0.09] border-white/20 text-white shadow-sm"
+                : (nightMode || spatialAudio || isLooping || stereoPan !== 0)
+                  ? "bg-white/[0.06] border-[var(--accent)] text-white"
+                  : "bg-white/[0.04] border-white/10 text-white/70 hover:text-white hover:bg-white/[0.07] hover:border-white/20"
             }`}
             style={nightMode || spatialAudio || isLooping || stereoPan !== 0 ? { color: "var(--accent)" } : {}}
           >
-            <div className="flex items-center gap-1.5">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="3" />
-                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
-              </svg>
-              <span>Options de lecture</span>
+            <div className="flex items-center gap-2">
+              <div className="w-5 h-5 rounded-lg flex items-center justify-center bg-white/10 text-white/80">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="4" y1="21" x2="4" y2="14" />
+                  <line x1="4" y1="10" x2="4" y2="3" />
+                  <line x1="12" y1="21" x2="12" y2="12" />
+                  <line x1="12" y1="8" x2="12" y2="3" />
+                  <line x1="20" y1="21" x2="20" y2="16" />
+                  <line x1="20" y1="12" x2="20" y2="3" />
+                  <line x1="1" y1="14" x2="7" y2="14" />
+                  <line x1="9" y1="8" x2="15" y2="8" />
+                  <line x1="17" y1="16" x2="23" y2="16" />
+                </svg>
+              </div>
+              <span className="tracking-wide">Options de lecture</span>
             </div>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
               {(nightMode || spatialAudio || isLooping || stereoPan !== 0) && (
-                <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: "var(--accent)" }} />
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-white/15" style={{ color: "var(--accent)" }}>
+                  Actif
+                </span>
               )}
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className={`transition-transform duration-200 ${showOptions ? "rotate-180" : ""}`}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className={`transition-transform duration-200 ${showOptions ? "rotate-180" : "text-white/40"}`}>
                 <polyline points="6 9 12 15 18 9" />
               </svg>
             </div>
