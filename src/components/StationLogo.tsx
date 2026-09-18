@@ -1,6 +1,6 @@
 "use client";
-import { useState, useEffect } from "react";
-import { logoDomain } from "@/lib/stations";
+import { useState, useEffect, useMemo } from "react";
+import { getLogoCandidates, getStationInitials } from "@/lib/logoResolver";
 
 interface Props {
   logo: string;
@@ -11,38 +11,18 @@ interface Props {
 
 const SIZE = { sm: 36, md: 48, lg: 60 };
 
-// Build the ordered list of logo URLs to try: the given one first, then
-// DuckDuckGo's icon as a fallback (different infra → covers Google misses),
-// before finally falling back to initials.
-function logoCandidates(logo: string): string[] {
-  const list = [logo];
-  const domain = logoDomain(logo);
-  if (domain) {
-    const ddg = `https://icons.duckduckgo.com/ip3/${domain}.ico`;
-    if (!list.includes(ddg)) list.push(ddg);
-  }
-  return list.filter(Boolean);
-}
-
 export default function StationLogo({ logo, name, color, size = "md" }: Props) {
-  const candidates = logoCandidates(logo);
+  const candidates = useMemo(() => getLogoCandidates(logo), [logo]);
   const [idx, setIdx] = useState(0);
   const [imgError, setImgError] = useState(false);
   const px = SIZE[size];
 
-  // Reset the fallback chain whenever the logo URL changes
   useEffect(() => {
     setIdx(0);
     setImgError(false);
   }, [logo]);
 
-  const initials = name
-    .split(/\s+/)
-    .map((w) => w[0])
-    .filter(Boolean)
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
+  const initials = useMemo(() => getStationInitials(name), [name]);
 
   const currentSrc = candidates[idx];
   const showImage = currentSrc && !imgError;

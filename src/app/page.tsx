@@ -287,7 +287,7 @@ export default function Home() {
       const idx = STATIONS.findIndex((s) => s.id === base.id);
       const next = STATIONS[(idx + dir + STATIONS.length) % STATIONS.length];
       setCurrentPodcast(null);
-      playerApi.initAudio(preferredStreamUrl(next));
+      playerApi.initAudio(preferredStreamUrl(next), { station: next });
       return withLogo(next);
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -892,7 +892,7 @@ export default function Home() {
                 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.18 }}>
                 <WebRadioPanel
-                  onPlay={(s) => { setCurrentPodcast(null); setSelectedStation(s); playerApi.initAudio(preferredStreamUrl(s)); }}
+                  onPlay={(s) => { setCurrentPodcast(null); setSelectedStation(s); playerApi.initAudio(preferredStreamUrl(s), { station: s }); }}
                   currentUrl={playerApi.currentUrl}
                   isPlaying={playerApi.isPlaying}
                   isFavorite={isFavorite}
@@ -906,7 +906,7 @@ export default function Home() {
                 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.18 }}>
                 <RadioSearch
-                  onPlay={(s) => { setCurrentPodcast(null); setSelectedStation(s); playerApi.initAudio(preferredStreamUrl(s)); }}
+                  onPlay={(s) => { setCurrentPodcast(null); setSelectedStation(s); playerApi.initAudio(preferredStreamUrl(s), { station: s }); }}
                   onToggleFavorite={toggleFavorite}
                   isFavorite={isFavorite}
                   currentUrl={playerApi.currentUrl}
@@ -1071,7 +1071,7 @@ export default function Home() {
           if (s) {
             setCurrentPodcast(null);
             setSelectedStation(s);
-            playerApi.initAudio(preferredStreamUrl(s));
+            playerApi.initAudio(preferredStreamUrl(s), { station: s });
           }
         }}
       />
@@ -1090,7 +1090,7 @@ export default function Home() {
         onSelectStation={(s) => {
           setCurrentPodcast(null);
           setSelectedStation(s);
-          playerApi.initAudio(preferredStreamUrl(s));
+          playerApi.initAudio(preferredStreamUrl(s), { station: s });
         }}
         onPlayEpisode={handlePlayEpisode}
       />

@@ -3,6 +3,7 @@ import { useRef, useState, useCallback, useEffect } from "react";
 import type { DecodeController } from "@/lib/streamDecoder";
 import { isEqCompatible } from "@/lib/stations";
 import { fadeOut } from "@/lib/audioFade";
+import { getNextStreamFallback, StreamCandidateStation } from "@/lib/streamFailover";
 
 // Lightweight iOS check inlined here so the heavy MP3-decoder module (with its
 // WASM) is only pulled in via dynamic import on devices that actually need it.
@@ -236,6 +237,7 @@ export function useAudioPlayer() {
   // Breaks the circular dependency: scheduleReconnect arms a timer that calls
   // doReconnectRef.current(), which is wired to reconnectNow() via a useEffect.
   const doReconnectRef = useRef<(() => void) | null>(null);
+  const stationRef = useRef<StreamCandidateStation | null>(null);
 
   const [reconnecting,     setReconnecting]     = useState(false);
   const [reconnectAttempt, setReconnectAttempt] = useState(0);
@@ -620,6 +622,19 @@ export function useAudioPlayer() {
         audio.src = url;
         audio.play().catch(() => { setIsLoading(false); scheduleReconnect("error"); });
       } else {
+        // Check for alternate stream fallback if available for this station
+        if (stationRef.current) {
+          const fallback = getNextStreamFallback(stationRef.current, url);
+          if (fallback && fallback !== url) {
+            audio.src = fallback;
+            setCurrentUrl(fallback);
+            audio.play().catch(() => {
+              setIsLoading(false);
+              scheduleReconnect("fallback-error");
+            });
+            return;
+          }
+        }
         // Real load/network failure → schedule a reconnect instead of dying.
         setIsLoading(false);
         scheduleReconnect("error");
@@ -764,9 +779,10 @@ export function useAudioPlayer() {
   // ── Public entry point: pick the right pipeline ───────────────────────────
   // `live` (radio) streams on iOS that are MP3 + CORS-friendly go through the
   // decode pipeline so the EQ works; everything else uses the <audio> element.
-  const initAudio = useCallback((url: string, opts?: { live?: boolean; video?: boolean; forceSwitch?: boolean }) => {
+  const initAudio = useCallback((url: string, opts?: { live?: boolean; video?: boolean; forceSwitch?: boolean; station?: StreamCandidateStation }) => {
     const live = opts?.live ?? true;
     wantVideoRef.current = !!opts?.video;
+    if (opts?.station) stationRef.current = opts.station;
 
     // Record the intent + exact params so a drop can replay this same pipeline.
     // Any fresh initAudio also cancels a pending retry → fast station switching

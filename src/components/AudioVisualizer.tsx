@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef } from "react";
 import { useTheme } from "@/context/ThemeContext";
+import { setupRetinaCanvas } from "@/lib/canvasOptimizer";
 
 interface Props {
   analyserRef: React.MutableRefObject<AnalyserNode | null>;
@@ -42,10 +43,15 @@ export default function AudioVisualizer({ analyserRef, isPlaying, color: rawColo
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext("2d");
+
+    const baseW = small ? 120 : 400;
+    const baseH = small ? 32 : 64;
+    const { ctx } = setupRetinaCanvas(canvas, baseW, baseH);
     if (!ctx) return;
 
     const color = resolveHex(rawColor);
+    const W = baseW;
+    const H = baseH;
 
     // Init simulated bar targets
     if (!simRef.current.length) {
@@ -57,11 +63,7 @@ export default function AudioVisualizer({ analyserRef, isPlaying, color: rawColo
     const simSpeed = Array.from({ length: 40 }, (_, i) => 0.6 + i * 0.03);
 
     if (!effectivePlaying) {
-      // Draw the static flat line ONCE and stop — no point burning a 60fps
-      // rAF loop (CPU/battery) to keep redrawing a line that never changes.
       cancelAnimationFrame(rafRef.current);
-      const W = canvas.width;
-      const H = canvas.height;
       ctx.clearRect(0, 0, W, H);
       ctx.beginPath();
       ctx.strokeStyle = `${color}40`;
@@ -75,8 +77,6 @@ export default function AudioVisualizer({ analyserRef, isPlaying, color: rawColo
     const draw = () => {
       rafRef.current = requestAnimationFrame(draw);
       const analyser = analyserRef.current;
-      const W = canvas.width;
-      const H = canvas.height;
       ctx.clearRect(0, 0, W, H);
 
       // Try to read real data from analyser
