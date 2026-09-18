@@ -8,6 +8,7 @@ interface Props {
   station: Station;
   isActive: boolean;
   isPlaying: boolean;
+  nowPlayingTrack?: string | null;
   analyserRef: React.MutableRefObject<AnalyserNode | null>;
   isFavorite: boolean;
   onClick: () => void;
@@ -15,16 +16,19 @@ interface Props {
 }
 
 export default function StationCard({
-  station, isActive, isPlaying, analyserRef, isFavorite, onClick, onToggleFavorite,
+  station, isActive, isPlaying, nowPlayingTrack, analyserRef, isFavorite, onClick, onToggleFavorite,
 }: Props) {
   return (
     <motion.div
       whileHover={{ scale: 1.01 }}
       whileTap={{ scale: 0.98 }}
       className={`flex items-center gap-3 rounded-2xl p-3 transition-all duration-200 glass glass-hover relative overflow-hidden cursor-pointer ${
-        isActive ? "" : ""
+        isActive ? "shadow-lg" : ""
       }`}
-      style={isActive ? { borderColor: `${station.color}50` } : {}}
+      style={isActive ? { 
+        borderColor: `${station.color}70`,
+        boxShadow: `0 4px 20px -2px ${station.color}25, inset 0 1px 0 rgba(255,255,255,0.12)`
+      } : {}}
       onClick={onClick}
     >
       {/* Active glow */}
@@ -73,7 +77,14 @@ export default function StationCard({
             <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse flex-shrink-0" />
           )}
         </div>
-        <p className="text-white/40 text-xs">{station.tagline}</p>
+        {isActive && isPlaying && nowPlayingTrack ? (
+          <div className="flex items-center gap-1.5 mt-0.5 text-xs font-medium truncate" style={{ color: station.color }}>
+            <span className="inline-block w-1.5 h-1.5 rounded-full animate-ping flex-shrink-0" style={{ backgroundColor: station.color }} />
+            <span className="truncate">{nowPlayingTrack}</span>
+          </div>
+        ) : (
+          <p className="text-white/40 text-xs truncate mt-0.5">{station.tagline}</p>
+        )}
       </div>
 
       <div className="flex items-center gap-2 flex-shrink-0 relative z-10">

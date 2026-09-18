@@ -406,8 +406,16 @@ export default function Home() {
                 </svg>
               </div>
               <div>
-                <h1 className="font-bold text-xl sm:text-2xl leading-none text-gradient">RadioFR</h1>
-                <p className="text-white/35 text-[11px] leading-none mt-1">Radios & Podcasts</p>
+                <div className="flex items-center gap-2">
+                  <h1 className="font-bold text-xl sm:text-2xl leading-none text-gradient">RadioFR</h1>
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border border-white/10 bg-white/5 text-white/70 tracking-wide">
+                    Radio-PaLaMa
+                  </span>
+                </div>
+                <p className="text-white/40 text-[11px] leading-none mt-1.5 flex items-center gap-1.5">
+                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                  Radios & Podcasts Live
+                </p>
               </div>
               {/* Mini EQ bars decoration */}
               <div className="hidden md:flex items-end gap-0.5 h-6 ml-1.5">
@@ -479,28 +487,43 @@ export default function Home() {
             </div>
           </div>
 
-          {/* ── Line 2 — nav tabs (SVG icons, full width) ── */}
-          <div className="flex flex-wrap glass rounded-2xl p-1 gap-0.5">
-            {TABS.map((t) => (
-              <button key={t.id} onClick={() => setTab(t.id)}
-                aria-label={t.label} aria-current={tab === t.id ? "page" : undefined}
-                className={`flex-1 min-w-fit px-3 py-2.5 rounded-xl text-xs font-semibold transition-all whitespace-nowrap flex items-center justify-center gap-1.5 ${
-                  tab === t.id ? "text-white" : "text-white/45 hover:text-white/80"
-                }`}
-                style={tab === t.id ? {
-                  background: "var(--accent)",
-                  boxShadow: "0 0 14px rgba(59,130,246,0.5)",
-                } : {}}>
-                <TabIcon id={t.id} size={18} />
-                <span>{t.label}</span>
-                {t.id === "favoris" && favorites.length > 0 && (
-                  <span className="text-[9px] rounded-full px-1.5 py-0.5 leading-none"
-                    style={{ background: "rgba(255,255,255,0.18)", color: tab === t.id ? "white" : "var(--accent)" }}>
-                    {favorites.length}
+          {/* ── Line 2 — nav tabs with animated sliding pill indicator ── */}
+          <div className="flex flex-wrap glass rounded-2xl p-1 gap-0.5 relative">
+            {TABS.map((t) => {
+              const isActive = tab === t.id;
+              return (
+                <button key={t.id} onClick={() => setTab(t.id)}
+                  aria-label={t.label} aria-current={isActive ? "page" : undefined}
+                  className={`relative flex-1 min-w-fit px-3 py-2.5 rounded-xl text-xs font-semibold transition-colors duration-200 whitespace-nowrap flex items-center justify-center gap-1.5 z-10 ${
+                    isActive ? "text-white" : "text-white/50 hover:text-white/85"
+                  }`}>
+                  {isActive && (
+                    <motion.div
+                      layoutId="activeTabPill"
+                      className="absolute inset-0 rounded-xl"
+                      style={{
+                        background: "var(--accent)",
+                        boxShadow: "0 0 16px rgba(59,130,246,0.45), inset 0 1px 0 rgba(255,255,255,0.25)",
+                      }}
+                      transition={{ type: "spring", stiffness: 450, damping: 35 }}
+                    />
+                  )}
+                  <span className="relative z-10 flex items-center gap-1.5">
+                    <TabIcon id={t.id} size={18} />
+                    <span>{t.label}</span>
+                    {t.id === "favoris" && favorites.length > 0 && (
+                      <span className="text-[9px] rounded-full px-1.5 py-0.5 leading-none font-bold"
+                        style={{
+                          background: isActive ? "rgba(255,255,255,0.22)" : "rgba(255,255,255,0.1)",
+                          color: isActive ? "#ffffff" : "var(--accent)"
+                        }}>
+                        {favorites.length}
+                      </span>
+                    )}
                   </span>
-                )}
-              </button>
-            ))}
+                </button>
+              );
+            })}
           </div>
         </div>
       </header>
@@ -621,15 +644,20 @@ export default function Home() {
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    {filteredStations.map((station) => (
-                      <StationCard key={station.id} station={station}
-                        isActive={selectedStation?.id === station.id}
-                        isPlaying={selectedStation?.id === station.id && playerApi.isPlaying}
-                        analyserRef={playerApi.analyserRef}
-                        isFavorite={isFavorite(station.id)}
-                        onClick={() => handlePlay(station)}
-                        onToggleFavorite={() => toggleFavorite(station)} />
-                    ))}
+                    {filteredStations.map((station) => {
+                      const isActive = selectedStation?.id === station.id;
+                      const activeTrack = isActive ? (nowPlaying.songTitle ? `${nowPlaying.songTitle}${nowPlaying.songArtist ? " • " + nowPlaying.songArtist : ""}` : null) : null;
+                      return (
+                        <StationCard key={station.id} station={station}
+                          isActive={isActive}
+                          isPlaying={isActive && playerApi.isPlaying}
+                          nowPlayingTrack={activeTrack}
+                          analyserRef={playerApi.analyserRef}
+                          isFavorite={isFavorite(station.id)}
+                          onClick={() => handlePlay(station)}
+                          onToggleFavorite={() => toggleFavorite(station)} />
+                      );
+                    })}
                   </div>
                 )}
               </motion.div>
@@ -698,15 +726,20 @@ export default function Home() {
                     <p className="text-white/30 text-xs uppercase tracking-widest mb-4 font-medium">
                       Ma liste · {favorites.length} station{favorites.length > 1 ? "s" : ""}
                     </p>
-                    {favorites.map((s) => (
-                      <StationCard key={s.id} station={withLogo(s)}
-                        isActive={selectedStation?.id === s.id}
-                        isPlaying={selectedStation?.id === s.id && playerApi.isPlaying}
-                        analyserRef={playerApi.analyserRef}
-                        isFavorite={true}
-                        onClick={() => handlePlay(withLogo(s))}
-                        onToggleFavorite={() => toggleFavorite(s)} />
-                    ))}
+                    {favorites.map((s) => {
+                      const isActive = selectedStation?.id === s.id;
+                      const activeTrack = isActive ? (nowPlaying.songTitle ? `${nowPlaying.songTitle}${nowPlaying.songArtist ? " • " + nowPlaying.songArtist : ""}` : null) : null;
+                      return (
+                        <StationCard key={s.id} station={withLogo(s)}
+                          isActive={isActive}
+                          isPlaying={isActive && playerApi.isPlaying}
+                          nowPlayingTrack={activeTrack}
+                          analyserRef={playerApi.analyserRef}
+                          isFavorite={true}
+                          onClick={() => handlePlay(withLogo(s))}
+                          onToggleFavorite={() => toggleFavorite(s)} />
+                      );
+                    })}
                   </div>
                 )}
               </motion.div>
