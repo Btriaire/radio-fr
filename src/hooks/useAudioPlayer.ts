@@ -2,6 +2,7 @@
 import { useRef, useState, useCallback, useEffect } from "react";
 import type { DecodeController } from "@/lib/streamDecoder";
 import { isEqCompatible } from "@/lib/stations";
+import { fadeOut } from "@/lib/audioFade";
 
 // Lightweight iOS check inlined here so the heavy MP3-decoder module (with its
 // WASM) is only pulled in via dynamic import on devices that actually need it.
@@ -927,8 +928,26 @@ export function useAudioPlayer() {
     const tick = () => setSleepTimerRemaining(Math.max(0, Math.round((endAt - Date.now()) / 1000)));
     tick();
     sleepTickRef.current = setInterval(tick, 1000);
-    sleepTimeoutRef.current = setTimeout(() => { pause(); cancelSleepTimer(); }, Math.max(0, endAt - Date.now()));
-  }, [pause, cancelSleepTimer]);
+
+    const msUntilEnd = Math.max(0, endAt - Date.now());
+    const fadeDurationSec = Math.min(5, Math.max(1, msUntilEnd / 1000));
+    const msBeforeFade = Math.max(0, msUntilEnd - fadeDurationSec * 1000);
+
+    sleepTimeoutRef.current = setTimeout(() => {
+      const g = gainRef.current;
+      const ctx = ctxRef.current;
+      if (g && ctx && ctx.state === "running") {
+        fadeOut(g, fadeDurationSec, ctx, () => {
+          pause();
+          cancelSleepTimer();
+          try { g.gain.setValueAtTime(volume, ctx.currentTime); } catch {}
+        });
+      } else {
+        pause();
+        cancelSleepTimer();
+      }
+    }, msBeforeFade);
+  }, [pause, cancelSleepTimer, volume]);
 
   const addSleepMinutes = useCallback((minutes: number) => {
     const now = Date.now();

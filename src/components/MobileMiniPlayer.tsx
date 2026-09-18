@@ -1,9 +1,10 @@
 "use client";
-import React, { useRef } from "react";
+import React from "react";
 import { motion } from "framer-motion";
 import StationLogo from "./StationLogo";
 import { Station } from "@/lib/stations";
 import { NowPlayingInfo } from "@/hooks/useNowPlaying";
+import { useSwipeGesture } from "@/hooks/useSwipeGesture";
 
 interface PodcastNowPlaying {
   episodeTitle: string;
@@ -24,6 +25,8 @@ interface Props {
   isFavorite?: boolean;
   onToggleFavorite?: () => void;
   nowPlaying?: NowPlayingInfo;
+  onNextStation?: () => void;
+  onPrevStation?: () => void;
 }
 
 export default function MobileMiniPlayer({
@@ -36,8 +39,15 @@ export default function MobileMiniPlayer({
   isFavorite,
   onToggleFavorite,
   nowPlaying,
+  onNextStation,
+  onPrevStation,
 }: Props) {
-  const touchStartY = useRef<number | null>(null);
+  const swipeHandlers = useSwipeGesture({
+    onSwipeUp: onExpand,
+    onSwipeLeft: onNextStation,
+    onSwipeRight: onPrevStation,
+    minDistance: 40,
+  });
 
   if (!station && !podcast) return null;
 
@@ -54,21 +64,6 @@ export default function MobileMiniPlayer({
       ? `${nowPlaying.songTitle}${nowPlaying.songArtist ? " • " + nowPlaying.songArtist : ""}`
       : station!.tagline;
 
-  const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartY.current = e.touches[0].clientY;
-  };
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    if (touchStartY.current === null) return;
-    const touchEndY = e.changedTouches[0].clientY;
-    const deltaY = touchStartY.current - touchEndY;
-    // Swiped up > 40px -> open full player
-    if (deltaY > 40) {
-      onExpand();
-    }
-    touchStartY.current = null;
-  };
-
   return (
     <div
       className="lg:hidden fixed bottom-3 left-3 right-3 z-40"
@@ -79,8 +74,7 @@ export default function MobileMiniPlayer({
         animate={{ y: 0, opacity: 1, scale: 1 }}
         exit={{ y: 60, opacity: 0, scale: 0.95 }}
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
+        {...swipeHandlers}
         onClick={onExpand}
         className="w-full rounded-2xl p-2.5 flex items-center gap-3 cursor-pointer select-none relative overflow-hidden backdrop-blur-2xl shadow-2xl border"
         style={{

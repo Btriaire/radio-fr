@@ -26,6 +26,7 @@ import HubScreen, { HubChoice } from "@/components/HubScreen";
 import { useMediaSession } from "@/hooks/useMediaSession";
 import MobileMiniPlayer from "@/components/MobileMiniPlayer";
 import { useNowPlaying } from "@/hooks/useNowPlaying";
+import { saveTrackHistory } from "@/lib/trackHistory";
 
 type Tab = "radio" | "webradio" | "search" | "favoris" | "podcasts" | "audius";
 
@@ -99,6 +100,18 @@ export default function Home() {
 
   // Podcast play-queue for automatic episode chaining (enchaînement auto).
   const episodeQueueRef = useRef<{ episodes: RSSEpisode[]; podcast: iTunesPodcast; index: number } | null>(null);
+
+  // Save played songs to track history (persisted in localStorage)
+  useEffect(() => {
+    if (selectedStation && nowPlaying.songTitle && playerApi.isPlaying) {
+      saveTrackHistory({
+        stationId: selectedStation.id,
+        stationName: selectedStation.name,
+        title: nowPlaying.songTitle,
+        artist: nowPlaying.songArtist,
+      });
+    }
+  }, [selectedStation, nowPlaying.songTitle, nowPlaying.songArtist, playerApi.isPlaying]);
 
   // Honour tab from URL params (e.g. after Spotify OAuth redirect)
   useEffect(() => {
@@ -991,6 +1004,8 @@ export default function Home() {
             isFavorite={selectedStation ? isFavorite(selectedStation.id) : false}
             onToggleFavorite={selectedStation ? () => toggleFavorite(selectedStation) : undefined}
             nowPlaying={nowPlaying}
+            onNextStation={() => playAdjacentStation(1)}
+            onPrevStation={() => playAdjacentStation(-1)}
           />
         )}
       </AnimatePresence>
