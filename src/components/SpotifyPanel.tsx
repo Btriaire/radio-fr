@@ -6,6 +6,7 @@ import {
   getEpisodesForPodcast, itunesProxy,
 } from "@/lib/podcastUtils";
 import { usePodcastFavorites, podKey } from "@/hooks/usePodcastFavorites";
+import { useOfflinePodcasts } from "@/hooks/useOfflinePodcasts";
 import { usePlayedEpisodes } from "@/hooks/usePlayedEpisodes";
 import { useSongLibrary, Playlist } from "@/hooks/useSongLibrary";
 import { MusicTrack, searchAllMusic, sourceBadge, generateYouTubePlaylist } from "@/lib/musicSearch";
@@ -133,6 +134,8 @@ function SpotifyPanel({ currentEpisodeUrl, isPlaying, onPlayEpisode }, ref) {
   const [activeGenre, setActiveGenre] = useState<number | null>(null); // null = Top FR
   const [mode, setMode]           = useState<"podcasts" | "songs">("podcasts");
   const [showFavorites, setShowFavorites] = useState(false);
+  const [showOffline, setShowOffline]     = useState(false);
+  const offline = useOfflinePodcasts();
   const { favorites: podFavorites, isFavorite: isPodFav, toggleFavorite: togglePodFav } = usePodcastFavorites();
 
   useImperativeHandle(ref, () => ({ pause: () => {} }));
@@ -206,12 +209,24 @@ function SpotifyPanel({ currentEpisodeUrl, isPlaying, onPlayEpisode }, ref) {
       <>
       {/* Genre tabs */}
       <div className="flex flex-wrap gap-1.5">
-        {/* Favoris — saved podcasts */}
-        <button onClick={() => { setShowFavorites(true); setQuery(""); }}
+        {/* Hors-ligne / Téléchargements */}
+        <button onClick={() => { setShowOffline(true); setShowFavorites(false); setQuery(""); }}
           className={`text-xs px-2.5 py-1 rounded-full whitespace-nowrap transition-all font-semibold flex-shrink-0 flex items-center gap-1 ${
-            showFavorites ? "text-white" : "glass glass-hover text-amber-300/80 hover:text-amber-200"
+            showOffline ? "text-white shadow-md" : "glass glass-hover text-emerald-300/80 hover:text-emerald-200"
           }`}
-          style={showFavorites ? { background: "linear-gradient(135deg,#f59e0b,#fbbf24)" } : {}}>
+          style={showOffline ? { background: "linear-gradient(135deg,#059669,#10b981)" } : {}}>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          <span>Hors-ligne{offline.offlineEpisodes.length > 0 ? ` ${offline.offlineEpisodes.length}` : ""}</span>
+        </button>
+
+        {/* Favoris — saved podcasts */}
+        <button onClick={() => { setShowFavorites(true); setShowOffline(false); setQuery(""); }}
+          className={`text-xs px-2.5 py-1 rounded-full whitespace-nowrap transition-all font-semibold flex-shrink-0 flex items-center gap-1 ${
+            showFavorites && !showOffline ? "text-white" : "glass glass-hover text-amber-300/80 hover:text-amber-200"
+          }`}
+          style={showFavorites && !showOffline ? { background: "linear-gradient(135deg,#f59e0b,#fbbf24)" } : {}}>
           <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
           <span>Favoris{podFavorites.length > 0 ? ` ${podFavorites.length}` : ""}</span>
         </button>
@@ -269,8 +284,88 @@ function SpotifyPanel({ currentEpisodeUrl, isPlaying, onPlayEpisode }, ref) {
 
       {error && <p className="text-red-400/80 text-sm text-center">{error}</p>}
 
-      {/* Podcast grid */}
-      {loading && !podcasts.length && !showFavorites ? (
+      {/* Offline Episodes View */}
+      {showOffline ? (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between px-1">
+            <div>
+              <p className="text-white text-xs font-bold uppercase tracking-wider">Épisodes téléchargés</p>
+              <p className="text-white/40 text-[11px]">
+                {offline.offlineEpisodes.length} épisode{offline.offlineEpisodes.length > 1 ? "s" : ""} · {Math.round(offline.totalBytes / 1024 / 1024)} Mo en mémoire locale
+              </p>
+            </div>
+            {offline.offlineEpisodes.length > 0 && (
+              <button
+                onClick={() => { if (confirm("Supprimer tous les épisodes hors-ligne ?")) offline.clearAll(); }}
+                className="text-[10px] text-red-400 hover:text-red-300 font-bold px-2 py-1 rounded-lg border border-red-500/30 hover:bg-red-500/10 transition-all"
+              >
+                Tout effacer
+              </button>
+            )}
+          </div>
+
+          {offline.offlineEpisodes.length === 0 ? (
+            <div className="flex flex-col items-center gap-3 py-12 text-center glass rounded-2xl p-6">
+              <div className="w-12 h-12 rounded-full flex items-center justify-center bg-white/5 border border-white/10 text-emerald-400">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+              </div>
+              <p className="text-white/70 text-sm font-semibold">Aucun épisode hors-ligne</p>
+              <p className="text-white/35 text-xs max-w-xs leading-relaxed">
+                Touche le bouton de téléchargement d’un épisode pour l’enregistrer et l’écouter sans connexion Internet.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2 max-h-[480px] overflow-y-auto pr-1">
+              {offline.offlineEpisodes.map((ep) => {
+                const active = currentEpisodeUrl === ep.audioUrl;
+                return (
+                  <div key={ep.id}
+                    onClick={() => onPlayEpisode(
+                      { title: ep.title, audioUrl: ep.audioUrl, duration: ep.duration, pubDate: ep.pubDate, fileSize: ep.sizeBytes, isVideo: false, mediaType: "audio/mpeg", description: "" },
+                      { trackName: ep.podcastName, artistName: ep.podcastName, artworkUrl600: ep.artwork, artworkUrl100: ep.artwork, collectionId: 0, trackId: 0, primaryGenreName: "Podcast", trackCount: 1, feedUrl: "", trackViewUrl: "" }
+                    )}
+                    className={`glass glass-hover rounded-2xl p-3 flex items-center gap-3 cursor-pointer transition-all ${
+                      active ? "border-[var(--accent)] ring-1 ring-[var(--accent)]" : "border-white/10"
+                    }`}
+                  >
+                    <div className="w-10 h-10 rounded-xl overflow-hidden flex-shrink-0 relative bg-white/5 border border-white/10">
+                      {ep.artwork ? (
+                        <img src={ep.artwork} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-white/40 font-bold text-xs">POD</div>
+                      )}
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white text-xs font-bold truncate">{ep.title}</p>
+                      <p className="text-white/40 text-[11px] truncate mt-0.5">{ep.podcastName}</p>
+                      <div className="flex items-center gap-2 mt-1 text-[10px] text-white/30">
+                        <span className="text-emerald-400 font-semibold flex items-center gap-0.5">
+                          <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
+                          DISPO HORS-LIGNE
+                        </span>
+                        <span>·</span>
+                        <span>{Math.round(ep.sizeBytes / 1024 / 1024)} Mo</span>
+                        {ep.duration && <span>· {ep.duration}</span>}
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={(e) => { e.stopPropagation(); offline.removeEpisode(ep.id); }}
+                      title="Supprimer de la mémoire locale"
+                      className="w-8 h-8 rounded-full flex items-center justify-center text-white/30 hover:text-red-400 hover:bg-white/10 transition-all flex-shrink-0"
+                    >
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      ) : loading && !podcasts.length && !showFavorites ? (
         <div className="grid grid-cols-2 gap-2">
           {Array.from({length: 6}).map((_,i) => (
             <div key={i} className="glass rounded-2xl p-3 animate-pulse aspect-square rounded-2xl"
@@ -346,6 +441,7 @@ function SpotifyPanel({ currentEpisodeUrl, isPlaying, onPlayEpisode }, ref) {
             podcast={selected}
             currentEpisodeUrl={currentEpisodeUrl}
             isPlaying={isPlaying}
+            offline={offline}
             onPlay={(ep, index, episodes) => onPlayEpisode(ep, selected, { kind: "podcast", queue: { episodes, index } })}
             onClose={() => setSelected(null)}
             isFav={isPodFav(selected)}
@@ -804,6 +900,7 @@ interface DetailProps {
   podcast: iTunesPodcast;
   currentEpisodeUrl: string | null;
   isPlaying: boolean;
+  offline: any;
   onPlay: (ep: RSSEpisode, index: number, episodes: RSSEpisode[]) => void;
   onClose: () => void;
   isFav?: boolean;
@@ -813,7 +910,7 @@ interface DetailProps {
 // Autoplay-next preference (shared with the page via localStorage, default ON).
 const AUTOPLAY_KEY = "radiofr_autoplay_next";
 
-function PodcastDetail({ podcast, currentEpisodeUrl, isPlaying, onPlay, onClose, isFav, onToggleFav }: DetailProps) {
+function PodcastDetail({ podcast, currentEpisodeUrl, isPlaying, offline, onPlay, onClose, isFav, onToggleFav }: DetailProps) {
   const [episodes, setEpisodes] = useState<RSSEpisode[]>([]);
   const [loading, setLoading]   = useState(true);
   const [feedError, setFeedError] = useState(false);
@@ -993,20 +1090,37 @@ function PodcastDetail({ podcast, currentEpisodeUrl, isPlaying, onPlay, onClose,
                       </svg>
                     </button>
 
-                    {/* Download button */}
-                    <a
-                      href={ep.audioUrl}
-                      download={`${ep.title.slice(0, 60).replace(/[^a-zA-Z0-9\s-]/g, "")}.mp3`}
-                      onClick={e => e.stopPropagation()}
-                      title="Télécharger"
-                      className="w-7 h-7 rounded-lg flex items-center justify-center transition-all hover:opacity-80"
-                      style={{ background: "rgba(255,255,255,0.07)" }}>
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="2">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                        <polyline points="7 10 12 15 17 10"/>
-                        <line x1="12" y1="15" x2="12" y2="3"/>
-                      </svg>
-                    </a>
+                    {/* Offline Download button */}
+                    {offline.isDownloaded(ep.audioUrl) ? (
+                      <button
+                        onClick={e => { e.stopPropagation(); offline.removeEpisode(ep.audioUrl); }}
+                        title="Disponible hors-ligne (cliquer pour supprimer)"
+                        className="w-7 h-7 rounded-lg flex items-center justify-center bg-emerald-500/20 text-emerald-400 hover:bg-red-500/20 hover:text-red-300 transition-all"
+                      >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      </button>
+                    ) : offline.downloadingIds[ep.audioUrl] != null ? (
+                      <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-white/10 text-[9px] font-bold text-white font-mono animate-pulse">
+                        {offline.downloadingIds[ep.audioUrl]}%
+                      </div>
+                    ) : (
+                      <button
+                        onClick={e => {
+                          e.stopPropagation();
+                          offline.downloadEpisode(ep, podcast);
+                        }}
+                        title="Enregistrer pour écoute hors-ligne"
+                        className="w-7 h-7 rounded-lg flex items-center justify-center bg-white/5 hover:bg-white/15 text-white/50 hover:text-white transition-all active:scale-95"
+                      >
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                          <polyline points="7 10 12 15 17 10" />
+                          <line x1="12" y1="15" x2="12" y2="3" />
+                        </svg>
+                      </button>
+                    )}
                   </div>
                 </motion.div>
               );

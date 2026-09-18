@@ -7,6 +7,7 @@ import { useStationLogos } from "@/hooks/useStationLogos";
 import { useTheme } from "@/context/ThemeContext";
 import { STATIONS, GENRES, Station, isEqCompatible, preferredStreamUrl } from "@/lib/stations";
 import { playableUrl, MusicTrack } from "@/lib/musicSearch";
+import { getOfflineBlobUrl } from "@/lib/offlineStorage";
 import Player from "@/components/Player";
 import StationCard from "@/components/StationCard";
 import SpotifyPanel, { SpotifyPanelHandle, AudiusView, RSSEpisode, iTunesPodcast } from "@/components/SpotifyPanel";
@@ -188,8 +189,14 @@ export default function Home() {
     // playback fails where native podcast apps succeed). EXCEPTION (handled by
     // playableUrl): archive.org blocks Vercel's IPs, so its CORS-enabled
     // datanodes are fetched directly by the browser. data:/blob: pass through.
-    const playUrl = playableUrl(ep.audioUrl);
-    playerApi.initAudio(playUrl, { live: false, video: !!ep.isVideo });
+    (async () => {
+      let playUrl = playableUrl(ep.audioUrl);
+      try {
+        const offlineBlob = await getOfflineBlobUrl(ep.audioUrl);
+        if (offlineBlob) playUrl = offlineBlob;
+      } catch {}
+      playerApi.initAudio(playUrl, { live: false, video: !!ep.isVideo });
+    })();
   }, [playerApi]);
 
   // Latest play handler kept in a ref so the (once-registered) ended callback
