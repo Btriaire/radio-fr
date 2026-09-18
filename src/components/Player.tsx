@@ -43,7 +43,7 @@ export default function Player({
   const [showEQ, setShowEQ] = useState(false);
   const [showSleepTimer, setShowSleepTimer] = useState(false);
   const [activeQuality, setActiveQuality] = useState<StreamQuality | null>(null);
-  const [sharedToast, setSharedToast] = useState(false);
+  const [sharedToast, setSharedToast] = useState<string | null>(null);
 
   const SPEEDS = [0.75, 1, 1.25, 1.5, 2];
 
@@ -75,8 +75,8 @@ export default function Player({
     if (typeof navigator !== "undefined" && navigator.clipboard) {
       try {
         await navigator.clipboard.writeText(`${shareText} — ${shareUrl}`);
-        setSharedToast(true);
-        setTimeout(() => setSharedToast(false), 2400);
+        setSharedToast("Lien copié dans le presse-papier !");
+        setTimeout(() => setSharedToast(null), 2400);
       } catch {}
     }
   };
@@ -262,6 +262,26 @@ export default function Player({
                         </p>
                       )}
                     </div>
+                    {/* Copy track name button */}
+                    <button
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        const trackStr = `${nowPlaying.songTitle}${nowPlaying.songArtist ? " - " + nowPlaying.songArtist : ""}`;
+                        try {
+                          await navigator.clipboard.writeText(trackStr);
+                          setSharedToast(`Titre copié : ${nowPlaying.songTitle}`);
+                          setTimeout(() => setSharedToast(null), 2500);
+                        } catch {}
+                      }}
+                      title="Copier le titre en cours"
+                      aria-label="Copier le titre en cours"
+                      className="w-6 h-6 rounded-lg flex items-center justify-center bg-white/10 hover:bg-white/20 text-white/60 hover:text-white transition-all active:scale-90 flex-shrink-0"
+                    >
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                      </svg>
+                    </button>
                   </div>
                 )}
               </>
@@ -313,7 +333,7 @@ export default function Player({
               initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
               className="mt-2 py-1 px-3 rounded-full text-center text-xs font-medium text-emerald-300 bg-emerald-500/15 border border-emerald-500/30"
             >
-              Lien copié dans le presse-papier !
+              {sharedToast}
             </motion.div>
           )}
         </AnimatePresence>

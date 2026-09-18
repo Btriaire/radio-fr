@@ -80,6 +80,9 @@ export default function Home() {
   const [youtubeTrack, setYoutubeTrack]         = useState<MusicTrack | null>(null);
   const [genre, setGenre]                       = useState("Tous");
   const [stationView, setStationView]           = useState<"list" | "grid">("list");
+  const [stationQuery, setStationQuery]         = useState("");
+  const [stationSort, setStationSort]           = useState<"default" | "name" | "freq">("default");
+  const [zappingFeedback, setZappingFeedback]   = useState<string | null>(null);
   const [configOpen, setConfigOpen]             = useState(false);
   const [ipodOpen, setIpodOpen]                 = useState(false);
   const [djOpen, setDjOpen]                      = useState(false);
@@ -144,8 +147,29 @@ export default function Home() {
     logo: s.logo || logoMap[s.id],
   });
 
-  const filteredStations = (genre === "Tous" ? STATIONS : STATIONS.filter((s) => s.genre === genre))
-    .map(withLogo);
+  let baseStationList = genre === "Tous" ? STATIONS : STATIONS.filter((s) => s.genre === genre);
+
+  if (stationQuery.trim()) {
+    const q = stationQuery.toLowerCase().trim();
+    baseStationList = baseStationList.filter((s) =>
+      s.name.toLowerCase().includes(q) ||
+      (s.tagline && s.tagline.toLowerCase().includes(q)) ||
+      (s.genre && s.genre.toLowerCase().includes(q)) ||
+      (s.freq && s.freq.toLowerCase().includes(q))
+    );
+  }
+
+  if (stationSort === "name") {
+    baseStationList = [...baseStationList].sort((a, b) => a.name.localeCompare(b.name, "fr", { sensitivity: "base" }));
+  } else if (stationSort === "freq") {
+    baseStationList = [...baseStationList].sort((a, b) => {
+      const fa = parseFloat(a.freq || "999");
+      const fb = parseFloat(b.freq || "999");
+      return fa - fb;
+    });
+  }
+
+  const filteredStations = baseStationList.map(withLogo);
 
   // YouTube tracks can't run through the media-element pipeline (cross-origin),
   // so they play in a separate hidden IFrame mini-player. Starting one stops any
@@ -157,7 +181,7 @@ export default function Home() {
     setYoutubeTrack(t);
   };
 
-  const handlePlay = (station: Station) => {
+  const handlePlay = useCallback((station: Station) => {
     setCurrentPodcast(null);
     setYoutubeTrack(null);
     if (selectedStation?.id === station.id) {
@@ -166,7 +190,19 @@ export default function Home() {
       setSelectedStation(station);
       playerApi.initAudio(preferredStreamUrl(station));
     }
-  };
+  }, [selectedStation?.id, playerApi]);
+
+  const handleRandomZapping = useCallback(() => {
+    const pool = (filteredStations.length > 0 ? filteredStations : STATIONS.map(withLogo))
+      .filter((s) => s.id !== selectedStation?.id);
+    const candidates = pool.length > 0 ? pool : STATIONS.map(withLogo);
+    const chosen = candidates[Math.floor(Math.random() * candidates.length)];
+    if (!chosen) return;
+
+    setZappingFeedback(chosen.name);
+    setTimeout(() => setZappingFeedback(null), 2500);
+    handlePlay(chosen);
+  }, [filteredStations, selectedStation?.id, handlePlay, withLogo]);
 
   const handlePlayEpisode = useCallback((ep: { title: string; audioUrl: string; duration: string; pubDate: string; fileSize: number; isVideo?: boolean }, pod: { trackName: string; artistName: string; artworkUrl600: string; artworkUrl100: string }, opts?: { kind?: "music" | "podcast"; queue?: { episodes: RSSEpisode[]; index: number } }) => {
     setCurrentPodcast({
@@ -630,6 +666,64 @@ export default function Home() {
               <motion.div key="radio"
                 initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 16 }} transition={{ duration: 0.18 }}>
+
+                {/* ── Radio Search & Random Zapping Bar ── */}
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="relative flex-1">
+                    <input
+                      type="text"
+                      value={stationQuery}
+                      onChange={(e) => setStationQuery(e.target.value)}
+                      placeholder="Rechercher une radio (nom, FM, genre)…"
+                      className="w-full glass rounded-xl pl-8 pr-8 py-2 text-xs text-white placeholder-white/35 outline-none border border-white/10 focus:border-[var(--accent)] transition-all"
+                    />
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="absolute left-2.5 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none">
+                      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
+                    {stationQuery && (
+                      <button
+                        onClick={() => setStationQuery("")}
+                        aria-label="Effacer la recherche"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-white/15 hover:bg-white/25 text-white/80 flex items-center justify-center transition-all"
+                      >
+                        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                          <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Zapping Aléatoire Button */}
+                  <button
+                    onClick={handleRandomZapping}
+                    title="Lancer une radio au hasard"
+                    className="px-3 py-2 rounded-xl text-xs font-semibold glass glass-hover text-white flex items-center gap-1.5 transition-all active:scale-95 border border-white/10 flex-shrink-0"
+                    style={{
+                      background: "linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.03))"
+                    }}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--accent)" }}>
+                      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                      <polyline points="3.29 7 12 12 20.71 7" /><line x1="12" y1="22" x2="12" y2="12" />
+                    </svg>
+                    <span>Zapper</span>
+                  </button>
+                </div>
+
+                {/* Zapping Feedback Notification */}
+                <AnimatePresence>
+                  {zappingFeedback && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}
+                      className="mb-3 p-2 rounded-xl text-center text-xs font-semibold text-white glass border border-[var(--accent)]/40 shadow-lg flex items-center justify-center gap-2"
+                    >
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                      <span>Zapping vers : <strong className="text-[var(--accent)]">{zappingFeedback}</strong></span>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* ── Genres ── */}
                 <div className="flex flex-wrap gap-2 mb-4">
                   {GENRES.map((g) => {
                     const isZen = g === "Zen";
@@ -653,12 +747,39 @@ export default function Home() {
                     );
                   })}
                 </div>
-                {/* Section header decoration + view toggle */}
+
+                {/* Section header decoration + Sort & View toggles */}
                 <div className="flex items-center gap-3 mb-3">
-                  <span className="text-[10px] font-medium opacity-40" style={{ color: "var(--accent)" }}>
+                  <span className="text-[10px] font-medium opacity-40 uppercase" style={{ color: "var(--accent)" }}>
                     {filteredStations.length} STATION{filteredStations.length > 1 ? "S" : ""}
                   </span>
                   <div className="flex-1 h-px opacity-40" style={{ background: "linear-gradient(to right, var(--accent), transparent)" }} />
+
+                  {/* Sort Controls */}
+                  <div className="flex items-center gap-1 glass rounded-lg p-0.5 text-[10px] font-medium text-white/50">
+                    <button
+                      onClick={() => setStationSort("default")}
+                      className={`px-2 py-1 rounded-md transition-all ${stationSort === "default" ? "bg-white/15 text-white font-semibold" : "hover:text-white"}`}
+                      title="Ordre recommandé"
+                    >
+                      Top
+                    </button>
+                    <button
+                      onClick={() => setStationSort("name")}
+                      className={`px-2 py-1 rounded-md transition-all ${stationSort === "name" ? "bg-white/15 text-white font-semibold" : "hover:text-white"}`}
+                      title="Trier de A à Z"
+                    >
+                      A-Z
+                    </button>
+                    <button
+                      onClick={() => setStationSort("freq")}
+                      className={`px-2 py-1 rounded-md transition-all ${stationSort === "freq" ? "bg-white/15 text-white font-semibold" : "hover:text-white"}`}
+                      title="Trier par fréquence FM"
+                    >
+                      FM
+                    </button>
+                  </div>
+
                   {/* List / Grid toggle */}
                   <div className="flex items-center gap-1 glass rounded-lg p-0.5">
                     <button onClick={() => setStationView("list")} title="Liste détaillée"
@@ -679,7 +800,18 @@ export default function Home() {
                     </button>
                   </div>
                 </div>
-                {stationView === "grid" ? (
+
+                {filteredStations.length === 0 ? (
+                  <div className="glass rounded-2xl p-10 text-center space-y-3">
+                    <p className="text-white/60 text-sm font-medium">Aucune station trouvée pour « {stationQuery} »</p>
+                    <button
+                      onClick={() => { setStationQuery(""); setGenre("Tous"); }}
+                      className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold text-[var(--accent)] transition-all"
+                    >
+                      Réinitialiser la recherche
+                    </button>
+                  </div>
+                ) : stationView === "grid" ? (
                   <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
                     {filteredStations.map((station) => {
                       const active = selectedStation?.id === station.id;
