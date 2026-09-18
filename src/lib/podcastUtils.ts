@@ -40,7 +40,7 @@ export async function getRSSEpisodes(feedUrl: string): Promise<RSSEpisode[]> {
     if (typeof DOMParser === "undefined") return [];
     const parser = new DOMParser();
     const doc = parser.parseFromString(xml, "text/xml");
-    const items = Array.from(doc.querySelectorAll("item")).slice(0, 12);
+    const items = Array.from(doc.querySelectorAll("item")).slice(0, 30);
     return items.map(item => {
       const enc = item.querySelector("enclosure");
       const mediaType = enc?.getAttribute("type") ?? "";

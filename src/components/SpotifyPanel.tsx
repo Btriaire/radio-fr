@@ -317,7 +317,7 @@ function SpotifyPanel({ currentEpisodeUrl, isPlaying, onPlayEpisode }, ref) {
               </p>
             </div>
           ) : (
-            <div className="space-y-2 max-h-[480px] overflow-y-auto pr-1">
+            <div className="space-y-2 max-h-[480px] overflow-y-auto overscroll-contain scroll-touch pr-1" style={{ WebkitOverflowScrolling: "touch" }}>
               {offline.offlineEpisodes.map((ep) => {
                 const active = currentEpisodeUrl === ep.audioUrl;
                 return (
@@ -326,7 +326,7 @@ function SpotifyPanel({ currentEpisodeUrl, isPlaying, onPlayEpisode }, ref) {
                       { title: ep.title, audioUrl: ep.audioUrl, duration: ep.duration, pubDate: ep.pubDate, fileSize: ep.sizeBytes, isVideo: false, mediaType: "audio/mpeg", description: "" },
                       { trackName: ep.podcastName, artistName: ep.podcastName, artworkUrl600: ep.artwork, artworkUrl100: ep.artwork, collectionId: 0, trackId: 0, primaryGenreName: "Podcast", trackCount: 1, feedUrl: "", trackViewUrl: "" }
                     )}
-                    className={`glass glass-hover rounded-2xl p-3 flex items-center gap-3 cursor-pointer transition-all ${
+                    className={`glass glass-hover rounded-2xl p-3 flex items-center gap-3 cursor-pointer transition-all touch-pan-y select-none ${
                       active ? "border-[var(--accent)] ring-1 ring-[var(--accent)]" : "border-white/10"
                     }`}
                   >
@@ -383,14 +383,14 @@ function SpotifyPanel({ currentEpisodeUrl, isPlaying, onPlayEpisode }, ref) {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-2 max-h-[400px] overflow-y-auto pr-1">
+        <div className="grid grid-cols-2 gap-2 max-h-[400px] overflow-y-auto overscroll-contain scroll-touch pr-1" style={{ WebkitOverflowScrolling: "touch" }}>
           {displayList.map((p, i) => {
             const fav = isPodFav(p);
             return (
               <motion.div key={podKey(p) || i}
                 initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: Math.min(i, 8) * 0.04 }}
-                className="glass glass-hover rounded-2xl p-2.5 flex flex-col gap-2 cursor-pointer"
+                className="glass glass-hover rounded-2xl p-2.5 flex flex-col gap-2 cursor-pointer touch-pan-y select-none"
                 onMouseEnter={() => getEpisodesForPodcast(p)}
                 onTouchStart={() => getEpisodesForPodcast(p)}
                 onClick={() => setSelected(p)}>
@@ -526,9 +526,10 @@ function SongsView({ onPlayEpisode }: { onPlayEpisode: SpotifyPanelProps["onPlay
 
       {/* Note about playback limitation */}
       <p className="text-white/30 text-[11px] leading-snug flex items-start gap-1.5">
-        <span style={{ color: "var(--accent)" }}>ℹ</span>
-        Spotify ne fournit plus d'extrait audio pour la plupart des titres. Les chansons
-        s'ouvrent alors dans l'app Spotify ; quand un extrait existe, ▶ le joue ici.
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="mt-0.5 flex-shrink-0" style={{ color: "var(--accent)" }}>
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+        </svg>
+        <span>Spotify ne fournit plus d&apos;extrait audio pour la plupart des titres. Les chansons s&apos;ouvrent alors dans l&apos;application Spotify.</span>
       </p>
 
       {error && <p className="text-red-400/80 text-sm text-center">{error}</p>}
@@ -541,12 +542,12 @@ function SongsView({ onPlayEpisode }: { onPlayEpisode: SpotifyPanelProps["onPlay
           ))}
         </div>
       ) : (
-        <div className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
+        <div className="space-y-2 max-h-[420px] overflow-y-auto overscroll-contain scroll-touch pr-1" style={{ WebkitOverflowScrolling: "touch" }}>
           {tracks.map((t, i) => (
             <motion.div key={t.id || i}
               initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
               transition={{ delay: Math.min(i, 8) * 0.03 }}
-              className="glass glass-hover rounded-xl p-2.5 flex items-center gap-3">
+              className="glass glass-hover rounded-xl p-2.5 flex items-center gap-3 touch-pan-y select-none">
               {t.image
                 ? <img src={t.image} alt={t.name} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
                 : <div className="w-12 h-12 rounded-lg flex items-center justify-center text-lg flex-shrink-0"
@@ -778,9 +779,10 @@ export function AudiusView({ onPlayEpisode, onPlayYouTube, youtubeTrackId, curre
           )}
 
           <p className="text-white/30 text-[11px] leading-snug flex items-start gap-1.5">
-            <span style={{ color: "var(--accent)" }}>ℹ</span>
-            SongPOD — streaming intégral gratuit et légal (sans DRM), ▶ joue le titre
-            complet ici, avec l'égaliseur. Ajoute à tes favoris pour sauvegarder.
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="mt-0.5 flex-shrink-0" style={{ color: "var(--accent)" }}>
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+            </svg>
+            <span>SongPOD — streaming intégral gratuit et légal (sans DRM). Le lecteur joue le titre complet ici, avec l&apos;égaliseur. Ajoute à tes favoris pour sauvegarder.</span>
           </p>
 
           {error && <p className="text-red-400/80 text-sm text-center">{error}</p>}
@@ -793,7 +795,7 @@ export function AudiusView({ onPlayEpisode, onPlayYouTube, youtubeTrackId, curre
               ))}
             </div>
           ) : (
-            <div className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
+            <div className="space-y-2 max-h-[420px] overflow-y-auto overscroll-contain scroll-touch pr-1" style={{ WebkitOverflowScrolling: "touch" }}>
               {tracks.slice(0, visible).map((t, i) => renderTrack(t, i))}
               {tracks.length > visible && (
                 <button onClick={() => setVisible((v) => v + 20)}
@@ -807,7 +809,7 @@ export function AudiusView({ onPlayEpisode, onPlayYouTube, youtubeTrackId, curre
         </>
       ) : (
         /* ── Bibliothèque ─────────────────────────────────────────────── */
-        <div className="space-y-4 max-h-[460px] overflow-y-auto pr-1">
+        <div className="space-y-4 max-h-[460px] overflow-y-auto overscroll-contain scroll-touch pr-1" style={{ WebkitOverflowScrolling: "touch" }}>
           {/* AI auto-playlist generator */}
           <div className="rounded-xl p-3 space-y-2"
             style={{ border: "1px solid rgba(167,139,250,0.3)", background: "rgba(167,139,250,0.08)" }}>
@@ -944,90 +946,102 @@ function PodcastDetail({ podcast, currentEpisodeUrl, isPlaying, offline, onPlay,
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"
-      style={{ backdropFilter: "blur(10px)", background: "rgba(2,8,23,0.82)" }}
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-2 sm:p-4"
+      style={{ backdropFilter: "blur(12px)", background: "rgba(2,8,23,0.85)" }}
       onClick={onClose}>
-      <motion.div initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
-        exit={{ y: 40, opacity: 0 }}
-        className="glass-dark rounded-3xl p-5 max-w-sm w-full max-h-[82vh] overflow-y-auto"
+      <motion.div initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
+        exit={{ y: 50, opacity: 0 }}
+        className="glass-dark rounded-3xl w-full max-w-lg h-[86vh] max-h-[86vh] flex flex-col overflow-hidden shadow-2xl border border-white/15"
         onClick={e => e.stopPropagation()}>
 
-        {/* Header */}
-        <div className="flex gap-3 mb-4">
-          {(podcast.artworkUrl600 || podcast.artworkUrl100) && (
-            <img src={hiResArt(podcast)} alt={podcast.trackName}
-              className="w-16 h-16 rounded-2xl object-cover flex-shrink-0" />
-          )}
-          <div className="flex-1 min-w-0">
-            <h3 className="text-white font-semibold text-sm leading-tight">{podcast.trackName}</h3>
-            <p className="text-white/50 text-xs mt-0.5">{podcast.artistName}</p>
-            {podcast.primaryGenreName && (
-              <span className="text-[10px] px-2 py-0.5 rounded-full inline-block mt-1 font-medium"
-                style={{ background: "var(--accent)22", color: "var(--accent)" }}>
-                {podcast.primaryGenreName}
-              </span>
+        {/* iOS pull handle for mobile */}
+        <div className="w-12 h-1.5 bg-white/20 rounded-full mx-auto mt-2.5 sm:hidden flex-shrink-0" />
+
+        {/* Pinned Header */}
+        <div className="p-4 sm:p-5 pb-3 border-b border-white/10 flex-shrink-0 bg-white/[0.02]">
+          <div className="flex gap-3">
+            {(podcast.artworkUrl600 || podcast.artworkUrl100) && (
+              <img src={hiResArt(podcast)} alt={podcast.trackName}
+                className="w-16 h-16 rounded-2xl object-cover flex-shrink-0 shadow-md border border-white/10" />
             )}
-          </div>
-          <div className="flex flex-col items-center gap-2 flex-shrink-0">
-            <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center bg-white/10 hover:bg-white/20 text-white/70 hover:text-white transition-all active:scale-95">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-            </button>
-            {onToggleFav && (
-              <button onClick={onToggleFav} aria-pressed={isFav}
-                aria-label={isFav ? "Retirer des favoris" : "Ajouter aux favoris"}
-                title={isFav ? "Retirer des favoris" : "Ajouter aux favoris"}
-                className="transition-all active:scale-90">
-                <svg width="20" height="20" viewBox="0 0 24 24"
-                  fill={isFav ? "#fbbf24" : "none"} stroke={isFav ? "#fbbf24" : "rgba(255,255,255,0.45)"} strokeWidth="2">
-                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                </svg>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-white font-semibold text-sm sm:text-base leading-tight line-clamp-2">{podcast.trackName}</h3>
+              <p className="text-white/50 text-xs mt-0.5 truncate">{podcast.artistName}</p>
+              {podcast.primaryGenreName && (
+                <span className="text-[10px] px-2 py-0.5 rounded-full inline-block mt-1.5 font-medium"
+                  style={{ background: "var(--accent)22", color: "var(--accent)" }}>
+                  {podcast.primaryGenreName}
+                </span>
+              )}
+            </div>
+            <div className="flex flex-col items-center gap-2 flex-shrink-0">
+              <button onClick={onClose} aria-label="Fermer" className="w-8 h-8 rounded-full flex items-center justify-center bg-white/10 hover:bg-white/20 text-white/70 hover:text-white transition-all active:scale-95">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
               </button>
-            )}
+              {onToggleFav && (
+                <button onClick={onToggleFav} aria-pressed={isFav}
+                  aria-label={isFav ? "Retirer des favoris" : "Ajouter aux favoris"}
+                  title={isFav ? "Retirer des favoris" : "Ajouter aux favoris"}
+                  className="transition-all active:scale-90 p-1">
+                  <svg width="18" height="18" viewBox="0 0 24 24"
+                    fill={isFav ? "#fbbf24" : "none"} stroke={isFav ? "#fbbf24" : "rgba(255,255,255,0.45)"} strokeWidth="2">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                  </svg>
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Subheader bar with episode count & autoplay toggle */}
+          <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-white/5">
+            <p className="text-white/50 text-xs uppercase tracking-wider flex items-center gap-2 font-medium">
+              <span>Épisodes</span>
+              {!loading && episodes.length > 0 && (
+                <span className="text-white/30 font-normal">· {episodes.length} disponibles</span>
+              )}
+            </p>
+            <button onClick={toggleAutoplay}
+              title="Lire les épisodes à la suite automatiquement"
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wide transition-all active:scale-95"
+              style={autoplay
+                ? { background: "var(--accent)22", color: "var(--accent)", border: "1px solid var(--accent)55" }
+                : { background: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.45)", border: "1px solid rgba(255,255,255,0.12)" }}>
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
+                <polygon points="4,4 13,12 4,20"/><rect x="15" y="4" width="3" height="16"/>
+              </svg>
+              Enchaînement {autoplay ? "auto" : "off"}
+            </button>
           </div>
         </div>
 
-        {/* Episodes */}
-        {loading ? (
-          <div className="flex flex-col items-center gap-2 py-8">
-            <div className="w-5 h-5 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" />
-            <p className="text-white/30 text-xs">Chargement des épisodes…</p>
-          </div>
-        ) : feedError || episodes.length === 0 ? (
-          <p className="text-white/30 text-xs text-center py-6">
-            Impossible de charger les épisodes pour ce podcast.
-          </p>
-        ) : (
-          <div className="space-y-2">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-white/40 text-xs uppercase tracking-wider flex items-center gap-2">
-                <span>Épisodes</span>
-                <span className="text-white/20">· {episodes.length} disponibles</span>
-              </p>
-              <button onClick={toggleAutoplay}
-                title="Lire les épisodes à la suite automatiquement"
-                className="flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] font-bold tracking-wide transition-all"
-                style={autoplay
-                  ? { background: "var(--accent)22", color: "var(--accent)", border: "1px solid var(--accent)55" }
-                  : { background: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.45)", border: "1px solid rgba(255,255,255,0.12)" }}>
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
-                  <polygon points="4,4 13,12 4,20"/><rect x="15" y="4" width="3" height="16"/>
-                </svg>
-                Enchaînement {autoplay ? "auto" : "off"}
-              </button>
+        {/* Scrollable Episodes List */}
+        <div
+          className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-3 sm:p-4 space-y-2 scroll-touch"
+          style={{ WebkitOverflowScrolling: "touch" }}>
+          {loading ? (
+            <div className="flex flex-col items-center justify-center gap-2.5 py-16">
+              <div className="w-6 h-6 border-2 border-white/20 border-t-white/70 rounded-full animate-spin" />
+              <p className="text-white/40 text-xs font-medium">Chargement des épisodes…</p>
             </div>
-            {episodes.map((ep, i) => {
+          ) : feedError || episodes.length === 0 ? (
+            <div className="text-center py-16 px-4">
+              <p className="text-white/40 text-xs">
+                Impossible de charger les épisodes pour ce podcast.
+              </p>
+            </div>
+          ) : (
+            episodes.map((ep, i) => {
               const active = currentEpisodeUrl === ep.audioUrl;
               const played = isPlayed(ep.audioUrl);
               return (
-                <motion.div key={i}
-                  initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.03 }}
-                  className="glass rounded-xl p-3 flex items-start gap-3 cursor-pointer transition-all"
-                  style={active ? { borderColor: "var(--accent)60" } : played ? { opacity: 0.55 } : {}}
+                <div
+                  key={ep.audioUrl || i}
+                  className="glass rounded-xl p-3 flex items-start gap-3 cursor-pointer transition-all hover:bg-white/[0.08] active:scale-[0.99] touch-pan-y select-none border border-white/10"
+                  style={active ? { borderColor: "var(--accent)70", background: "rgba(255,255,255,0.09)" } : played ? { opacity: 0.6 } : {}}
                   onClick={() => { markPlayed(ep.audioUrl); onPlay(ep, i, episodes); }}>
 
                   {/* Play button */}
-                  <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center transition-all"
+                  <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center transition-all mt-0.5"
                     style={{
                       background: active ? "var(--accent)" : "rgba(255,255,255,0.08)",
                       boxShadow: active ? "0 0 12px var(--accent)60" : "none",
@@ -1045,7 +1059,7 @@ function PodcastDetail({ podcast, currentEpisodeUrl, isPlaying, offline, onPlay,
 
                   {/* Info */}
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium leading-tight line-clamp-2"
+                    <p className="text-xs font-semibold leading-tight line-clamp-2"
                       style={{ color: played ? "rgba(255,255,255,0.6)" : "#fff" }}>{ep.title}</p>
                     <div className="flex items-center gap-2 mt-1 flex-wrap">
                       {played && (
@@ -1059,20 +1073,20 @@ function PodcastDetail({ podcast, currentEpisodeUrl, isPlaying, offline, onPlay,
                       )}
                       {ep.isVideo && (
                         <span className="text-[9px] px-1.5 py-0.5 rounded-full font-semibold"
-                          style={{ background: "var(--accent)22", color: "var(--accent)" }}>▶ VIDÉO</span>
+                          style={{ background: "var(--accent)22", color: "var(--accent)" }}>VIDÉO</span>
                       )}
                       {ep.pubDate && (
-                        <span className="text-white/30 text-[10px]">{ep.pubDate}</span>
+                        <span className="text-white/35 text-[10px]">{ep.pubDate}</span>
                       )}
                       {ep.duration && (
-                        <span className="text-white/25 text-[10px]">· {ep.duration}</span>
+                        <span className="text-white/30 text-[10px]">· {ep.duration}</span>
                       )}
                       {ep.fileSize > 0 && (
-                        <span className="text-white/20 text-[10px]">· {Math.round(ep.fileSize / 1024 / 1024)} Mo</span>
+                        <span className="text-white/25 text-[10px]">· {Math.round(ep.fileSize / 1024 / 1024)} Mo</span>
                       )}
                     </div>
                     {ep.description && (
-                      <p className="text-white/25 text-[10px] mt-1 line-clamp-2">{ep.description}</p>
+                      <p className="text-white/30 text-[10px] mt-1 line-clamp-2 leading-relaxed">{ep.description}</p>
                     )}
                   </div>
 
@@ -1122,11 +1136,11 @@ function PodcastDetail({ podcast, currentEpisodeUrl, isPlaying, offline, onPlay,
                       </button>
                     )}
                   </div>
-                </motion.div>
+                </div>
               );
-            })}
-          </div>
-        )}
+            })
+          )}
+        </div>
       </motion.div>
     </motion.div>
   );
