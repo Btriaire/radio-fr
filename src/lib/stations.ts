@@ -36,6 +36,7 @@ export function logoDomain(logoUrl: string): string | null {
 // playback outright (the browser refuses the opaque redirect/response).
 const EQ_CORS_HOSTS = [
   "icecast.radiofrance.fr",
+  "direct.francebleu.fr",
   "europe1.lmn.fm",
   "europe2.lmn.fm",   // same lmn.fm infra as Europe 1 → ACAO: *
   "rfm.lmn.fm",       // same lmn.fm infra → ACAO: *

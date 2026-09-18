@@ -245,10 +245,14 @@ export function useAudioPlayer() {
     // On iOS the element gets routed to hardware and the graph only receives
     // silence (EQ never works this way), while wrapping the element in a
     // MediaElementSource can also stop playback when the screen locks. So on
-    // iOS we leave the <audio> element untouched → reliable background playback.
+    // iOS we leave the <audio> element untouched → reliable background playback,
+    // unless the user explicitly opted into the iOS EQ in Settings.
     // Low-battery mode opts out the same way, on purpose, to skip the graph's
     // ongoing CPU cost (filters + analyser) even on desktop.
-    if (detectIOS() || lowBatteryMode()) {
+    let iosEqOptIn = false;
+    try { iosEqOptIn = localStorage.getItem("radiofr_ios_eq") === "1"; } catch {}
+
+    if ((detectIOS() && !iosEqOptIn) || lowBatteryMode()) {
       eqEnabledRef.current = false;
       setEqActive(false);
       gainRef.current = null;   // volume falls back to element.volume
@@ -561,7 +565,9 @@ export function useAudioPlayer() {
     // request CORS mode for the small whitelist of hosts known to actually send
     // the header (EQ_CORS_HOSTS) — everything else loads in plain mode, exactly
     // like iOS already does, and plays reliably (just without the EQ tap).
-    audio.crossOrigin = (!detectIOS() && isEqCompatible(url)) ? "anonymous" : null;
+    let iosEqOptIn = false;
+    try { iosEqOptIn = localStorage.getItem("radiofr_ios_eq") === "1"; } catch {}
+    audio.crossOrigin = ((!detectIOS() || iosEqOptIn) && isEqCompatible(url)) ? "anonymous" : null;
     audio.volume = volume;
     audio.loop = isLoopingRef.current;
     try {
@@ -752,7 +758,7 @@ export function useAudioPlayer() {
   // ── Public entry point: pick the right pipeline ───────────────────────────
   // `live` (radio) streams on iOS that are MP3 + CORS-friendly go through the
   // decode pipeline so the EQ works; everything else uses the <audio> element.
-  const initAudio = useCallback((url: string, opts?: { live?: boolean; video?: boolean }) => {
+  const initAudio = useCallback((url: string, opts?: { live?: boolean; video?: boolean; forceSwitch?: boolean }) => {
     const live = opts?.live ?? true;
     wantVideoRef.current = !!opts?.video;
 
@@ -770,8 +776,8 @@ export function useAudioPlayer() {
     setReconnecting(false);
     resumeAtRef.current = 0;
 
-    // Same source already loaded → just resume if paused.
-    if (currentUrl === url && (audioRef.current || decoderRef.current)) {
+    // Same source already loaded → just resume if paused (unless forced switch requested).
+    if (!opts?.forceSwitch && currentUrl === url && (audioRef.current || decoderRef.current)) {
       if (!isPlaying) {
         ctxRef.current?.resume();
         if (modeRef.current === "decoder") startDecodedAudio(url);
@@ -788,14 +794,15 @@ export function useAudioPlayer() {
     try { iosEqOptIn = localStorage.getItem("radiofr_ios_eq") === "1"; } catch {}
     // The JS decode pipeline is more CPU-hungry than the Web Audio graph it
     // replaces on iOS — skip it under low-battery too, even if EQ was opted in.
-    const useDecoder = live && iosEqOptIn && detectIOS() && !lowBatteryMode() && isEqCompatible(url) && /\.mp3(\?|$)/i.test(url);
+    const isMpeg = !/\.(aac|m3u8|ogg|flac|opus|m4a)(\?|$)/i.test(url);
+    const useDecoder = live && iosEqOptIn && detectIOS() && !lowBatteryMode() && isEqCompatible(url) && isMpeg;
     if (useDecoder) {
       startDecodedAudio(url);
     } else {
       try { decoderRef.current?.stop(); } catch {}
       decoderRef.current = null;
       modeRef.current = "element";
-      initElementAudio(url);
+      initElementAudio(url, !!opts?.forceSwitch);
     }
   }, [currentUrl, isPlaying, startDecodedAudio, initElementAudio, clearReconnect, stopWatchdog, clearConnectTimer]);
 
@@ -810,8 +817,9 @@ export function useAudioPlayer() {
     setIsLoading(true);
     let iosEqOptIn = false;
     try { iosEqOptIn = localStorage.getItem("radiofr_ios_eq") === "1"; } catch {}
+    const isMpeg = !/\.(aac|m3u8|ogg|flac|opus|m4a)(\?|$)/i.test(last.url);
     const useDecoder = last.live && iosEqOptIn && detectIOS() && !lowBatteryMode() &&
-      isEqCompatible(last.url) && /\.mp3(\?|$)/i.test(last.url);
+      isEqCompatible(last.url) && isMpeg;
     if (useDecoder) {
       startDecodedAudio(last.url);
     } else {
@@ -825,6 +833,36 @@ export function useAudioPlayer() {
 
   // Wire the executor into the ref the backoff timer calls (breaks the cycle).
   useEffect(() => { doReconnectRef.current = reconnectNow; }, [reconnectNow]);
+
+  // Immediate hot-swap when settings change (e.g. user toggles "Égaliseur sur iPhone" in Settings)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handleSettingsChange = (e: Event) => {
+      const detail = (e as CustomEvent)?.detail;
+      if (detail?.key === "ios_eq" || detail?.key === "low_battery") {
+        const last = lastInitRef.current;
+        if (last && (wantPlayingRef.current || isPlaying || audioRef.current || decoderRef.current)) {
+          let iosEqOptIn = false;
+          try { iosEqOptIn = localStorage.getItem("radiofr_ios_eq") === "1"; } catch {}
+          const isMpeg = !/\.(aac|m3u8|ogg|flac|opus|m4a)(\?|$)/i.test(last.url);
+          const useDecoder = last.live && iosEqOptIn && detectIOS() && !lowBatteryMode() &&
+            isEqCompatible(last.url) && isMpeg;
+
+          if (useDecoder) {
+            startDecodedAudio(last.url);
+          } else {
+            try { decoderRef.current?.stop(); } catch {}
+            decoderRef.current = null;
+            modeRef.current = "element";
+            wantVideoRef.current = last.video;
+            initElementAudio(last.url, true);
+          }
+        }
+      }
+    };
+    window.addEventListener("radiofr:settings-changed", handleSettingsChange);
+    return () => window.removeEventListener("radiofr:settings-changed", handleSettingsChange);
+  }, [isPlaying, startDecodedAudio, initElementAudio]);
 
   const play = useCallback(() => {
     wantPlayingRef.current = true;

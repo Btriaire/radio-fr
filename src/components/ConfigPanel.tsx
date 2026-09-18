@@ -66,7 +66,10 @@ export default function ConfigPanel({ open, onClose }: Props) {
   const toggleIosEq = () => {
     setIosEq((v) => {
       const next = !v;
-      try { localStorage.setItem("radiofr_ios_eq", next ? "1" : "0"); } catch {}
+      try {
+        localStorage.setItem("radiofr_ios_eq", next ? "1" : "0");
+        window.dispatchEvent(new CustomEvent("radiofr:settings-changed", { detail: { key: "ios_eq", value: next } }));
+      } catch {}
       return next;
     });
   };
@@ -82,7 +85,10 @@ export default function ConfigPanel({ open, onClose }: Props) {
   const toggleLowBattery = () => {
     setLowBattery((v) => {
       const next = !v;
-      try { localStorage.setItem("radiofr_low_battery", next ? "1" : "0"); } catch {}
+      try {
+        localStorage.setItem("radiofr_low_battery", next ? "1" : "0");
+        window.dispatchEvent(new CustomEvent("radiofr:settings-changed", { detail: { key: "low_battery", value: next } }));
+      } catch {}
       return next;
     });
   };
@@ -156,7 +162,10 @@ export default function ConfigPanel({ open, onClose }: Props) {
             className="fixed top-0 right-0 bottom-0 z-50 w-full sm:w-[420px] glass-dark border-l border-white/10 flex flex-col overflow-hidden shadow-2xl"
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-white/[0.02]">
+            <div
+              className="flex items-center justify-between px-5 sm:px-6 pb-4 border-b border-white/10 bg-white/[0.03]"
+              style={{ paddingTop: "max(1.25rem, calc(env(safe-area-inset-top, 0px) + 0.85rem))" }}
+            >
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-xl flex items-center justify-center border border-white/10 bg-white/5" style={{ color: "var(--accent)" }}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -172,7 +181,7 @@ export default function ConfigPanel({ open, onClose }: Props) {
 
               <button
                 onClick={onClose}
-                className="px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 flex items-center gap-1.5 text-white/80 hover:text-white transition-all active:scale-95 text-xs font-semibold"
+                className="min-h-[44px] min-w-[44px] px-3.5 py-2 rounded-full bg-white/10 hover:bg-white/20 active:bg-white/25 border border-white/15 flex items-center justify-center gap-1.5 text-white/90 hover:text-white transition-all active:scale-95 text-xs font-semibold shadow-sm cursor-pointer"
                 aria-label="Fermer la configuration"
                 title="Fermer (Échap)"
               >
@@ -633,14 +642,17 @@ export default function ConfigPanel({ open, onClose }: Props) {
             </div>
 
             {/* Footer Status & Done Button */}
-            <div className="px-6 py-3 border-t border-white/10 bg-white/[0.02] flex items-center justify-between text-[11px] text-white/50 font-mono">
+            <div
+              className="px-6 py-3 border-t border-white/10 bg-white/[0.02] flex items-center justify-between text-[11px] text-white/50 font-mono"
+              style={{ paddingBottom: "max(0.75rem, calc(env(safe-area-inset-bottom, 0px) + 0.5rem))" }}
+            >
               <span className="flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                 Radio-PaLaMa
               </span>
               <button
                 onClick={onClose}
-                className="px-4 py-1.5 rounded-xl font-sans font-semibold text-xs text-white border border-white/20 hover:border-white/40 transition-all active:scale-95"
+                className="px-4 py-1.5 rounded-xl font-sans font-semibold text-xs text-white border border-white/20 hover:border-white/40 transition-all active:scale-95 cursor-pointer"
                 style={{ background: "var(--accent)33", color: "var(--accent)" }}
               >
                 Terminer

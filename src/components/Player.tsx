@@ -97,6 +97,18 @@ export default function Player({
     }
   };
 
+  const notifyEqUnavailable = () => {
+    const isIPhone = typeof navigator !== "undefined" && /iP(hone|ad|od)/.test(navigator.userAgent);
+    let iosEqOptIn = false;
+    try { iosEqOptIn = localStorage.getItem("radiofr_ios_eq") === "1"; } catch {}
+    if (isIPhone && !iosEqOptIn) {
+      setSharedToast("Sur iPhone, activez 'Égaliseur sur iPhone' dans les Préférences (icône engrenage).");
+    } else {
+      setSharedToast("Égaliseur indisponible sur ce flux radio (sécurité CORS du serveur).");
+    }
+    setTimeout(() => setSharedToast(null), 4000);
+  };
+
   // "24:05" for anything under an hour, "1:04:05" past that.
   const formatSleepRemaining = (s: number) => {
     const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
@@ -542,14 +554,13 @@ export default function Player({
             <button
               onClick={() => {
                 if (!eqActive) {
-                  setSharedToast("Égaliseur indisponible sur ce flux radio (sécurité CORS du serveur)");
-                  setTimeout(() => setSharedToast(null), 3500);
+                  notifyEqUnavailable();
                   return;
                 }
                 toggleMode(BASS_BOOSTER, bassOn);
               }}
-              className={`flex-1 px-3 py-2 rounded-xl text-xs font-semibold transition-all glass glass-hover flex items-center justify-center gap-1.5 ${
-                !eqActive ? "opacity-40 cursor-pointer" : ""
+              className={`flex-1 px-3 py-2 rounded-xl text-xs font-semibold transition-all glass glass-hover flex items-center justify-center gap-1.5 cursor-pointer ${
+                !eqActive ? "opacity-40" : ""
               } ${bassOn ? "" : "text-white/45"}`}
               style={bassOn ? { color: "var(--accent)", background: "var(--accent)22", border: "1px solid var(--accent)55" } : {}}
               title={!eqActive ? "Cliquer pour plus d'infos : non supporté par ce flux" : "Bass Booster"}
@@ -567,14 +578,13 @@ export default function Player({
             <button
               onClick={() => {
                 if (!eqActive) {
-                  setSharedToast("Égaliseur indisponible sur ce flux radio (sécurité CORS du serveur)");
-                  setTimeout(() => setSharedToast(null), 3500);
+                  notifyEqUnavailable();
                   return;
                 }
                 toggleMode(VOICE_ISOLATION, voiceOn);
               }}
-              className={`flex-1 px-3 py-2 rounded-xl text-xs font-semibold transition-all glass glass-hover flex items-center justify-center gap-1.5 ${
-                !eqActive ? "opacity-40 cursor-pointer" : ""
+              className={`flex-1 px-3 py-2 rounded-xl text-xs font-semibold transition-all glass glass-hover flex items-center justify-center gap-1.5 cursor-pointer ${
+                !eqActive ? "opacity-40" : ""
               } ${voiceOn ? "" : "text-white/45"}`}
               style={voiceOn ? { color: "var(--accent)", background: "var(--accent)22", border: "1px solid var(--accent)55" } : {}}
               title={!eqActive ? "Cliquer pour plus d'infos : non supporté par ce flux" : "Voice Isolation"}
@@ -755,38 +765,59 @@ export default function Player({
                   </div>
                   <div className="grid grid-cols-3 gap-1">
                     <button
-                      onClick={() => toggleMode(VOCAL_CLARITY, vocalClarityOn)}
-                      disabled={!eqActive}
-                      className={`px-1.5 py-1 rounded-lg text-[10px] font-semibold transition-all text-center truncate ${
+                      onClick={() => {
+                        if (!eqActive) {
+                          notifyEqUnavailable();
+                          return;
+                        }
+                        toggleMode(VOCAL_CLARITY, vocalClarityOn);
+                      }}
+                      className={`px-1.5 py-1 rounded-lg text-[10px] font-semibold transition-all text-center truncate cursor-pointer ${
+                        !eqActive ? "opacity-40" : ""
+                      } ${
                         vocalClarityOn
                           ? "bg-white/20 text-white border border-white/30"
                           : "glass glass-hover text-white/50 hover:text-white"
                       }`}
-                      title="Clarté vocale : détache la voix et élimine les résonances graves"
+                      title={!eqActive ? "Cliquer pour plus d'infos : égaliseur désactivé" : "Clarté vocale : détache la voix et élimine les résonances graves"}
                     >
                       Clarté Voix
                     </button>
                     <button
-                      onClick={() => toggleMode(NEWS_SPEECH, newsSpeechOn)}
-                      disabled={!eqActive}
-                      className={`px-1.5 py-1 rounded-lg text-[10px] font-semibold transition-all text-center truncate ${
+                      onClick={() => {
+                        if (!eqActive) {
+                          notifyEqUnavailable();
+                          return;
+                        }
+                        toggleMode(NEWS_SPEECH, newsSpeechOn);
+                      }}
+                      className={`px-1.5 py-1 rounded-lg text-[10px] font-semibold transition-all text-center truncate cursor-pointer ${
+                        !eqActive ? "opacity-40" : ""
+                      } ${
                         newsSpeechOn
                           ? "bg-white/20 text-white border border-white/30"
                           : "glass glass-hover text-white/50 hover:text-white"
                       }`}
-                      title="Journal / Talk : focus medium radio informations"
+                      title={!eqActive ? "Cliquer pour plus d'infos : égaliseur désactivé" : "Journal / Talk : focus medium radio informations"}
                     >
                       Radio Talk
                     </button>
                     <button
-                      onClick={() => toggleMode(PODCAST_PRO, podcastProOn)}
-                      disabled={!eqActive}
-                      className={`px-1.5 py-1 rounded-lg text-[10px] font-semibold transition-all text-center truncate ${
+                      onClick={() => {
+                        if (!eqActive) {
+                          notifyEqUnavailable();
+                          return;
+                        }
+                        toggleMode(PODCAST_PRO, podcastProOn);
+                      }}
+                      className={`px-1.5 py-1 rounded-lg text-[10px] font-semibold transition-all text-center truncate cursor-pointer ${
+                        !eqActive ? "opacity-40" : ""
+                      } ${
                         podcastProOn
                           ? "bg-white/20 text-white border border-white/30"
                           : "glass glass-hover text-white/50 hover:text-white"
                       }`}
-                      title="Studio Pro : présence broadcast chaleureuse et dynamique"
+                      title={!eqActive ? "Cliquer pour plus d'infos : égaliseur désactivé" : "Studio Pro : présence broadcast chaleureuse et dynamique"}
                     >
                       Studio Pro
                     </button>
@@ -810,38 +841,59 @@ export default function Player({
                   </div>
                   <div className="grid grid-cols-3 gap-1">
                     <button
-                      onClick={() => toggleMode(WARM_ACOUSTIC, warmAcousticOn)}
-                      disabled={!eqActive}
-                      className={`px-1.5 py-1 rounded-lg text-[10px] font-semibold transition-all text-center truncate ${
+                      onClick={() => {
+                        if (!eqActive) {
+                          notifyEqUnavailable();
+                          return;
+                        }
+                        toggleMode(WARM_ACOUSTIC, warmAcousticOn);
+                      }}
+                      className={`px-1.5 py-1 rounded-lg text-[10px] font-semibold transition-all text-center truncate cursor-pointer ${
+                        !eqActive ? "opacity-40" : ""
+                      } ${
                         warmAcousticOn
                           ? "bg-white/20 text-white border border-white/30"
                           : "glass glass-hover text-white/50 hover:text-white"
                       }`}
-                      title="Chaleur acoustique : basses rondes et veloutées, aigus doux"
+                      title={!eqActive ? "Cliquer pour plus d'infos : égaliseur désactivé" : "Chaleur acoustique : basses rondes et veloutées, aigus doux"}
                     >
                       Acoustique
                     </button>
                     <button
-                      onClick={() => toggleMode(CONCERT_HALL, concertHallOn)}
-                      disabled={!eqActive}
-                      className={`px-1.5 py-1 rounded-lg text-[10px] font-semibold transition-all text-center truncate ${
+                      onClick={() => {
+                        if (!eqActive) {
+                          notifyEqUnavailable();
+                          return;
+                        }
+                        toggleMode(CONCERT_HALL, concertHallOn);
+                      }}
+                      className={`px-1.5 py-1 rounded-lg text-[10px] font-semibold transition-all text-center truncate cursor-pointer ${
+                        !eqActive ? "opacity-40" : ""
+                      } ${
                         concertHallOn
                           ? "bg-white/20 text-white border border-white/30"
                           : "glass glass-hover text-white/50 hover:text-white"
                       }`}
-                      title="Scène Live : effet de spatialisation et présence de concert"
+                      title={!eqActive ? "Cliquer pour plus d'infos : égaliseur désactivé" : "Scène Live : effet de spatialisation et présence de concert"}
                     >
                       Scène Live
                     </button>
                     <button
-                      onClick={() => toggleMode(DYNAMIC_PUNCH, dynamicPunchOn)}
-                      disabled={!eqActive}
-                      className={`px-1.5 py-1 rounded-lg text-[10px] font-semibold transition-all text-center truncate ${
+                      onClick={() => {
+                        if (!eqActive) {
+                          notifyEqUnavailable();
+                          return;
+                        }
+                        toggleMode(DYNAMIC_PUNCH, dynamicPunchOn);
+                      }}
+                      className={`px-1.5 py-1 rounded-lg text-[10px] font-semibold transition-all text-center truncate cursor-pointer ${
+                        !eqActive ? "opacity-40" : ""
+                      } ${
                         dynamicPunchOn
                           ? "bg-white/20 text-white border border-white/30"
                           : "glass glass-hover text-white/50 hover:text-white"
                       }`}
-                      title="Punch dynamique : impact percutant et précision moderne"
+                      title={!eqActive ? "Cliquer pour plus d'infos : égaliseur désactivé" : "Punch dynamique : impact percutant et précision moderne"}
                     >
                       Punch Club
                     </button>
