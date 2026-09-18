@@ -916,6 +916,8 @@ function PodcastDetail({ podcast, currentEpisodeUrl, isPlaying, offline, onPlay,
   const [episodes, setEpisodes] = useState<RSSEpisode[]>([]);
   const [loading, setLoading]   = useState(true);
   const [feedError, setFeedError] = useState(false);
+  const [filterQuery, setFilterQuery] = useState("");
+  const [podcastShared, setPodcastShared] = useState(false);
   const { isPlayed, markPlayed, togglePlayed } = usePlayedEpisodes();
 
   // Autoplay-next toggle (persisted; read by the page when an episode ends).
@@ -931,8 +933,29 @@ function PodcastDetail({ podcast, currentEpisodeUrl, isPlaying, offline, onPlay,
     });
   };
 
+  const handleSharePodcast = async () => {
+    const title = podcast.trackName;
+    const text = `Écoute le podcast "${podcast.trackName}" (${podcast.artistName}) sur Radio-Palama`;
+    const url = typeof window !== "undefined" ? window.location.origin : "https://radio-fr.vercel.app";
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try {
+        await navigator.share({ title, text, url });
+        return;
+      } catch (e: any) {
+        if (e?.name === "AbortError") return;
+      }
+    }
+    if (typeof navigator !== "undefined" && navigator.clipboard) {
+      try {
+        await navigator.clipboard.writeText(`${text} — ${url}`);
+        setPodcastShared(true);
+        setTimeout(() => setPodcastShared(false), 2200);
+      } catch {}
+    }
+  };
+
   useEffect(() => {
-    setLoading(true); setFeedError(false); setEpisodes([]);
+    setLoading(true); setFeedError(false); setEpisodes([]); setFilterQuery("");
 
     getEpisodesForPodcast(podcast).then(eps => {
       if (eps.length === 0) setFeedError(true);
@@ -943,6 +966,13 @@ function PodcastDetail({ podcast, currentEpisodeUrl, isPlaying, offline, onPlay,
       setLoading(false);
     });
   }, [podcast.feedUrl, podcast.collectionId]); // eslint-disable-line
+
+  const filteredEpisodes = filterQuery.trim()
+    ? episodes.filter(ep =>
+        ep.title.toLowerCase().includes(filterQuery.toLowerCase()) ||
+        (ep.description && ep.description.toLowerCase().includes(filterQuery.toLowerCase()))
+      )
+    : episodes;
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -974,30 +1004,49 @@ function PodcastDetail({ podcast, currentEpisodeUrl, isPlaying, offline, onPlay,
                 </span>
               )}
             </div>
-            <div className="flex flex-col items-center gap-2 flex-shrink-0">
-              <button onClick={onClose} aria-label="Fermer" className="w-8 h-8 rounded-full flex items-center justify-center bg-white/10 hover:bg-white/20 text-white/70 hover:text-white transition-all active:scale-95">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              {/* Share button */}
+              <button onClick={handleSharePodcast} aria-label="Partager ce podcast" title="Partager ce podcast"
+                className="w-8 h-8 rounded-full flex items-center justify-center bg-white/10 hover:bg-white/20 text-white/70 hover:text-white transition-all active:scale-95">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+                  <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                </svg>
               </button>
+
               {onToggleFav && (
                 <button onClick={onToggleFav} aria-pressed={isFav}
                   aria-label={isFav ? "Retirer des favoris" : "Ajouter aux favoris"}
                   title={isFav ? "Retirer des favoris" : "Ajouter aux favoris"}
-                  className="transition-all active:scale-90 p-1">
-                  <svg width="18" height="18" viewBox="0 0 24 24"
+                  className="w-8 h-8 rounded-full flex items-center justify-center bg-white/10 hover:bg-white/20 transition-all active:scale-90">
+                  <svg width="16" height="16" viewBox="0 0 24 24"
                     fill={isFav ? "#fbbf24" : "none"} stroke={isFav ? "#fbbf24" : "rgba(255,255,255,0.45)"} strokeWidth="2">
                     <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                   </svg>
                 </button>
               )}
+
+              <button onClick={onClose} aria-label="Fermer" className="w-8 h-8 rounded-full flex items-center justify-center bg-white/10 hover:bg-white/20 text-white/70 hover:text-white transition-all active:scale-95">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+              </button>
             </div>
           </div>
+
+          {/* Share toast */}
+          {podcastShared && (
+            <div className="mt-2 py-1 px-3 rounded-full text-center text-xs font-medium text-emerald-300 bg-emerald-500/15 border border-emerald-500/30">
+              Lien du podcast copié !
+            </div>
+          )}
 
           {/* Subheader bar with episode count & autoplay toggle */}
           <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-white/5">
             <p className="text-white/50 text-xs uppercase tracking-wider flex items-center gap-2 font-medium">
               <span>Épisodes</span>
               {!loading && episodes.length > 0 && (
-                <span className="text-white/30 font-normal">· {episodes.length} disponibles</span>
+                <span className="text-white/30 font-normal">
+                  {filterQuery.trim() ? `· ${filteredEpisodes.length} sur ${episodes.length}` : `· ${episodes.length} disponibles`}
+                </span>
               )}
             </p>
             <button onClick={toggleAutoplay}
@@ -1012,6 +1061,33 @@ function PodcastDetail({ podcast, currentEpisodeUrl, isPlaying, offline, onPlay,
               Enchaînement {autoplay ? "auto" : "off"}
             </button>
           </div>
+
+          {/* Instant episode search / filter bar */}
+          {!loading && episodes.length > 0 && (
+            <div className="mt-2.5 relative">
+              <input
+                type="text"
+                value={filterQuery}
+                onChange={e => setFilterQuery(e.target.value)}
+                placeholder="Rechercher parmi les épisodes…"
+                className="w-full glass rounded-xl pl-8 pr-8 py-1.5 text-xs text-white placeholder-white/30 outline-none border border-white/10 focus:border-[var(--accent)] transition-all"
+              />
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="absolute left-2.5 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none">
+                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+              {filterQuery && (
+                <button
+                  onClick={() => setFilterQuery("")}
+                  aria-label="Effacer la recherche"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-white/15 hover:bg-white/25 text-white/80 flex items-center justify-center transition-all"
+                >
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Scrollable Episodes List */}
@@ -1029,8 +1105,15 @@ function PodcastDetail({ podcast, currentEpisodeUrl, isPlaying, offline, onPlay,
                 Impossible de charger les épisodes pour ce podcast.
               </p>
             </div>
+          ) : filteredEpisodes.length === 0 ? (
+            <div className="text-center py-16 px-4 space-y-2">
+              <p className="text-white/50 text-xs font-medium">Aucun épisode ne correspond à « {filterQuery} »</p>
+              <button onClick={() => setFilterQuery("")} className="text-[11px] text-[var(--accent)] underline">
+                Effacer la recherche
+              </button>
+            </div>
           ) : (
-            episodes.map((ep, i) => {
+            filteredEpisodes.map((ep, i) => {
               const active = currentEpisodeUrl === ep.audioUrl;
               const played = isPlayed(ep.audioUrl);
               return (

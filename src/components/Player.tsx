@@ -43,6 +43,9 @@ export default function Player({
   const [showEQ, setShowEQ] = useState(false);
   const [showSleepTimer, setShowSleepTimer] = useState(false);
   const [activeQuality, setActiveQuality] = useState<StreamQuality | null>(null);
+  const [sharedToast, setSharedToast] = useState(false);
+
+  const SPEEDS = [0.75, 1, 1.25, 1.5, 2];
 
   const {
     isPlaying, volume, isLoading, error, eqActive,
@@ -50,8 +53,33 @@ export default function Player({
     reconnecting, reconnectAttempt, offline, retry,
     analyserRef, filtersRef, mediaElRef, togglePlay, play, pause, changeVolume, seekTo,
     bands, updateBand, applyPreset, resetEQ, initAudio,
+    playbackRate, setPlaybackRate, seekRelative,
     sleepTimerRemaining, addSleepMinutes, cancelSleepTimer,
   } = playerApi;
+
+  const handleShare = async () => {
+    const shareTitle = isPodcast ? podcast!.episodeTitle : (station?.name || "Radio-Palama");
+    const shareText = isPodcast
+      ? `Écoute "${podcast!.episodeTitle}" (${podcast!.podcastName}) sur Radio-Palama`
+      : `Écoute ${station?.name || "la radio"} en direct sur Radio-Palama`;
+    const shareUrl = typeof window !== "undefined" ? window.location.origin : "https://radio-fr.vercel.app";
+
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try {
+        await navigator.share({ title: shareTitle, text: shareText, url: shareUrl });
+        return;
+      } catch (e: any) {
+        if (e?.name === "AbortError") return;
+      }
+    }
+    if (typeof navigator !== "undefined" && navigator.clipboard) {
+      try {
+        await navigator.clipboard.writeText(`${shareText} — ${shareUrl}`);
+        setSharedToast(true);
+        setTimeout(() => setSharedToast(false), 2400);
+      } catch {}
+    }
+  };
 
   // "24:05" for anything under an hour, "1:04:05" past that.
   const formatSleepRemaining = (s: number) => {
@@ -254,6 +282,15 @@ export default function Player({
                 <span className="text-xs text-white/60 font-medium">LIVE</span>
               </div>
             )}
+            {/* Share button */}
+            <button onClick={handleShare} className="p-1.5 rounded-lg glass-hover transition-all text-white/40 hover:text-white"
+              aria-label="Partager" title="Partager">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+              </svg>
+            </button>
+
             {!isPodcast && onToggleFavorite && (
               <button onClick={onToggleFavorite} className="p-1.5 rounded-lg glass-hover transition-all"
                 aria-label={isFavorite ? "Retirer des favoris" : "Ajouter aux favoris"}
@@ -269,14 +306,42 @@ export default function Player({
           </div>
         </div>
 
-        {/* Podcast progress bar */}
+        {/* Share toast notification */}
+        <AnimatePresence>
+          {sharedToast && (
+            <motion.div
+              initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
+              className="mt-2 py-1 px-3 rounded-full text-center text-xs font-medium text-emerald-300 bg-emerald-500/15 border border-emerald-500/30"
+            >
+              Lien copié dans le presse-papier !
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Podcast progress bar & playback speed */}
         {isPodcast && duration > 0 && (
-          <div className="mt-3 space-y-1">
+          <div className="mt-3 space-y-1.5">
             <input type="range" min={0} max={duration} step={1} value={currentTime}
               onChange={e => seekTo(Number(e.target.value))}
               className="w-full" style={{ accentColor: "var(--accent)" }} />
-            <div className="flex justify-between text-[10px] text-white/30 font-mono">
+            <div className="flex items-center justify-between text-[10px] text-white/35 font-mono">
               <span>{fmt(currentTime)}</span>
+              {/* Playback speed selector */}
+              <div className="flex items-center gap-1 font-sans">
+                {SPEEDS.map(rate => (
+                  <button
+                    key={rate}
+                    onClick={() => setPlaybackRate(rate)}
+                    className={`px-1.5 py-0.5 rounded text-[9px] font-bold transition-all ${
+                      playbackRate === rate
+                        ? "bg-white/20 text-white border border-white/20 shadow-sm"
+                        : "text-white/35 hover:text-white hover:bg-white/10"
+                    }`}
+                  >
+                    {rate}x
+                  </button>
+                ))}
+              </div>
               <span>{fmt(duration)}</span>
             </div>
           </div>
@@ -288,7 +353,7 @@ export default function Player({
         <div className="px-5 pb-1">
           <div className="flex items-center gap-1.5 mb-1.5">
             <span className="text-[9px] px-1.5 py-0.5 rounded-full font-semibold tracking-wide"
-              style={{ background: "var(--accent)22", color: "var(--accent)" }}>● VIDÉO</span>
+              style={{ background: "var(--accent)22", color: "var(--accent)" }}>VIDÉO</span>
           </div>
           <div ref={videoBoxRef}
             className="mx-auto rounded-xl overflow-hidden glass"
@@ -321,7 +386,23 @@ export default function Player({
 
       {/* Controls */}
       <div className="px-5 pb-3 space-y-3">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
+          {/* Quick Skip -15s for Podcasts / Tracks */}
+          {(isPodcast || duration > 0) && (
+            <button
+              onClick={() => seekRelative(-15)}
+              aria-label="Reculer de 15 secondes"
+              title="Reculer de 15 secondes"
+              className="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center glass glass-hover text-white/70 hover:text-white transition-all active:scale-90 flex-shrink-0"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M1 4v6h6" />
+                <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+                <text x="12" y="15" fontSize="7.5" fontWeight="bold" fill="currentColor" textAnchor="middle" stroke="none">15</text>
+              </svg>
+            </button>
+          )}
+
           {/* Play/Pause */}
           <button
             onClick={togglePlay}
@@ -344,6 +425,22 @@ export default function Player({
               </svg>
             )}
           </button>
+
+          {/* Quick Skip +30s for Podcasts / Tracks */}
+          {(isPodcast || duration > 0) && (
+            <button
+              onClick={() => seekRelative(30)}
+              aria-label="Avancer de 30 secondes"
+              title="Avancer de 30 secondes"
+              className="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center glass glass-hover text-white/70 hover:text-white transition-all active:scale-90 flex-shrink-0"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M23 4v6h-6" />
+                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+                <text x="12" y="15" fontSize="7.5" fontWeight="bold" fill="currentColor" textAnchor="middle" stroke="none">30</text>
+              </svg>
+            </button>
+          )}
 
           {/* Volume */}
           <div className="flex items-center gap-2 flex-1">

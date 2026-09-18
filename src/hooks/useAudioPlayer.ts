@@ -167,6 +167,8 @@ export function useAudioPlayer() {
   const [eqActive,    setEqActive]    = useState(true);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration,    setDuration]    = useState(0);
+  const [playbackRate, setPlaybackRateState] = useState(1);
+  const playbackRateRef = useRef(1);
 
   // ── Sleep timer (countdown, distinct from the "Mode Sommeil" clock-time
   // schedule above) — seconds left, or null when no timer is armed. Exposed
@@ -460,6 +462,10 @@ export function useAudioPlayer() {
     // like iOS already does, and plays reliably (just without the EQ tap).
     audio.crossOrigin = (!detectIOS() && isEqCompatible(url)) ? "anonymous" : null;
     audio.volume = volume;
+    try {
+      audio.playbackRate = playbackRateRef.current;
+      audio.defaultPlaybackRate = playbackRateRef.current;
+    } catch {}
     audioRef.current = audio;
 
     // Set src FIRST, then build the Web Audio graph. iOS Safari binds
@@ -847,6 +853,27 @@ export function useAudioPlayer() {
     }
   }, []);
 
+  const seekRelative = useCallback((deltaSeconds: number) => {
+    if (audioRef.current && isFinite(audioRef.current.currentTime)) {
+      const current = audioRef.current.currentTime;
+      const dur = audioRef.current.duration;
+      const target = Math.max(0, Math.min(isFinite(dur) && dur > 0 ? dur : Infinity, current + deltaSeconds));
+      audioRef.current.currentTime = target;
+      setCurrentTime(target);
+    }
+  }, []);
+
+  const setPlaybackRate = useCallback((rate: number) => {
+    playbackRateRef.current = rate;
+    setPlaybackRateState(rate);
+    if (audioRef.current) {
+      try {
+        audioRef.current.playbackRate = rate;
+        audioRef.current.defaultPlaybackRate = rate;
+      } catch {}
+    }
+  }, []);
+
   const stop = useCallback(() => {
     // Full stop → cancel any reconnection and forget the source.
     wantPlayingRef.current = false;
@@ -980,6 +1007,7 @@ export function useAudioPlayer() {
     initAudio, play, pause, togglePlay, seekTo,
     changeVolume, updateBand, applyPreset, resetEQ, stop,
     setOnEnded, retry,
+    playbackRate, setPlaybackRate, seekRelative,
     sleepTimerRemaining, addSleepMinutes, cancelSleepTimer,
   };
 }

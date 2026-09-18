@@ -274,6 +274,63 @@ export default function Home() {
     onSeek: currentPodcast ? (t: number) => playerApi.seekTo(t) : undefined,
   });
 
+  // ── Global keyboard shortcuts (Desktop & iPad) ────────────────────────────
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore if user is currently typing in an input or textarea
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+
+      if (e.code === "Space") {
+        e.preventDefault();
+        playerApi.togglePlay();
+      } else if (e.key === "m" || e.key === "M") {
+        e.preventDefault();
+        if (playerApi.volume > 0) {
+          (window as any)._prevVol = playerApi.volume;
+          playerApi.changeVolume(0);
+        } else {
+          playerApi.changeVolume((window as any)._prevVol || 0.8);
+        }
+      } else if (e.key === "ArrowRight") {
+        e.preventDefault();
+        if (currentPodcast || playerApi.duration > 0) {
+          playerApi.seekRelative(30);
+        } else {
+          playAdjacentStation(1);
+        }
+      } else if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        if (currentPodcast || playerApi.duration > 0) {
+          playerApi.seekRelative(-15);
+        } else {
+          playAdjacentStation(-1);
+        }
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        playerApi.changeVolume(Math.min(1, Number((playerApi.volume + 0.05).toFixed(2))));
+      } else if (e.key === "ArrowDown") {
+        e.preventDefault();
+        playerApi.changeVolume(Math.max(0, Number((playerApi.volume - 0.05).toFixed(2))));
+      } else if (e.key === "f" || e.key === "F") {
+        if (selectedStation) {
+          e.preventDefault();
+          toggleFavorite(selectedStation);
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [playerApi, currentPodcast, selectedStation, playAdjacentStation, toggleFavorite]);
+
   return (
     <div className="min-h-screen flex flex-col">
 

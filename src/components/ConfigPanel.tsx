@@ -568,6 +568,38 @@ export default function ConfigPanel({ open, onClose }: Props) {
                     </div>
                   </div>
 
+                  {/* Keyboard Shortcuts Guide */}
+                  <div className="p-4 rounded-2xl glass border border-white/10 space-y-2.5">
+                    <div className="flex items-center gap-2">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--accent)]">
+                        <rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 8h.001M10 8h.001M14 8h.001M18 8h.001M8 12h.001M12 12h.001M16 12h.001M7 16h10"/>
+                      </svg>
+                      <p className="text-white text-sm font-bold">Raccourcis Clavier</p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="flex items-center justify-between p-2 rounded-xl bg-white/5 border border-white/5">
+                        <span className="text-white/60">Lecture / Pause</span>
+                        <kbd className="px-1.5 py-0.5 rounded bg-white/10 font-mono text-[10px] text-white">Espace</kbd>
+                      </div>
+                      <div className="flex items-center justify-between p-2 rounded-xl bg-white/5 border border-white/5">
+                        <span className="text-white/60">Saut / Station</span>
+                        <kbd className="px-1.5 py-0.5 rounded bg-white/10 font-mono text-[10px] text-white">Gauche / Droite</kbd>
+                      </div>
+                      <div className="flex items-center justify-between p-2 rounded-xl bg-white/5 border border-white/5">
+                        <span className="text-white/60">Volume +/-</span>
+                        <kbd className="px-1.5 py-0.5 rounded bg-white/10 font-mono text-[10px] text-white">Haut / Bas</kbd>
+                      </div>
+                      <div className="flex items-center justify-between p-2 rounded-xl bg-white/5 border border-white/5">
+                        <span className="text-white/60">Couper le son</span>
+                        <kbd className="px-1.5 py-0.5 rounded bg-white/10 font-mono text-[10px] text-white">M</kbd>
+                      </div>
+                      <div className="flex items-center justify-between p-2 rounded-xl bg-white/5 border border-white/5 col-span-2">
+                        <span className="text-white/60">Ajouter aux favoris</span>
+                        <kbd className="px-1.5 py-0.5 rounded bg-white/10 font-mono text-[10px] text-white">F</kbd>
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Reset & Cache Maintenance */}
                   <div className="p-4 rounded-2xl glass border border-red-500/20 bg-red-500/[0.03] space-y-3">
                     <div>
