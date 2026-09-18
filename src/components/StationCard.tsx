@@ -22,26 +22,26 @@ export default function StationCard({
     <motion.div
       whileHover={{ scale: 1.01 }}
       whileTap={{ scale: 0.98 }}
-      className={`flex items-center gap-3 rounded-2xl p-3 transition-all duration-200 glass glass-hover relative overflow-hidden cursor-pointer ${
-        isActive ? "shadow-lg" : ""
+      className={`group flex items-center gap-3 rounded-2xl p-3 transition-all duration-200 glass glass-hover relative overflow-hidden cursor-pointer ${
+        isActive ? "shadow-xl ring-1" : ""
       }`}
       style={isActive ? { 
-        borderColor: `${station.color}70`,
-        boxShadow: `0 4px 20px -2px ${station.color}25, inset 0 1px 0 rgba(255,255,255,0.12)`
+        borderColor: `${station.color}80`,
+        boxShadow: `0 8px 30px -4px ${station.color}35, inset 0 1px 0 rgba(255,255,255,0.18)`
       } : {}}
       onClick={onClick}
     >
       {/* Active glow */}
       {isActive && (
         <div
-          className="absolute inset-0 pointer-events-none opacity-10"
+          className="absolute inset-0 pointer-events-none opacity-15"
           style={{ background: `radial-gradient(circle at 20% 50%, ${station.color}, transparent 70%)` }}
         />
       )}
 
-      {/* Signal arcs — decorative, top-right corner */}
+      {/* Signal arcs decorative corner */}
       {isActive && (
-        <svg className="absolute top-0 right-0 opacity-20 pointer-events-none" width="80" height="60" viewBox="0 0 80 60" fill="none">
+        <svg className="absolute top-0 right-0 opacity-25 pointer-events-none" width="80" height="60" viewBox="0 0 80 60" fill="none">
           {[20, 36, 52].map((r, i) => (
             <path key={r}
               d={`M ${80 - r * 0.6} 0 A ${r} ${r} 0 0 0 80 ${r * 0.6}`}
@@ -55,14 +55,29 @@ export default function StationCard({
         </svg>
       )}
 
-      <StationLogo logo={station.logo} name={station.name} color={station.color} size="sm" />
+      <div className="relative flex-shrink-0">
+        <StationLogo logo={station.logo} name={station.name} color={station.color} size="sm" />
+        {/* Hover play/pause icon overlay */}
+        <div className="absolute inset-0 rounded-xl bg-black/40 backdrop-blur-[1px] opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white pointer-events-none">
+          {isActive && isPlaying ? (
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <rect x="6" y="4" width="4" height="16" rx="1" />
+              <rect x="14" y="4" width="4" height="16" rx="1" />
+            </svg>
+          ) : (
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <polygon points="6 3 20 12 6 21 6 3" />
+            </svg>
+          )}
+        </div>
+      </div>
 
       <div className="flex-1 min-w-0 relative z-10">
         <div className="flex items-center gap-2">
-          <span className="font-medium text-white text-sm truncate">{station.name}</span>
+          <span className="font-semibold text-white text-sm truncate">{station.name}</span>
           {isEqCompatible(station.streamUrl) && (
             <span
-              title="Égaliseur disponible (EQ compatible)"
+              title="Egaliseur disponible (EQ compatible)"
               className="flex items-center gap-0.5 text-[9px] font-bold px-1 py-0.5 rounded-md flex-shrink-0"
               style={{ background: `${station.color}22`, color: station.color }}
             >
@@ -74,7 +89,14 @@ export default function StationCard({
             </span>
           )}
           {isActive && isPlaying && (
-            <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse flex-shrink-0" />
+            <span
+              title="En direct"
+              className="flex items-end gap-[2px] h-3.5 px-1 py-0.5 rounded bg-red-500/15 border border-red-500/30 flex-shrink-0"
+            >
+              <span className="w-0.5 bg-red-400 rounded-full animate-pulse" style={{ height: "60%" }} />
+              <span className="w-0.5 bg-red-400 rounded-full animate-pulse" style={{ height: "100%", animationDelay: "150ms" }} />
+              <span className="w-0.5 bg-red-400 rounded-full animate-pulse" style={{ height: "40%", animationDelay: "300ms" }} />
+            </span>
           )}
         </div>
         {isActive && isPlaying && nowPlayingTrack ? (
@@ -83,7 +105,7 @@ export default function StationCard({
             <span className="truncate">{nowPlayingTrack}</span>
           </div>
         ) : (
-          <p className="text-white/40 text-xs truncate mt-0.5">{station.tagline}</p>
+          <p className="text-white/45 text-xs truncate mt-0.5">{station.tagline}</p>
         )}
       </div>
 

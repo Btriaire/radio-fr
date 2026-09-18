@@ -27,6 +27,7 @@ import { useMediaSession } from "@/hooks/useMediaSession";
 import MobileMiniPlayer from "@/components/MobileMiniPlayer";
 import { useNowPlaying } from "@/hooks/useNowPlaying";
 import { saveTrackHistory } from "@/lib/trackHistory";
+import TrackHistoryDrawer from "@/components/TrackHistoryDrawer";
 
 type Tab = "radio" | "webradio" | "search" | "favoris" | "podcasts" | "audius";
 
@@ -87,6 +88,7 @@ export default function Home() {
   const [configOpen, setConfigOpen]             = useState(false);
   const [ipodOpen, setIpodOpen]                 = useState(false);
   const [djOpen, setDjOpen]                      = useState(false);
+  const [historyOpen, setHistoryOpen]           = useState(false);
   const [hubOpen, setHubOpen]                   = useState(true);
   const [mobilePlayerExpanded, setMobilePlayerExpanded] = useState(false);
   const spotifyPanelRef                         = useRef<SpotifyPanelHandle>(null);
@@ -586,6 +588,18 @@ export default function Home() {
                   <path d="M2 19h20M4 19v-3M20 19v-3" />
                 </svg>
               </button>
+              {/* Recent Tracks History button */}
+              <button
+                onClick={() => setHistoryOpen(true)}
+                className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl glass-hover flex items-center justify-center transition-all active:scale-90"
+                title="Titres recents" aria-label="Ouvrir l'historique des titres recents"
+              >
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--accent)" }}>
+                  <circle cx="12" cy="12" r="10" />
+                  <polyline points="12 6 12 12 16 14" />
+                </svg>
+              </button>
               {/* Config button */}
               <button
                 onClick={() => setConfigOpen(true)}
@@ -1047,6 +1061,20 @@ export default function Home() {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Track History drawer */}
+      <TrackHistoryDrawer
+        isOpen={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+        onPlayStation={(stationId) => {
+          const s = STATIONS.find((st) => st.id === stationId);
+          if (s) {
+            setCurrentPodcast(null);
+            setSelectedStation(s);
+            playerApi.initAudio(preferredStreamUrl(s));
+          }
+        }}
+      />
 
       {/* Config panel */}
       <ConfigPanel open={configOpen} onClose={() => setConfigOpen(false)} />
