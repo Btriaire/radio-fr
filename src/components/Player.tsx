@@ -41,6 +41,7 @@ export default function Player({
   onClose,
 }: Props) {
   const [showEQ, setShowEQ] = useState(false);
+  const [showOptions, setShowOptions] = useState(false);
   const [showSleepTimer, setShowSleepTimer] = useState(false);
   const [activeQuality, setActiveQuality] = useState<StreamQuality | null>(null);
   const [sharedToast, setSharedToast] = useState<string | null>(null);
@@ -55,6 +56,11 @@ export default function Player({
     bands, updateBand, applyPreset, resetEQ, initAudio,
     playbackRate, setPlaybackRate, seekRelative,
     sleepTimerRemaining, addSleepMinutes, cancelSleepTimer,
+    isLooping, toggleLoop,
+    nightMode, toggleNightMode,
+    stereoPan, setStereoPan,
+    spatialAudio, toggleSpatialAudio,
+    toggleMute,
   } = playerApi;
 
   const handleShare = async () => {
@@ -462,13 +468,27 @@ export default function Player({
             </button>
           )}
 
-          {/* Volume */}
+          {/* Volume with mute toggle */}
           <div className="flex items-center gap-2 flex-1">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-              strokeWidth="2" className="text-white/30 flex-shrink-0">
-              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
-              <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
-            </svg>
+            <button
+              onClick={toggleMute}
+              aria-label={volume === 0 ? "Activer le son" : "Couper le son"}
+              title={volume === 0 ? "Activer le son" : "Couper le son"}
+              className="text-white/40 hover:text-white transition-colors flex-shrink-0"
+            >
+              {volume === 0 ? (
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                  <line x1="23" y1="9" x2="17" y2="15" />
+                  <line x1="17" y1="9" x2="23" y2="15" />
+                </svg>
+              ) : (
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                  <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+                </svg>
+              )}
+            </button>
             <input type="range" min={0} max={1} step={0.02} value={volume}
               onChange={(e) => changeVolume(Number(e.target.value))}
               aria-label="Volume" title={`Volume ${Math.round(volume * 100)}%`}
@@ -578,6 +598,133 @@ export default function Player({
             )}
           </div>
         )}
+
+        {/* Advanced Playback Options Drawer */}
+        <div className="space-y-1.5">
+          <button
+            onClick={() => setShowOptions((v) => !v)}
+            aria-label="Options de lecture"
+            aria-expanded={showOptions}
+            className={`w-full px-3 py-1.5 rounded-xl text-xs font-semibold transition-all glass glass-hover flex items-center justify-between ${
+              showOptions || nightMode || spatialAudio || isLooping || stereoPan !== 0 ? "" : "text-white/40"
+            }`}
+            style={nightMode || spatialAudio || isLooping || stereoPan !== 0 ? { color: "var(--accent)" } : {}}
+          >
+            <div className="flex items-center gap-1.5">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="3" />
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+              </svg>
+              <span>Options de lecture</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              {(nightMode || spatialAudio || isLooping || stereoPan !== 0) && (
+                <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: "var(--accent)" }} />
+              )}
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className={`transition-transform duration-200 ${showOptions ? "rotate-180" : ""}`}>
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </div>
+          </button>
+
+          <AnimatePresence>
+            {showOptions && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="overflow-hidden space-y-2 pt-1 pb-1"
+              >
+                {/* Toggles row */}
+                <div className="grid grid-cols-3 gap-1.5">
+                  {/* Mode Nuit (Dynamic Compressor) */}
+                  <button
+                    onClick={toggleNightMode}
+                    className={`px-2 py-1.5 rounded-xl text-[11px] font-semibold transition-all glass glass-hover flex flex-col items-center justify-center gap-1 text-center ${
+                      nightMode ? "" : "text-white/45"
+                    }`}
+                    style={nightMode ? { color: "var(--accent)", background: "var(--accent)22", border: "1px solid var(--accent)55" } : {}}
+                    title="Compression dynamique pour lisser le volume (pubs et jingles atténués)"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+                    </svg>
+                    <span>Mode Nuit</span>
+                  </button>
+
+                  {/* Audio Spatial 3D */}
+                  <button
+                    onClick={toggleSpatialAudio}
+                    className={`px-2 py-1.5 rounded-xl text-[11px] font-semibold transition-all glass glass-hover flex flex-col items-center justify-center gap-1 text-center ${
+                      spatialAudio ? "" : "text-white/45"
+                    }`}
+                    style={spatialAudio ? { color: "var(--accent)", background: "var(--accent)22", border: "1px solid var(--accent)55" } : {}}
+                    title="Élargissement spatial stéréo et clarté immersive"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="10" />
+                      <line x1="2" y1="12" x2="22" y2="12" />
+                      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                    </svg>
+                    <span>Spatial 3D</span>
+                  </button>
+
+                  {/* Boucle / Repeat */}
+                  <button
+                    onClick={toggleLoop}
+                    className={`px-2 py-1.5 rounded-xl text-[11px] font-semibold transition-all glass glass-hover flex flex-col items-center justify-center gap-1 text-center ${
+                      isLooping ? "" : "text-white/45"
+                    }`}
+                    style={isLooping ? { color: "var(--accent)", background: "var(--accent)22", border: "1px solid var(--accent)55" } : {}}
+                    title="Répéter la piste ou l'émission en continu"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="17 1 21 5 17 9" />
+                      <path d="M3 11V9a4 4 0 0 1 4-4h14" />
+                      <polyline points="7 23 3 19 7 15" />
+                      <path d="M21 13v2a4 4 0 0 1-4 4H3" />
+                    </svg>
+                    <span>Boucle</span>
+                  </button>
+                </div>
+
+                {/* Stereo Balance (L / R) */}
+                <div className="p-2 rounded-xl bg-white/[0.04] border border-white/10 space-y-1.5">
+                  <div className="flex items-center justify-between text-[11px] text-white/50">
+                    <span>Balance stéréo</span>
+                    <span className="font-mono text-[10px] text-white/70">
+                      {stereoPan === 0 ? "Centre" : stereoPan < 0 ? `G ${Math.round(Math.abs(stereoPan) * 100)}%` : `D ${Math.round(stereoPan * 100)}%`}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-white/30 font-bold">G</span>
+                    <input
+                      type="range"
+                      min={-1}
+                      max={1}
+                      step={0.05}
+                      value={stereoPan}
+                      onChange={(e) => setStereoPan(Number(e.target.value))}
+                      aria-label="Balance stéréo Gauche / Droite"
+                      className="flex-1"
+                      style={{ accentColor: "var(--accent)" }}
+                    />
+                    <span className="text-[10px] text-white/30 font-bold">D</span>
+                    {stereoPan !== 0 && (
+                      <button
+                        onClick={() => setStereoPan(0)}
+                        title="Recentrer"
+                        className="text-[10px] text-white/40 hover:text-white px-1.5 py-0.5 rounded bg-white/10 transition-colors"
+                      >
+                        Reset
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
 
         {/* Sleep timer — a one-off "stop in N minutes" countdown, distinct from
             the recurring daily "Mode Sommeil" clock-time window in Configuration. */}

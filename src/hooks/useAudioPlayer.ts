@@ -160,6 +160,17 @@ export function useAudioPlayer() {
 
   const [isPlaying,   setIsPlaying]   = useState(false);
   const [volume,      setVolume]      = useState(0.8);
+  const prevVolumeRef = useRef(0.8);
+  const [isLooping,   setIsLooping]   = useState(false);
+  const isLoopingRef  = useRef(false);
+  const [nightMode,   setNightMode]   = useState(false);
+  const nightModeRef  = useRef(false);
+  const compressorRef = useRef<DynamicsCompressorNode | null>(null);
+  const [stereoPan,   setStereoPanState] = useState(0);
+  const stereoPanRef  = useRef(0);
+  const pannerRef     = useRef<StereoPannerNode | null>(null);
+  const [spatialAudio, setSpatialAudio] = useState(false);
+  const spatialAudioRef = useRef(false);
   const [currentUrl,  setCurrentUrl]  = useState<string | null>(null);
   const [bands,       setBands]       = useState<EQBand[]>(DEFAULT_BANDS);
   const [isLoading,   setIsLoading]   = useState(false);
@@ -282,12 +293,49 @@ export function useAudioPlayer() {
     // attenuation in browsers that DO apply element.volume to the source.
     audio.volume = 1;
 
-    // source → filter[0] → … → filter[9] → analyser → gain → destination
+    // Dynamics compressor (Night Mode)
+    let compressor: DynamicsCompressorNode | null = null;
+    try {
+      compressor = ctx.createDynamicsCompressor();
+      if (nightModeRef.current) {
+        compressor.threshold.setValueAtTime(-30, ctx.currentTime);
+        compressor.knee.setValueAtTime(30, ctx.currentTime);
+        compressor.ratio.setValueAtTime(12, ctx.currentTime);
+        compressor.attack.setValueAtTime(0.003, ctx.currentTime);
+        compressor.release.setValueAtTime(0.25, ctx.currentTime);
+      } else {
+        compressor.threshold.setValueAtTime(0, ctx.currentTime);
+        compressor.ratio.setValueAtTime(1, ctx.currentTime);
+      }
+    } catch {}
+    compressorRef.current = compressor;
+
+    // Stereo panner (Balance L/R)
+    let panner: StereoPannerNode | null = null;
+    try {
+      if (ctx.createStereoPanner) {
+        panner = ctx.createStereoPanner();
+        panner.pan.setValueAtTime(stereoPanRef.current, ctx.currentTime);
+      }
+    } catch {}
+    pannerRef.current = panner;
+
+    // source → filter[0] → … → filter[9] → analyser → gain → (compressor) → (panner) → destination
     let node: AudioNode = source;
     for (const f of filters) { node.connect(f); node = f; }
     node.connect(analyser);
     analyser.connect(gain);
-    gain.connect(ctx.destination);
+    
+    let lastNode: AudioNode = gain;
+    if (compressor) {
+      lastNode.connect(compressor);
+      lastNode = compressor;
+    }
+    if (panner) {
+      lastNode.connect(panner);
+      lastNode = panner;
+    }
+    lastNode.connect(ctx.destination);
   }, []);
 
   // ── Build the SAME filter chain WITHOUT a MediaElementSource ───────────────
@@ -313,11 +361,46 @@ export function useAudioPlayer() {
     gain.gain.value = vol;
     gainRef.current = gain;
 
-    // (PCM) → filter[0] → … → filter[9] → analyser → gain → destination
+    let compressor: DynamicsCompressorNode | null = null;
+    try {
+      compressor = ctx.createDynamicsCompressor();
+      if (nightModeRef.current) {
+        compressor.threshold.setValueAtTime(-30, ctx.currentTime);
+        compressor.knee.setValueAtTime(30, ctx.currentTime);
+        compressor.ratio.setValueAtTime(12, ctx.currentTime);
+        compressor.attack.setValueAtTime(0.003, ctx.currentTime);
+        compressor.release.setValueAtTime(0.25, ctx.currentTime);
+      } else {
+        compressor.threshold.setValueAtTime(0, ctx.currentTime);
+        compressor.ratio.setValueAtTime(1, ctx.currentTime);
+      }
+    } catch {}
+    compressorRef.current = compressor;
+
+    let panner: StereoPannerNode | null = null;
+    try {
+      if (ctx.createStereoPanner) {
+        panner = ctx.createStereoPanner();
+        panner.pan.setValueAtTime(stereoPanRef.current, ctx.currentTime);
+      }
+    } catch {}
+    pannerRef.current = panner;
+
+    // (PCM) → filter[0] → … → filter[9] → analyser → gain → (compressor) → (panner) → destination
     for (let i = 0; i < filters.length - 1; i++) filters[i].connect(filters[i + 1]);
     filters[filters.length - 1].connect(analyser);
     analyser.connect(gain);
-    gain.connect(ctx.destination);
+    
+    let lastNode: AudioNode = gain;
+    if (compressor) {
+      lastNode.connect(compressor);
+      lastNode = compressor;
+    }
+    if (panner) {
+      lastNode.connect(panner);
+      lastNode = panner;
+    }
+    lastNode.connect(ctx.destination);
     return filters[0];   // input: decoded buffers connect here
   }, []);
 
@@ -462,6 +545,7 @@ export function useAudioPlayer() {
     // like iOS already does, and plays reliably (just without the EQ tap).
     audio.crossOrigin = (!detectIOS() && isEqCompatible(url)) ? "anonymous" : null;
     audio.volume = volume;
+    audio.loop = isLoopingRef.current;
     try {
       audio.playbackRate = playbackRateRef.current;
       audio.defaultPlaybackRate = playbackRateRef.current;
@@ -874,6 +958,79 @@ export function useAudioPlayer() {
     }
   }, []);
 
+  const toggleMute = useCallback(() => {
+    if (volume > 0) {
+      prevVolumeRef.current = volume;
+      changeVolume(0);
+    } else {
+      changeVolume(prevVolumeRef.current > 0 ? prevVolumeRef.current : 0.8);
+    }
+  }, [volume, changeVolume]);
+
+  const toggleLoop = useCallback(() => {
+    setIsLooping((prev) => {
+      const next = !prev;
+      isLoopingRef.current = next;
+      if (audioRef.current) {
+        audioRef.current.loop = next;
+      }
+      return next;
+    });
+  }, []);
+
+  const toggleNightMode = useCallback(() => {
+    setNightMode((prev) => {
+      const next = !prev;
+      nightModeRef.current = next;
+      const comp = compressorRef.current;
+      const ctx = ctxRef.current;
+      if (comp && ctx && ctx.state !== "closed") {
+        try {
+          if (next) {
+            comp.threshold.setValueAtTime(-30, ctx.currentTime);
+            comp.knee.setValueAtTime(30, ctx.currentTime);
+            comp.ratio.setValueAtTime(12, ctx.currentTime);
+            comp.attack.setValueAtTime(0.003, ctx.currentTime);
+            comp.release.setValueAtTime(0.25, ctx.currentTime);
+          } else {
+            comp.threshold.setValueAtTime(0, ctx.currentTime);
+            comp.ratio.setValueAtTime(1, ctx.currentTime);
+          }
+        } catch {}
+      }
+      return next;
+    });
+  }, []);
+
+  const setStereoPan = useCallback((pan: number) => {
+    const clamped = Math.max(-1, Math.min(1, pan));
+    stereoPanRef.current = clamped;
+    setStereoPanState(clamped);
+    const panner = pannerRef.current;
+    const ctx = ctxRef.current;
+    if (panner && ctx && ctx.state !== "closed") {
+      try {
+        panner.pan.setValueAtTime(clamped, ctx.currentTime);
+      } catch {
+        panner.pan.value = clamped;
+      }
+    }
+  }, []);
+
+  const toggleSpatialAudio = useCallback(() => {
+    setSpatialAudio((prev) => {
+      const next = !prev;
+      spatialAudioRef.current = next;
+      // When spatial audio is enabled, apply a wider EQ curve (slight boost at 64Hz and 8kHz/16kHz, slight dip at 500Hz)
+      if (next) {
+        applyPreset([4, 3, 1, 0, -2, 0, 1, 3, 5, 6]);
+      } else {
+        resetEQ();
+      }
+      return next;
+    });
+  }, [applyPreset, resetEQ]);
+
   const stop = useCallback(() => {
     // Full stop → cancel any reconnection and forget the source.
     wantPlayingRef.current = false;
@@ -1009,5 +1166,10 @@ export function useAudioPlayer() {
     setOnEnded, retry,
     playbackRate, setPlaybackRate, seekRelative,
     sleepTimerRemaining, addSleepMinutes, cancelSleepTimer,
+    isLooping, toggleLoop,
+    nightMode, toggleNightMode,
+    stereoPan, setStereoPan,
+    spatialAudio, toggleSpatialAudio,
+    toggleMute,
   };
 }
