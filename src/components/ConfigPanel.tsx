@@ -35,6 +35,18 @@ export default function ConfigPanel({ open, onClose }: Props) {
   const [searchStation, setSearchStation] = useState("");
   const [showClearSuccess, setShowClearSuccess] = useState(false);
 
+  // Close on Escape key
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [open, onClose]);
+
   useEffect(() => {
     try {
       setIosEq(localStorage.getItem("radiofr_ios_eq") === "1");
@@ -160,9 +172,11 @@ export default function ConfigPanel({ open, onClose }: Props) {
 
               <button
                 onClick={onClose}
-                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/70 hover:text-white transition-all active:scale-95"
-                aria-label="Fermer"
+                className="px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 flex items-center gap-1.5 text-white/80 hover:text-white transition-all active:scale-95 text-xs font-semibold"
+                aria-label="Fermer la configuration"
+                title="Fermer (Échap)"
               >
+                <span>Fermer</span>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                   <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
                 </svg>
@@ -618,13 +632,19 @@ export default function ConfigPanel({ open, onClose }: Props) {
 
             </div>
 
-            {/* Footer Status */}
-            <div className="px-6 py-3 border-t border-white/10 bg-white/[0.02] flex items-center justify-between text-[11px] text-white/35 font-mono">
-              <span>Radio-PaLaMa v2.4</span>
+            {/* Footer Status & Done Button */}
+            <div className="px-6 py-3 border-t border-white/10 bg-white/[0.02] flex items-center justify-between text-[11px] text-white/50 font-mono">
               <span className="flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                Opérationnel
+                Radio-PaLaMa
               </span>
+              <button
+                onClick={onClose}
+                className="px-4 py-1.5 rounded-xl font-sans font-semibold text-xs text-white border border-white/20 hover:border-white/40 transition-all active:scale-95"
+                style={{ background: "var(--accent)33", color: "var(--accent)" }}
+              >
+                Terminer
+              </button>
             </div>
           </motion.div>
         </>
