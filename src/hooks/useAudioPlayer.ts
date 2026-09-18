@@ -98,6 +98,14 @@ export const EQ_PRESETS: Record<string, number[]> = {
   Electronic: [ 10,   8,   5,   0,  -2,   0,   2,   5,   8,  10],
   Podcast:    [ -4,  -3,   0,   5,   9,   9,   7,   3,   0,  -2],
   Nuit:       [  6,   5,   2,   0,  -4,  -6,  -6,  -3,  -1,   0],
+  // ── Vocal & Speech focus presets ─────────────────────────────────────────
+  "Clarté Voix": [ -10,  -8,  -4,   2,  10,  12,   8,   4,   0,  -4],
+  "Radio Talk":  [ -16, -12,  -6,   4,  11,  10,   6,   2,  -8, -14],
+  "Studio Pro":  [  -8,  -5,   1,   5,   8,   9,   7,   5,   2,   0],
+  // ── Music focus presets ──────────────────────────────────────────────────
+  "Acoustique":  [   6,   8,   7,   4,   2,   0,   1,   3,   2,   1],
+  "Scène Live":  [   9,   7,   4,   1,  -1,   2,   4,   6,   8,  10],
+  "Punch Club":  [  12,  10,   5,  -2,   0,   4,   6,   5,   7,   8],
   // ── Imaginative & effective extras ──────────────────────────────────────
   "Boom 808": [ 16,  15,   9,   2,  -1,  -2,   0,   2,   3,   2],  // trap/hip-hop sub
   Club:       [ 11,  10,   8,   4,   2,   0,   1,   3,   5,   6],  // smiley loudness
@@ -124,6 +132,16 @@ export const EQ_PRESETS: Record<string, number[]> = {
 //   bands: 32 64 125 250 500 1k 2k 4k 8k 16k
 export const BASS_BOOSTER:    number[] = [18, 16, 12,  6,  1,  0,  0,  2,  3,  4];
 export const VOICE_ISOLATION: number[] = [-20, -18, -12, -4,  4,  9,  9,  6, -5, -16];
+
+// ── Vocal & Speech Processing Profiles ─────────────────────────────────────
+export const VOCAL_CLARITY:   number[] = [-10,  -8,  -4,  2, 10, 12,  8,  4,  0, -4]; // Crisp voice intelligibility
+export const NEWS_SPEECH:     number[] = [-16, -12,  -6,  4, 11, 10,  6,  2, -8,-14]; // Radio talk / news anchor focus
+export const PODCAST_PRO:     number[] = [ -8,  -5,   1,  5,  8,  9,  7,  5,  2,  0]; // Broadcast studio presence
+
+// ── Music Processing Profiles ──────────────────────────────────────────────
+export const WARM_ACOUSTIC:   number[] = [  6,   8,   7,  4,  2,  0,  1,  3,  2,  1]; // Rich acoustic guitar & organic warm lows
+export const CONCERT_HALL:    number[] = [  9,   7,   4,  1, -1,  2,  4,  6,  8, 10]; // Live stadium soundstage & airy presence
+export const DYNAMIC_PUNCH:   number[] = [ 12,  10,   5, -2,  0,  4,  6,  5,  7,  8]; // Punchy kicks, detailed highs, modern EDM/Rock
 
 // ── Auto-reconnect tuning (module scope) ───────────────────────────────────
 // On a dropped stream we retry with exponential backoff instead of dying with

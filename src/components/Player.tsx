@@ -1,5 +1,15 @@
 "use client";
-import { useAudioPlayer, BASS_BOOSTER, VOICE_ISOLATION } from "@/hooks/useAudioPlayer";
+import {
+  useAudioPlayer,
+  BASS_BOOSTER,
+  VOICE_ISOLATION,
+  VOCAL_CLARITY,
+  NEWS_SPEECH,
+  PODCAST_PRO,
+  WARM_ACOUSTIC,
+  CONCERT_HALL,
+  DYNAMIC_PUNCH,
+} from "@/hooks/useAudioPlayer";
 import { Station, StreamQuality } from "@/lib/stations";
 import AudioVisualizer from "./AudioVisualizer";
 import Equalizer from "./Equalizer";
@@ -123,8 +133,15 @@ export default function Player({
 
   // Derived active state for one-tap modes (compare current bands to preset)
   const matchesPreset = (preset: number[]) => bands.every((b, i) => b.gain === preset[i]);
-  const bassOn  = matchesPreset(BASS_BOOSTER);
-  const voiceOn = matchesPreset(VOICE_ISOLATION);
+  const bassOn       = matchesPreset(BASS_BOOSTER);
+  const voiceOn      = matchesPreset(VOICE_ISOLATION);
+  const vocalClarityOn = matchesPreset(VOCAL_CLARITY);
+  const newsSpeechOn   = matchesPreset(NEWS_SPEECH);
+  const podcastProOn   = matchesPreset(PODCAST_PRO);
+  const warmAcousticOn = matchesPreset(WARM_ACOUSTIC);
+  const concertHallOn  = matchesPreset(CONCERT_HALL);
+  const dynamicPunchOn = matchesPreset(DYNAMIC_PUNCH);
+
   const toggleMode = (preset: number[], on: boolean) =>
     on ? resetEQ() : applyPreset(preset);
 
@@ -686,6 +703,115 @@ export default function Player({
                     </svg>
                     <span>Boucle</span>
                   </button>
+                </div>
+
+                {/* Traitement Voix / Parole (Speech & Vocal DSP) */}
+                <div className="p-2 rounded-xl bg-white/[0.04] border border-white/10 space-y-1.5">
+                  <div className="flex items-center justify-between text-[11px] text-white/60">
+                    <div className="flex items-center gap-1.5 font-semibold">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
+                        <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                      </svg>
+                      <span>Traitement Voix / Parole</span>
+                    </div>
+                    {(vocalClarityOn || newsSpeechOn || podcastProOn) && (
+                      <span className="text-[10px] text-emerald-400 font-medium">Actif</span>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-3 gap-1">
+                    <button
+                      onClick={() => toggleMode(VOCAL_CLARITY, vocalClarityOn)}
+                      disabled={!eqActive}
+                      className={`px-1.5 py-1 rounded-lg text-[10px] font-semibold transition-all text-center truncate ${
+                        vocalClarityOn
+                          ? "bg-white/20 text-white border border-white/30"
+                          : "glass glass-hover text-white/50 hover:text-white"
+                      }`}
+                      title="Clarté vocale : détache la voix et élimine les résonances graves"
+                    >
+                      Clarté Voix
+                    </button>
+                    <button
+                      onClick={() => toggleMode(NEWS_SPEECH, newsSpeechOn)}
+                      disabled={!eqActive}
+                      className={`px-1.5 py-1 rounded-lg text-[10px] font-semibold transition-all text-center truncate ${
+                        newsSpeechOn
+                          ? "bg-white/20 text-white border border-white/30"
+                          : "glass glass-hover text-white/50 hover:text-white"
+                      }`}
+                      title="Journal / Talk : focus medium radio informations"
+                    >
+                      Radio Talk
+                    </button>
+                    <button
+                      onClick={() => toggleMode(PODCAST_PRO, podcastProOn)}
+                      disabled={!eqActive}
+                      className={`px-1.5 py-1 rounded-lg text-[10px] font-semibold transition-all text-center truncate ${
+                        podcastProOn
+                          ? "bg-white/20 text-white border border-white/30"
+                          : "glass glass-hover text-white/50 hover:text-white"
+                      }`}
+                      title="Studio Pro : présence broadcast chaleureuse et dynamique"
+                    >
+                      Studio Pro
+                    </button>
+                  </div>
+                </div>
+
+                {/* Traitement Musique (Music DSP) */}
+                <div className="p-2 rounded-xl bg-white/[0.04] border border-white/10 space-y-1.5">
+                  <div className="flex items-center justify-between text-[11px] text-white/60">
+                    <div className="flex items-center gap-1.5 font-semibold">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M9 18V5l12-2v13" />
+                        <circle cx="6" cy="18" r="3" />
+                        <circle cx="18" cy="16" r="3" />
+                      </svg>
+                      <span>Traitement Musique</span>
+                    </div>
+                    {(warmAcousticOn || concertHallOn || dynamicPunchOn) && (
+                      <span className="text-[10px] text-purple-400 font-medium">Actif</span>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-3 gap-1">
+                    <button
+                      onClick={() => toggleMode(WARM_ACOUSTIC, warmAcousticOn)}
+                      disabled={!eqActive}
+                      className={`px-1.5 py-1 rounded-lg text-[10px] font-semibold transition-all text-center truncate ${
+                        warmAcousticOn
+                          ? "bg-white/20 text-white border border-white/30"
+                          : "glass glass-hover text-white/50 hover:text-white"
+                      }`}
+                      title="Chaleur acoustique : basses rondes et veloutées, aigus doux"
+                    >
+                      Acoustique
+                    </button>
+                    <button
+                      onClick={() => toggleMode(CONCERT_HALL, concertHallOn)}
+                      disabled={!eqActive}
+                      className={`px-1.5 py-1 rounded-lg text-[10px] font-semibold transition-all text-center truncate ${
+                        concertHallOn
+                          ? "bg-white/20 text-white border border-white/30"
+                          : "glass glass-hover text-white/50 hover:text-white"
+                      }`}
+                      title="Scène Live : effet de spatialisation et présence de concert"
+                    >
+                      Scène Live
+                    </button>
+                    <button
+                      onClick={() => toggleMode(DYNAMIC_PUNCH, dynamicPunchOn)}
+                      disabled={!eqActive}
+                      className={`px-1.5 py-1 rounded-lg text-[10px] font-semibold transition-all text-center truncate ${
+                        dynamicPunchOn
+                          ? "bg-white/20 text-white border border-white/30"
+                          : "glass glass-hover text-white/50 hover:text-white"
+                      }`}
+                      title="Punch dynamique : impact percutant et précision moderne"
+                    >
+                      Punch Club
+                    </button>
+                  </div>
                 </div>
 
                 {/* Stereo Balance (L / R) */}
