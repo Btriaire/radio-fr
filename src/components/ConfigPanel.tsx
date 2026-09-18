@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { THEMES, IPOD_SKINS, useTheme } from "@/context/ThemeContext";
+import { THEMES, IPOD_SKINS, useTheme, VisualizerStyle } from "@/context/ThemeContext";
 import { STATIONS } from "@/lib/stations";
 
 interface Props {
@@ -9,16 +9,48 @@ interface Props {
   onClose: () => void;
 }
 
-export default function ConfigPanel({ open, onClose }: Props) {
-  const { theme, setTheme, defaultStationId, setDefaultStationId, ipodSkin, setIpodSkin } = useTheme();
+type ConfigTab = "appearance" | "audio" | "timer" | "system";
 
-  // iOS-only: opt into the Web Audio EQ on iPhone. It enables the equalizer on
-  // mobile but the sound stops when the screen locks (Web Audio gets suspended).
-  // Off by default → live radio keeps playing in the background.
+export default function ConfigPanel({ open, onClose }: Props) {
+  const {
+    theme, setTheme,
+    defaultStationId, setDefaultStationId,
+    ipodSkin, setIpodSkin,
+    visualizerStyle, setVisualizerStyle
+  } = useTheme();
+
+  const [activeTab, setActiveTab] = useState<ConfigTab>("appearance");
+
+  // Options states
   const [iosEq, setIosEq] = useState(false);
+  const [lowBandwidth, setLowBandwidth] = useState(false);
+  const [lowBattery, setLowBattery] = useState(false);
+  const [autoReconnect, setAutoReconnect] = useState(true);
+  const [volumeNormalization, setVolumeNormalization] = useState(true);
+  const [sleepEnabled, setSleepEnabled] = useState(false);
+  const [sleepStart, setSleepStart] = useState("23:00");
+  const [sleepEnd, setSleepEnd] = useState("07:00");
+  const [defaultTimerMin, setDefaultTimerMin] = useState(30);
+  const [podcastAutoplay, setPodcastAutoplay] = useState(true);
+  const [searchStation, setSearchStation] = useState("");
+  const [showClearSuccess, setShowClearSuccess] = useState(false);
+
   useEffect(() => {
-    try { setIosEq(localStorage.getItem("radiofr_ios_eq") === "1"); } catch {}
+    try {
+      setIosEq(localStorage.getItem("radiofr_ios_eq") === "1");
+      setLowBandwidth(localStorage.getItem("radiofr_low_bandwidth") === "1");
+      setLowBattery(localStorage.getItem("radiofr_low_battery") === "1");
+      setAutoReconnect(localStorage.getItem("radiofr_auto_reconnect") !== "0");
+      setVolumeNormalization(localStorage.getItem("radiofr_vol_norm") !== "0");
+      setSleepEnabled(localStorage.getItem("radiofr_sleep_enabled") === "1");
+      setSleepStart(localStorage.getItem("radiofr_sleep_start") || "23:00");
+      setSleepEnd(localStorage.getItem("radiofr_sleep_end") || "07:00");
+      setPodcastAutoplay(localStorage.getItem("radiofr_autoplay_next") !== "0");
+      const savedTimer = localStorage.getItem("radiofr_default_timer");
+      if (savedTimer) setDefaultTimerMin(Number(savedTimer));
+    } catch {}
   }, []);
+
   const toggleIosEq = () => {
     setIosEq((v) => {
       const next = !v;
@@ -27,12 +59,6 @@ export default function ConfigPanel({ open, onClose }: Props) {
     });
   };
 
-  // Mode "Économie de données" — always play the lowest-bitrate tier a station
-  // offers (see preferredStreamUrl in lib/stations.ts).
-  const [lowBandwidth, setLowBandwidth] = useState(false);
-  useEffect(() => {
-    try { setLowBandwidth(localStorage.getItem("radiofr_low_bandwidth") === "1"); } catch {}
-  }, []);
   const toggleLowBandwidth = () => {
     setLowBandwidth((v) => {
       const next = !v;
@@ -41,12 +67,6 @@ export default function ConfigPanel({ open, onClose }: Props) {
     });
   };
 
-  // Mode "Économie de batterie" — skips the Web Audio graph (EQ + analyser)
-  // and freezes the visualizers, the two real CPU/battery costs of playback.
-  const [lowBattery, setLowBattery] = useState(false);
-  useEffect(() => {
-    try { setLowBattery(localStorage.getItem("radiofr_low_battery") === "1"); } catch {}
-  }, []);
   const toggleLowBattery = () => {
     setLowBattery((v) => {
       const next = !v;
@@ -55,20 +75,22 @@ export default function ConfigPanel({ open, onClose }: Props) {
     });
   };
 
-  // Mode "Sommeil" — auto-pauses playback during a daily time window (e.g.
-  // bedtime) so the radio doesn't keep playing all night unattended. Only the
-  // transition into the window triggers a pause (see useAudioPlayer.ts) — the
-  // user can still tap Play to override it if they actually want sound then.
-  const [sleepEnabled, setSleepEnabled] = useState(false);
-  const [sleepStart, setSleepStart] = useState("23:00");
-  const [sleepEnd, setSleepEnd] = useState("07:00");
-  useEffect(() => {
-    try {
-      setSleepEnabled(localStorage.getItem("radiofr_sleep_enabled") === "1");
-      setSleepStart(localStorage.getItem("radiofr_sleep_start") || "23:00");
-      setSleepEnd(localStorage.getItem("radiofr_sleep_end") || "07:00");
-    } catch {}
-  }, []);
+  const toggleAutoReconnect = () => {
+    setAutoReconnect((v) => {
+      const next = !v;
+      try { localStorage.setItem("radiofr_auto_reconnect", next ? "1" : "0"); } catch {}
+      return next;
+    });
+  };
+
+  const toggleVolumeNormalization = () => {
+    setVolumeNormalization((v) => {
+      const next = !v;
+      try { localStorage.setItem("radiofr_vol_norm", next ? "1" : "0"); } catch {}
+      return next;
+    });
+  };
+
   const toggleSleep = () => {
     setSleepEnabled((v) => {
       const next = !v;
@@ -76,14 +98,29 @@ export default function ConfigPanel({ open, onClose }: Props) {
       return next;
     });
   };
-  const updateSleepStart = (v: string) => {
-    setSleepStart(v);
-    try { localStorage.setItem("radiofr_sleep_start", v); } catch {}
+
+  const togglePodcastAutoplay = () => {
+    setPodcastAutoplay((v) => {
+      const next = !v;
+      try { localStorage.setItem("radiofr_autoplay_next", next ? "1" : "0"); } catch {}
+      return next;
+    });
   };
-  const updateSleepEnd = (v: string) => {
-    setSleepEnd(v);
-    try { localStorage.setItem("radiofr_sleep_end", v); } catch {}
+
+  const handleClearCache = () => {
+    if (confirm("Réinitialiser les préférences et vider les caches locaux ?")) {
+      try {
+        localStorage.clear();
+        setShowClearSuccess(true);
+        setTimeout(() => window.location.reload(), 800);
+      } catch {}
+    }
   };
+
+  const filteredStations = STATIONS.filter(s =>
+    s.name.toLowerCase().includes(searchStation.toLowerCase()) ||
+    s.genre.toLowerCase().includes(searchStation.toLowerCase())
+  );
 
   return (
     <AnimatePresence>
@@ -94,354 +131,468 @@ export default function ConfigPanel({ open, onClose }: Props) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50"
-            style={{ backdropFilter: "blur(8px)", background: "rgba(0,0,0,0.6)" }}
+            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md"
             onClick={onClose}
           />
 
-          {/* Panel */}
+          {/* Panel Container (iOS Center of Control Style) */}
           <motion.div
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
-            transition={{ type: "spring", damping: 28, stiffness: 280 }}
-            className="fixed top-0 right-0 bottom-0 z-50 w-80 glass-dark overflow-y-auto"
-            style={{ borderLeft: "1px solid var(--glass-border)" }}
+            transition={{ type: "spring", damping: 30, stiffness: 300 }}
+            className="fixed top-0 right-0 bottom-0 z-50 w-full sm:w-[420px] glass-dark border-l border-white/10 flex flex-col overflow-hidden shadow-2xl"
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b"
-              style={{ borderColor: "var(--glass-border)" }}>
-              <div className="flex items-center gap-2">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                  strokeWidth="2" style={{ color: "var(--accent)" }}>
-                  <circle cx="12" cy="12" r="3" />
-                  <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
-                  <path d="M4.93 4.93a10 10 0 0 0 0 14.14" />
-                </svg>
-                <h2 className="font-semibold text-white">Configuration</h2>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-white/[0.02]">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl flex items-center justify-center border border-white/10 bg-white/5" style={{ color: "var(--accent)" }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                </div>
+                <div>
+                  <h2 className="font-bold text-white text-base leading-tight">Préférences</h2>
+                  <p className="text-white/40 text-[11px] leading-tight mt-0.5">Configuration du lecteur</p>
+                </div>
               </div>
-              <button onClick={onClose}
+
+              <button
+                onClick={onClose}
                 className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/70 hover:text-white transition-all active:scale-95"
-                aria-label="Fermer">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                aria-label="Fermer"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                  <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
               </button>
             </div>
 
-            <div className="p-5 space-y-8">
-              {/* ── Theme selector ── */}
-              <section className="space-y-3">
-                <h3 className="text-xs font-semibold tracking-widest uppercase"
-                  style={{ color: "var(--accent)" }}>
-                  Thème
-                </h3>
-                <div className="space-y-2">
-                  {THEMES.map((t) => (
+            {/* iOS Segmented Navigation Pill */}
+            <div className="px-5 pt-3 pb-2">
+              <div className="flex glass rounded-xl p-1 gap-1 relative">
+                {([
+                  { id: "appearance" as const, label: "Thèmes", icon: (
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                      <circle cx="13.5" cy="6.5" r=".5" fill="currentColor" /><circle cx="17.5" cy="10.5" r=".5" fill="currentColor" /><circle cx="8.5" cy="7.5" r=".5" fill="currentColor" /><circle cx="6.5" cy="12.5" r=".5" fill="currentColor" /><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z" />
+                    </svg>
+                  )},
+                  { id: "audio" as const, label: "Audio", icon: (
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                      <line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" />
+                    </svg>
+                  )},
+                  { id: "timer" as const, label: "Veille", icon: (
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                      <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
+                    </svg>
+                  )},
+                  { id: "system" as const, label: "Système", icon: (
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                      <rect x="2" y="3" width="20" height="14" rx="2" /><line x1="8" y1="21" x2="16" y2="21" /><line x1="12" y1="17" x2="12" y2="21" />
+                    </svg>
+                  )},
+                ]).map((t) => {
+                  const active = activeTab === t.id;
+                  return (
                     <button
                       key={t.id}
-                      onClick={() => setTheme(t.id)}
-                      className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all glass glass-hover`}
-                      style={theme === t.id ? {
-                        borderColor: t.swatch[1],
-                        boxShadow: `0 0 14px ${t.swatch[1]}40`,
-                      } : {}}
+                      onClick={() => setActiveTab(t.id)}
+                      className={`relative flex-1 py-1.5 px-2 rounded-lg text-xs font-semibold transition-colors duration-200 flex items-center justify-center gap-1.5 z-10 ${
+                        active ? "text-white" : "text-white/45 hover:text-white/80"
+                      }`}
                     >
-                      {/* Theme swatch */}
-                      <div className="w-10 h-10 rounded-xl flex-shrink-0 overflow-hidden relative"
-                        style={{ border: `1px solid ${t.swatch[1]}40` }}>
-                        {/* Base color */}
-                        <div className="absolute inset-0" style={{ background: t.swatch[0] }} />
-
-                        {t.id === "cosmic" ? (
-                          /* Cosmic: starfield dots + nebula gradient */
-                          <>
-                            <div className="absolute inset-0"
-                              style={{ background: `radial-gradient(ellipse at 30% 70%, ${t.swatch[1]}80, transparent 60%), radial-gradient(ellipse at 80% 20%, ${t.swatch[2]}60, transparent 50%)` }} />
-                            {[...Array(6)].map((_,i) => (
-                              <div key={i} className="absolute w-0.5 h-0.5 rounded-full bg-white"
-                                style={{ top: `${[15,35,55,20,70,45][i]}%`, left: `${[20,60,35,80,15,70][i]}%`, opacity: 0.8 }} />
-                            ))}
-                          </>
-                        ) : t.id === "neon" ? (
-                          /* Neon: scan lines + electric glow */
-                          <>
-                            <div className="absolute inset-0"
-                              style={{ backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,229,255,0.08) 3px, rgba(0,229,255,0.08) 4px)" }} />
-                            <div className="absolute inset-0"
-                              style={{ background: `radial-gradient(ellipse at 50% 100%, ${t.swatch[1]}60, transparent 60%)` }} />
-                            <div className="absolute bottom-1 left-1 right-1 h-0.5 rounded-full"
-                              style={{ background: `linear-gradient(to right, ${t.swatch[2]}, ${t.swatch[1]})`, boxShadow: `0 0 6px ${t.swatch[1]}` }} />
-                          </>
-                        ) : t.id === "synthwave" ? (
-                          /* Synthwave: retro sun + perspective grid */
-                          <>
-                            <div className="absolute inset-0"
-                              style={{ background: `radial-gradient(circle at 50% 25%, ${t.swatch[1]}90, transparent 55%)` }} />
-                            <div className="absolute inset-x-0 bottom-0 h-1/2"
-                              style={{
-                                backgroundImage: `linear-gradient(${t.swatch[2]}80 1px, transparent 1px), linear-gradient(90deg, ${t.swatch[1]}80 1px, transparent 1px)`,
-                                backgroundSize: "6px 6px",
-                                transform: "perspective(40px) rotateX(50deg)",
-                                transformOrigin: "bottom",
-                              }} />
-                          </>
-                        ) : t.id === "wood" ? (
-                          /* Wood: vertical grain streaks + warm knot glow */
-                          <>
-                            <div className="absolute inset-0"
-                              style={{ backgroundImage: `repeating-linear-gradient(179deg, rgba(0,0,0,0.18) 0px, rgba(0,0,0,0.18) 1px, transparent 1px, transparent 3px)` }} />
-                            <div className="absolute inset-0"
-                              style={{ background: `radial-gradient(ellipse 60% 40% at 60% 55%, ${t.swatch[2]}70, transparent 70%)` }} />
-                            <div className="absolute inset-x-0 top-0 h-1/3"
-                              style={{ background: "linear-gradient(to bottom, rgba(255,220,180,0.18), transparent)" }} />
-                          </>
-                        ) : (
-                          /* Metal: brushed lines + shine */
-                          <>
-                            <div className="absolute inset-0"
-                              style={{ backgroundImage: `repeating-linear-gradient(90deg, transparent 0px, rgba(255,255,255,0.06) 1px, transparent 2px, transparent 3px)` }} />
-                            <div className="absolute inset-0"
-                              style={{ background: `linear-gradient(135deg, ${t.swatch[2]}55 0%, transparent 50%, ${t.swatch[1]}44 100%)` }} />
-                            <div className="absolute inset-x-0 top-0 h-1/2"
-                              style={{ background: "linear-gradient(to bottom, rgba(255,255,255,0.2), transparent)" }} />
-                          </>
-                        )}
-                        {/* Accent dot */}
-                        <div className="absolute bottom-1.5 right-1.5 w-2 h-2 rounded-full"
-                          style={{ background: t.swatch[1], boxShadow: `0 0 6px ${t.swatch[1]}` }} />
-                      </div>
-
-                      <div className="flex-1 text-left">
-                        <p className="text-white text-sm font-medium">{t.name}</p>
-                        <p className="text-white/40 text-xs">{t.description}</p>
-                      </div>
-
-                      {theme === t.id && (
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                          strokeWidth="2.5" style={{ color: "var(--accent)", flexShrink: 0 }}>
-                          <polyline points="20 6 9 17 4 12" />
-                        </svg>
+                      {active && (
+                        <motion.div
+                          layoutId="configTabIndicator"
+                          className="absolute inset-0 rounded-lg bg-[var(--accent)] shadow-md"
+                          transition={{ type: "spring", stiffness: 450, damping: 35 }}
+                        />
                       )}
-                    </button>
-                  ))}
-                </div>
-              </section>
-
-              {/* ── iPod color ── */}
-              <section className="space-y-3">
-                <h3 className="text-xs font-semibold tracking-widest uppercase"
-                  style={{ color: "var(--accent)" }}>
-                  Couleur de l&apos;iPod
-                </h3>
-                <p className="text-white/30 text-xs">Habillage du lecteur iPod.</p>
-                <div className="grid grid-cols-3 gap-2">
-                  {IPOD_SKINS.map((sk) => (
-                    <button
-                      key={sk.id}
-                      onClick={() => setIpodSkin(sk.id)}
-                      className="flex flex-col items-center gap-2 p-3 rounded-xl transition-all glass glass-hover"
-                      style={ipodSkin === sk.id ? {
-                        borderColor: "var(--accent)",
-                        boxShadow: "0 0 14px var(--accent)",
-                      } : {}}
-                    >
-                      {/* Mini iPod preview */}
-                      <div className="w-9 h-12 rounded-lg flex flex-col items-center justify-end pb-1 relative overflow-hidden"
-                        style={{ background: `linear-gradient(160deg, ${sk.preview[0]}, ${sk.preview[1]})`, border: "1px solid rgba(255,255,255,0.15)" }}>
-                        <div className="w-6 h-3 rounded-[2px] mb-1 mt-1"
-                          style={{ background: "linear-gradient(180deg, #b2ccec, #d2e6ff)" }} />
-                        <div className="w-5 h-5 rounded-full"
-                          style={{ background: sk.wheelRing, border: "1px solid rgba(0,0,0,0.12)" }} />
-                      </div>
-                      <span className={`text-[11px] font-medium ${ipodSkin === sk.id ? "text-white" : "text-white/55"}`}>
-                        {sk.name}
+                      <span className="relative z-10 flex items-center gap-1">
+                        {t.icon}
+                        <span>{t.label}</span>
                       </span>
                     </button>
-                  ))}
-                </div>
-              </section>
+                  );
+                })}
+              </div>
+            </div>
 
-              {/* ── Default station ── */}
-              <section className="space-y-3">
-                <h3 className="text-xs font-semibold tracking-widest uppercase"
-                  style={{ color: "var(--accent)" }}>
-                  Station par défaut
-                </h3>
-                <p className="text-white/30 text-xs">Lance automatiquement au démarrage.</p>
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
 
-                <div className="space-y-1.5 max-h-64 overflow-y-auto pr-1">
-                  <button
-                    onClick={() => setDefaultStationId(null)}
-                    className={`w-full flex items-center gap-2 p-2.5 rounded-xl text-sm transition-all glass glass-hover ${
-                      !defaultStationId ? "text-white" : "text-white/50"
-                    }`}
-                    style={!defaultStationId ? { borderColor: "var(--accent)" } : {}}
-                  >
-                    <div className="w-6 h-6 rounded-lg flex items-center justify-center text-xs"
-                      style={{ background: "rgba(255,255,255,0.06)" }}>–</div>
-                    <span>Aucune</span>
-                    {!defaultStationId && (
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        strokeWidth="2.5" className="ml-auto" style={{ color: "var(--accent)" }}>
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                    )}
-                  </button>
+              {/* TAB 1: THEMES & APPARENCE */}
+              {activeTab === "appearance" && (
+                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+                  <section className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xs font-bold tracking-wider uppercase text-white/50">Thèmes d&apos;ambiance</h3>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/5 text-white/40 border border-white/10 font-mono">
+                        {THEMES.length} disponibles
+                      </span>
+                    </div>
 
-                  {STATIONS.map((s) => (
-                    <button
-                      key={s.id}
-                      onClick={() => setDefaultStationId(s.id)}
-                      className={`w-full flex items-center gap-2 p-2.5 rounded-xl text-sm transition-all glass glass-hover ${
-                        defaultStationId === s.id ? "text-white" : "text-white/60"
-                      }`}
-                      style={defaultStationId === s.id ? { borderColor: "var(--accent)" } : {}}
-                    >
-                      <div className="w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0"
-                        style={{ background: `${s.color}33`, color: s.color }}>
-                        {s.name[0]}
+                    <div className="grid grid-cols-1 gap-2.5">
+                      {THEMES.map((t) => (
+                        <button
+                          key={t.id}
+                          onClick={() => setTheme(t.id)}
+                          className={`w-full flex items-center gap-3.5 p-3 rounded-2xl transition-all glass glass-hover relative overflow-hidden text-left ${
+                            theme === t.id ? "ring-2 ring-[var(--accent)] shadow-lg" : "border border-white/10"
+                          }`}
+                        >
+                          <div className="w-12 h-12 rounded-xl flex-shrink-0 overflow-hidden relative border border-white/20 shadow-md">
+                            <div className="absolute inset-0" style={{ background: t.swatch[0] }} />
+                            <div className="absolute inset-0 opacity-80" style={{
+                              background: `radial-gradient(circle at 70% 30%, ${t.swatch[1]}, transparent 65%)`
+                            }} />
+                            <div className="absolute bottom-1 right-1 w-2.5 h-2.5 rounded-full" style={{
+                              background: t.swatch[2],
+                              boxShadow: `0 0 8px ${t.swatch[1]}`
+                            }} />
+                          </div>
+
+                          <div className="flex-1 min-w-0">
+                            <p className="text-white text-sm font-bold truncate">{t.name}</p>
+                            <p className="text-white/45 text-xs truncate mt-0.5">{t.description}</p>
+                          </div>
+
+                          {theme === t.id && (
+                            <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 bg-[var(--accent)] text-white shadow-md">
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="20 6 9 17 4 12" />
+                              </svg>
+                            </div>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </section>
+
+                  {/* Visualizer Style */}
+                  <section className="space-y-3">
+                    <h3 className="text-xs font-bold tracking-wider uppercase text-white/50">Style du visualiseur audio</h3>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[
+                        { id: "bars" as const, label: "Spectre", desc: "Barres EQ" },
+                        { id: "wave" as const, label: "Onde", desc: "Waveform" },
+                        { id: "dots" as const, label: "Néon", desc: "Points pulse" },
+                      ].map((v) => (
+                        <button
+                          key={v.id}
+                          onClick={() => setVisualizerStyle(v.id)}
+                          className={`p-3 rounded-xl flex flex-col items-center gap-1.5 transition-all glass glass-hover text-center ${
+                            visualizerStyle === v.id ? "ring-2 ring-[var(--accent)] bg-white/10" : "border border-white/10"
+                          }`}
+                        >
+                          <span className="text-xs font-bold text-white">{v.label}</span>
+                          <span className="text-[10px] text-white/40">{v.desc}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </section>
+
+                  {/* iPod Skins */}
+                  <section className="space-y-3">
+                    <h3 className="text-xs font-bold tracking-wider uppercase text-white/50">Habillage du mode iPod</h3>
+                    <div className="grid grid-cols-3 gap-2.5">
+                      {IPOD_SKINS.map((sk) => (
+                        <button
+                          key={sk.id}
+                          onClick={() => setIpodSkin(sk.id)}
+                          className={`p-3 rounded-2xl flex flex-col items-center gap-2 transition-all glass glass-hover ${
+                            ipodSkin === sk.id ? "ring-2 ring-[var(--accent)]" : "border border-white/10"
+                          }`}
+                        >
+                          <div className="w-10 h-14 rounded-lg flex flex-col items-center justify-end pb-1.5 shadow-md"
+                            style={{ background: `linear-gradient(160deg, ${sk.preview[0]}, ${sk.preview[1]})`, border: "1px solid rgba(255,255,255,0.2)" }}>
+                            <div className="w-7 h-4 rounded-[2px] mb-1.5 bg-blue-100/90" />
+                            <div className="w-5 h-5 rounded-full" style={{ background: sk.wheelRing }} />
+                          </div>
+                          <span className="text-xs font-semibold text-white/80">{sk.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </section>
+                </motion.div>
+              )}
+
+              {/* TAB 2: AUDIO & QUALITÉ */}
+              {activeTab === "audio" && (
+                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-5">
+                  <section className="space-y-3">
+                    <h3 className="text-xs font-bold tracking-wider uppercase text-white/50">Performances Audio</h3>
+
+                    {/* Low Bandwidth */}
+                    <div className="p-4 rounded-2xl glass border border-white/10 flex items-center justify-between gap-4">
+                      <div>
+                        <p className="text-white text-sm font-bold">Économie de données</p>
+                        <p className="text-white/45 text-xs mt-0.5">Privilégie les flux 32-64 kbps pour réduire la consommation mobile.</p>
                       </div>
-                      <span className="truncate">{s.name}</span>
-                      {s.freq && <span className="text-white/25 text-xs ml-auto flex-shrink-0">{s.freq}</span>}
-                      {defaultStationId === s.id && (
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                          strokeWidth="2.5" className="flex-shrink-0" style={{ color: "var(--accent)" }}>
-                          <polyline points="20 6 9 17 4 12" />
-                        </svg>
-                      )}
+                      <button
+                        onClick={toggleLowBandwidth}
+                        className={`w-12 h-7 rounded-full transition-all relative flex-shrink-0 ${
+                          lowBandwidth ? "bg-emerald-500" : "bg-white/15"
+                        }`}
+                      >
+                        <span className={`absolute top-1 w-5 h-5 rounded-full bg-white transition-all shadow-md ${
+                          lowBandwidth ? "left-6" : "left-1"
+                        }`} />
+                      </button>
+                    </div>
+
+                    {/* Auto Reconnect */}
+                    <div className="p-4 rounded-2xl glass border border-white/10 flex items-center justify-between gap-4">
+                      <div>
+                        <p className="text-white text-sm font-bold">Reconnexion automatique</p>
+                        <p className="text-white/45 text-xs mt-0.5">Relance immédiatement le flux en cas de passage WiFi / 4G / 5G.</p>
+                      </div>
+                      <button
+                        onClick={toggleAutoReconnect}
+                        className={`w-12 h-7 rounded-full transition-all relative flex-shrink-0 ${
+                          autoReconnect ? "bg-emerald-500" : "bg-white/15"
+                        }`}
+                      >
+                        <span className={`absolute top-1 w-5 h-5 rounded-full bg-white transition-all shadow-md ${
+                          autoReconnect ? "left-6" : "left-1"
+                        }`} />
+                      </button>
+                    </div>
+
+                    {/* Volume Normalization */}
+                    <div className="p-4 rounded-2xl glass border border-white/10 flex items-center justify-between gap-4">
+                      <div>
+                        <p className="text-white text-sm font-bold">Protection acoustique douce</p>
+                        <p className="text-white/45 text-xs mt-0.5">Évite les variations de volume brutales entre différentes radios.</p>
+                      </div>
+                      <button
+                        onClick={toggleVolumeNormalization}
+                        className={`w-12 h-7 rounded-full transition-all relative flex-shrink-0 ${
+                          volumeNormalization ? "bg-emerald-500" : "bg-white/15"
+                        }`}
+                      >
+                        <span className={`absolute top-1 w-5 h-5 rounded-full bg-white transition-all shadow-md ${
+                          volumeNormalization ? "left-6" : "left-1"
+                        }`} />
+                      </button>
+                    </div>
+
+                    {/* iOS Web Audio EQ */}
+                    <div className="p-4 rounded-2xl glass border border-white/10 flex items-center justify-between gap-4">
+                      <div>
+                        <p className="text-white text-sm font-bold">Égaliseur sur iPhone</p>
+                        <p className="text-white/45 text-xs mt-0.5">
+                          {iosEq ? "Actif (Attention : coupe le son écran éteint sur iOS).": "Désactivé pour préserver la lecture en arrière-plan."}
+                        </p>
+                      </div>
+                      <button
+                        onClick={toggleIosEq}
+                        className={`w-12 h-7 rounded-full transition-all relative flex-shrink-0 ${
+                          iosEq ? "bg-amber-500" : "bg-white/15"
+                        }`}
+                      >
+                        <span className={`absolute top-1 w-5 h-5 rounded-full bg-white transition-all shadow-md ${
+                          iosEq ? "left-6" : "left-1"
+                        }`} />
+                      </button>
+                    </div>
+                  </section>
+                </motion.div>
+              )}
+
+              {/* TAB 3: MINUTERIE & VEILLE */}
+              {activeTab === "timer" && (
+                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-5">
+                  {/* Mode Batterie */}
+                  <div className="p-4 rounded-2xl glass border border-white/10 flex items-center justify-between gap-4">
+                    <div>
+                      <p className="text-white text-sm font-bold">Mode Économie de Batterie</p>
+                      <p className="text-white/45 text-xs mt-0.5">Suspend les visualisations 60fps et le graphe Web Audio pour doubler l&apos;autonomie.</p>
+                    </div>
+                    <button
+                      onClick={toggleLowBattery}
+                      className={`w-12 h-7 rounded-full transition-all relative flex-shrink-0 ${
+                        lowBattery ? "bg-emerald-500" : "bg-white/15"
+                      }`}
+                    >
+                      <span className={`absolute top-1 w-5 h-5 rounded-full bg-white transition-all shadow-md ${
+                        lowBattery ? "left-6" : "left-1"
+                      }`} />
                     </button>
-                  ))}
-                </div>
-              </section>
-
-              {/* ── Modes économie ── */}
-              <section className="space-y-3">
-                <h3 className="text-xs font-semibold tracking-widest uppercase"
-                  style={{ color: "var(--accent)" }}>
-                  Modes économie
-                </h3>
-
-                <button onClick={toggleLowBandwidth}
-                  className="w-full glass glass-hover rounded-xl p-3 flex items-center gap-3 text-left transition-all">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-white/80 text-sm font-medium">Économie de données</p>
-                    <p className="text-white/40 text-[11px] mt-0.5 leading-snug">
-                      {lowBandwidth
-                        ? "Activé — lecture systématique en qualité basse (≈32-56 kbps)."
-                        : "Désactivé — qualité standard par défaut."}
-                    </p>
                   </div>
-                  <span className="relative flex-shrink-0 w-11 h-6 rounded-full transition-all"
-                    style={{ background: lowBandwidth ? "var(--accent)" : "rgba(255,255,255,0.15)" }}>
-                    <span className="absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all"
-                      style={{ left: lowBandwidth ? "22px" : "2px" }} />
-                  </span>
-                </button>
 
-                <button onClick={toggleLowBattery}
-                  className="w-full glass glass-hover rounded-xl p-3 flex items-center gap-3 text-left transition-all">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-white/80 text-sm font-medium">Économie de batterie</p>
-                    <p className="text-white/40 text-[11px] mt-0.5 leading-snug">
-                      {lowBattery
-                        ? "Activé — égaliseur et visualiseurs désactivés."
-                        : "Désactivé — égaliseur et animations actifs."}
-                    </p>
-                  </div>
-                  <span className="relative flex-shrink-0 w-11 h-6 rounded-full transition-all"
-                    style={{ background: lowBattery ? "var(--accent)" : "rgba(255,255,255,0.15)" }}>
-                    <span className="absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all"
-                      style={{ left: lowBattery ? "22px" : "2px" }} />
-                  </span>
-                </button>
-              </section>
-
-              {/* ── Mode Sommeil ── */}
-              <section className="space-y-3">
-                <h3 className="text-xs font-semibold tracking-widest uppercase"
-                  style={{ color: "var(--accent)" }}>
-                  Mode Sommeil
-                </h3>
-                <div className="glass rounded-xl p-3 space-y-3">
-                  <button onClick={toggleSleep}
-                    className="w-full flex items-center gap-3 text-left transition-all">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-white/80 text-sm font-medium">Pause automatique</p>
-                      <p className="text-white/40 text-[11px] mt-0.5 leading-snug">
-                        {sleepEnabled
-                          ? `Activé — coupe la lecture tous les jours entre ${sleepStart} et ${sleepEnd}.`
-                          : "Désactivé — la radio joue à toute heure."}
-                      </p>
+                  {/* Mode Sommeil Quotidien */}
+                  <div className="p-4 rounded-2xl glass border border-white/10 space-y-4">
+                    <div className="flex items-center justify-between gap-4">
+                      <div>
+                        <p className="text-white text-sm font-bold">Mode Sommeil Quotidien</p>
+                        <p className="text-white/45 text-xs mt-0.5">Coupe automatiquement la lecture pendant votre plage de sommeil.</p>
+                      </div>
+                      <button
+                        onClick={toggleSleep}
+                        className={`w-12 h-7 rounded-full transition-all relative flex-shrink-0 ${
+                          sleepEnabled ? "bg-indigo-500" : "bg-white/15"
+                        }`}
+                      >
+                        <span className={`absolute top-1 w-5 h-5 rounded-full bg-white transition-all shadow-md ${
+                          sleepEnabled ? "left-6" : "left-1"
+                        }`} />
+                      </button>
                     </div>
-                    <span className="relative flex-shrink-0 w-11 h-6 rounded-full transition-all"
-                      style={{ background: sleepEnabled ? "var(--accent)" : "rgba(255,255,255,0.15)" }}>
-                      <span className="absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all"
-                        style={{ left: sleepEnabled ? "22px" : "2px" }} />
-                    </span>
-                  </button>
 
-                  {sleepEnabled && (
-                    <div className="flex items-center gap-3 pt-3"
-                      style={{ borderTop: "1px solid var(--glass-border)" }}>
-                      <label className="flex-1 flex flex-col gap-1">
-                        <span className="text-white/40 text-[10px] uppercase tracking-wide">De</span>
-                        <input type="time" value={sleepStart}
-                          onChange={(e) => updateSleepStart(e.target.value)}
-                          className="bg-transparent border rounded-lg px-2 py-1.5 text-white/80 text-sm w-full"
-                          style={{ borderColor: "var(--glass-border)", colorScheme: "dark" }} />
-                      </label>
-                      <label className="flex-1 flex flex-col gap-1">
-                        <span className="text-white/40 text-[10px] uppercase tracking-wide">À</span>
-                        <input type="time" value={sleepEnd}
-                          onChange={(e) => updateSleepEnd(e.target.value)}
-                          className="bg-transparent border rounded-lg px-2 py-1.5 text-white/80 text-sm w-full"
-                          style={{ borderColor: "var(--glass-border)", colorScheme: "dark" }} />
-                      </label>
-                    </div>
-                  )}
-                </div>
-              </section>
-
-              {/* ── Lecture mobile (iOS) ── */}
-              <section className="space-y-3">
-                <h3 className="text-xs font-semibold tracking-widest uppercase"
-                  style={{ color: "var(--accent)" }}>
-                  Lecture mobile
-                </h3>
-                <button onClick={toggleIosEq}
-                  className="w-full glass glass-hover rounded-xl p-3 flex items-center gap-3 text-left transition-all">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-white/80 text-sm font-medium">Égaliseur sur iPhone</p>
-                    <p className="text-white/40 text-[11px] mt-0.5 leading-snug">
-                      {iosEq
-                        ? "Activé — le son se coupe quand l'écran se verrouille."
-                        : "Désactivé — la radio continue écran éteint (recommandé)."}
-                    </p>
+                    {sleepEnabled && (
+                      <div className="grid grid-cols-2 gap-3 pt-3 border-t border-white/10">
+                        <div>
+                          <label className="text-[10px] uppercase font-bold text-white/40 block mb-1">Extinction</label>
+                          <input
+                            type="time"
+                            value={sleepStart}
+                            onChange={(e) => {
+                              setSleepStart(e.target.value);
+                              try { localStorage.setItem("radiofr_sleep_start", e.target.value); } catch {}
+                            }}
+                            className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm font-mono outline-none focus:border-[var(--accent)]"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] uppercase font-bold text-white/40 block mb-1">Reprise autorisée</label>
+                          <input
+                            type="time"
+                            value={sleepEnd}
+                            onChange={(e) => {
+                              setSleepEnd(e.target.value);
+                              try { localStorage.setItem("radiofr_sleep_end", e.target.value); } catch {}
+                            }}
+                            className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm font-mono outline-none focus:border-[var(--accent)]"
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  {/* Switch */}
-                  <span className="relative flex-shrink-0 w-11 h-6 rounded-full transition-all"
-                    style={{ background: iosEq ? "var(--accent)" : "rgba(255,255,255,0.15)" }}>
-                    <span className="absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all"
-                      style={{ left: iosEq ? "22px" : "2px" }} />
-                  </span>
-                </button>
-              </section>
 
-              {/* ── Spotify config hint ── */}
-              <section className="space-y-3">
-                <h3 className="text-xs font-semibold tracking-widest uppercase"
-                  style={{ color: "var(--accent)" }}>
-                  Spotify
-                </h3>
-                <div className="glass rounded-xl p-3 space-y-2 text-xs text-white/50">
-                  <p className="font-medium text-white/70">Redirect URI à configurer :</p>
-                  <code className="block px-2 py-1.5 rounded-lg text-[10px] font-mono break-all"
-                    style={{ background: "rgba(0,0,0,0.4)", color: "var(--accent)" }}>
-                    {typeof window !== "undefined" ? window.location.origin : "https://radio-fr.vercel.app"}
-                    /api/spotify/callback
-                  </code>
-                  <p>Ajoute cette URL dans ton app Spotify Developer Dashboard → Redirect URIs.</p>
-                </div>
-              </section>
+                  {/* Minuterie par défaut */}
+                  <div className="p-4 rounded-2xl glass border border-white/10 space-y-3">
+                    <div>
+                      <p className="text-white text-sm font-bold">Durée par défaut de la minuterie</p>
+                      <p className="text-white/45 text-xs mt-0.5">Valeur présélectionnée dans le lecteur.</p>
+                    </div>
+                    <div className="grid grid-cols-4 gap-2">
+                      {[15, 30, 45, 60].map((m) => (
+                        <button
+                          key={m}
+                          onClick={() => {
+                            setDefaultTimerMin(m);
+                            try { localStorage.setItem("radiofr_default_timer", String(m)); } catch {}
+                          }}
+                          className={`py-2 rounded-xl text-xs font-bold transition-all ${
+                            defaultTimerMin === m
+                              ? "bg-[var(--accent)] text-white shadow-md"
+                              : "bg-white/5 text-white/60 hover:bg-white/10"
+                          }`}
+                        >
+                          {m} min
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* TAB 4: SYSTÈME & DÉMARRAGE */}
+              {activeTab === "system" && (
+                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-5">
+                  {/* Podcast Autoplay */}
+                  <div className="p-4 rounded-2xl glass border border-white/10 flex items-center justify-between gap-4">
+                    <div>
+                      <p className="text-white text-sm font-bold">Enchaînement automatique</p>
+                      <p className="text-white/45 text-xs mt-0.5">Lit automatiquement l&apos;épisode suivant à la fin du podcast.</p>
+                    </div>
+                    <button
+                      onClick={togglePodcastAutoplay}
+                      className={`w-12 h-7 rounded-full transition-all relative flex-shrink-0 ${
+                        podcastAutoplay ? "bg-emerald-500" : "bg-white/15"
+                      }`}
+                    >
+                      <span className={`absolute top-1 w-5 h-5 rounded-full bg-white transition-all shadow-md ${
+                        podcastAutoplay ? "left-6" : "left-1"
+                      }`} />
+                    </button>
+                  </div>
+
+                  {/* Default Station Picker */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xs font-bold tracking-wider uppercase text-white/50">Station au lancement</h3>
+                      {defaultStationId && (
+                        <button
+                          onClick={() => setDefaultStationId(null)}
+                          className="text-[11px] text-red-400/80 hover:text-red-300 transition-colors"
+                        >
+                          Désactiver
+                        </button>
+                      )}
+                    </div>
+
+                    <input
+                      type="text"
+                      value={searchStation}
+                      onChange={(e) => setSearchStation(e.target.value)}
+                      placeholder="Rechercher une station…"
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2 text-xs text-white placeholder-white/30 outline-none focus:border-[var(--accent)]"
+                    />
+
+                    <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                      {filteredStations.slice(0, 15).map((s) => {
+                        const isSelected = defaultStationId === s.id;
+                        return (
+                          <button
+                            key={s.id}
+                            onClick={() => setDefaultStationId(isSelected ? null : s.id)}
+                            className={`w-full flex items-center gap-3 p-2.5 rounded-xl text-xs transition-all text-left ${
+                              isSelected
+                                ? "bg-[var(--accent)] text-white shadow-md"
+                                : "glass glass-hover text-white/70"
+                            }`}
+                          >
+                            <span className="w-6 h-6 rounded-lg flex items-center justify-center font-bold text-[10px] flex-shrink-0"
+                              style={{ background: `${s.color}33`, color: isSelected ? "#fff" : s.color }}>
+                              {s.name[0]}
+                            </span>
+                            <span className="truncate flex-1 font-medium">{s.name}</span>
+                            {s.freq && <span className="opacity-50 text-[10px]">{s.freq}</span>}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Reset & Cache Maintenance */}
+                  <div className="p-4 rounded-2xl glass border border-red-500/20 bg-red-500/[0.03] space-y-3">
+                    <div>
+                      <p className="text-red-300 text-sm font-bold">Maintenance & Cache</p>
+                      <p className="text-white/40 text-xs mt-0.5">Efface les données locales et restaure la configuration par défaut.</p>
+                    </div>
+                    <button
+                      onClick={handleClearCache}
+                      className="w-full py-2.5 rounded-xl border border-red-500/40 text-red-300 hover:bg-red-500/10 text-xs font-bold transition-all active:scale-98"
+                    >
+                      {showClearSuccess ? "Réinitialisé !" : "Vider le cache et réinitialiser"}
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+
+            </div>
+
+            {/* Footer Status */}
+            <div className="px-6 py-3 border-t border-white/10 bg-white/[0.02] flex items-center justify-between text-[11px] text-white/35 font-mono">
+              <span>Radio-PaLaMa v2.4</span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                Opérationnel
+              </span>
             </div>
           </motion.div>
         </>

@@ -69,6 +69,7 @@ export const THEMES: ThemeMeta[] = [
 
 // ── iPod overlay color skins ──────────────────────────────────────────────
 export type IpodSkin = "white" | "grey" | "black";
+export type VisualizerStyle = "bars" | "wave" | "dots";
 
 export interface IpodSkinMeta {
   id: IpodSkin;
@@ -137,6 +138,8 @@ interface ThemeCtx {
   setDefaultStationId: (id: string | null) => void;
   ipodSkin: IpodSkin;
   setIpodSkin: (s: IpodSkin) => void;
+  visualizerStyle: VisualizerStyle;
+  setVisualizerStyle: (v: VisualizerStyle) => void;
 }
 
 const Ctx = createContext<ThemeCtx>({
@@ -146,12 +149,15 @@ const Ctx = createContext<ThemeCtx>({
   setDefaultStationId: () => {},
   ipodSkin: "white",
   setIpodSkin: () => {},
+  visualizerStyle: "bars",
+  setVisualizerStyle: () => {},
 });
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<ThemeId>("default");
   const [defaultStationId, setDefaultStationIdState] = useState<string | null>(null);
   const [ipodSkin, setIpodSkinState] = useState<IpodSkin>("white");
+  const [visualizerStyle, setVisualizerStyleState] = useState<VisualizerStyle>("bars");
 
   useEffect(() => {
     try {
@@ -161,6 +167,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       if (ds) setDefaultStationIdState(ds);
       const sk = localStorage.getItem("radiofr_ipod_skin") as IpodSkin | null;
       if (sk) setIpodSkinState(sk);
+      const vs = localStorage.getItem("radiofr_visualizer_style") as VisualizerStyle | null;
+      if (vs) setVisualizerStyleState(vs);
     } catch {}
   }, []);
 
@@ -186,8 +194,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     try { localStorage.setItem("radiofr_ipod_skin", s); } catch {}
   }, []);
 
+  const setVisualizerStyle = useCallback((v: VisualizerStyle) => {
+    setVisualizerStyleState(v);
+    try { localStorage.setItem("radiofr_visualizer_style", v); } catch {}
+  }, []);
+
   return (
-    <Ctx.Provider value={{ theme, setTheme, defaultStationId, setDefaultStationId, ipodSkin, setIpodSkin }}>
+    <Ctx.Provider value={{ theme, setTheme, defaultStationId, setDefaultStationId, ipodSkin, setIpodSkin, visualizerStyle, setVisualizerStyle }}>
       {children}
     </Ctx.Provider>
   );

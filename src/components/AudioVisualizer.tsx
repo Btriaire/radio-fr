@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef } from "react";
+import { useTheme } from "@/context/ThemeContext";
 
 interface Props {
   analyserRef: React.MutableRefObject<AnalyserNode | null>;
@@ -23,6 +24,7 @@ function resolveHex(c: string): string {
 }
 
 export default function AudioVisualizer({ analyserRef, isPlaying, color: rawColor = "#3b82f6", small = false }: Props) {
+  const { visualizerStyle } = useTheme();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef    = useRef<number>(0);
   const phaseRef  = useRef(0);
@@ -89,54 +91,102 @@ export default function AudioVisualizer({ analyserRef, isPlaying, color: rawColo
       phaseRef.current += 0.05;
       const phase = phaseRef.current;
 
-      if (useReal && data) {
-        // Real bars
-        const barW = (W / data.length) * 2.5;
-        let x = 0;
-        for (let i = 0; i < data.length; i++) {
-          const barH = (data[i] / 255) * H;
-          const alpha = 0.4 + (data[i] / 255) * 0.6;
-          const grad = ctx.createLinearGradient(0, H - barH, 0, H);
-          grad.addColorStop(0, color);
-          grad.addColorStop(1, `${color}20`);
-          ctx.fillStyle = grad;
-          ctx.globalAlpha = alpha;
-          const r = Math.min(barW / 2, 3);
-          ctx.beginPath();
-          ctx.roundRect(x, H - barH, barW - 1, barH, [r, r, 0, 0]);
-          ctx.fill();
-          x += barW + 1;
+      if (visualizerStyle === "wave") {
+        // Smooth sine / bezier wave
+        ctx.beginPath();
+        const step = W / 40;
+        ctx.moveTo(0, H / 2);
+        for (let i = 0; i <= 40; i++) {
+          const x = i * step;
+          let factor = 0.4;
+          if (useReal && data) {
+            const idx = Math.floor((i / 40) * (data.length / 2));
+            factor = (data[idx] || 50) / 255;
+          } else {
+            factor = 0.3 + 0.4 * Math.sin(phase * 1.5 + i * 0.35);
+          }
+          const y = H / 2 + Math.sin(phase + i * 0.25) * (H * 0.38) * factor;
+          ctx.lineTo(x, y);
         }
-        ctx.globalAlpha = 1;
-      } else {
-        // Simulated animated bars (CORS-blocked or no analyser)
-        const count = small ? 16 : 32;
-        const barW  = (W - count + 1) / count;
+        ctx.strokeStyle = color;
+        ctx.lineWidth = small ? 1.5 : 2.5;
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 8;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+      } else if (visualizerStyle === "dots") {
+        // Glowing neon dots
+        const count = small ? 14 : 28;
+        const spacing = W / count;
         for (let i = 0; i < count; i++) {
-          const t     = phase * simSpeed[i % simSpeed.length];
-          const amp   = simAmps[i % simAmps.length];
-          const raw   = amp * (0.5 + 0.5 * Math.sin(t + i * 0.7)) *
-                        (0.7 + 0.3 * Math.sin(t * 0.4 + i * 0.3));
-          const barH  = Math.max(3, raw * H * 0.85);
-          const alpha = 0.35 + raw * 0.5;
-          const grad  = ctx.createLinearGradient(0, H - barH, 0, H);
-          grad.addColorStop(0, color);
-          grad.addColorStop(1, `${color}15`);
-          ctx.fillStyle = grad;
-          ctx.globalAlpha = alpha;
-          const r = Math.min(barW / 2, 3);
-          const x = i * (barW + 1);
+          let factor = 0.3;
+          if (useReal && data) {
+            const idx = Math.floor((i / count) * (data.length / 2));
+            factor = (data[idx] || 40) / 255;
+          } else {
+            const t = phase * simSpeed[i % simSpeed.length];
+            factor = simAmps[i % simAmps.length] * (0.4 + 0.6 * Math.sin(t + i * 0.5));
+          }
+          const cy = H - Math.max(6, factor * H * 0.85);
+          const cx = i * spacing + spacing / 2;
+          const r = small ? 2 : 3.5;
           ctx.beginPath();
-          ctx.roundRect(x, H - barH, barW, barH, [r, r, 0, 0]);
+          ctx.arc(cx, cy, r, 0, Math.PI * 2);
+          ctx.fillStyle = color;
+          ctx.shadowColor = color;
+          ctx.shadowBlur = 10;
           ctx.fill();
         }
-        ctx.globalAlpha = 1;
+        ctx.shadowBlur = 0;
+      } else {
+        // Default: bars
+        if (useReal && data) {
+          const barW = (W / data.length) * 2.5;
+          let x = 0;
+          for (let i = 0; i < data.length; i++) {
+            const barH = (data[i] / 255) * H;
+            const alpha = 0.4 + (data[i] / 255) * 0.6;
+            const grad = ctx.createLinearGradient(0, H - barH, 0, H);
+            grad.addColorStop(0, color);
+            grad.addColorStop(1, `${color}20`);
+            ctx.fillStyle = grad;
+            ctx.globalAlpha = alpha;
+            const r = Math.min(barW / 2, 3);
+            ctx.beginPath();
+            ctx.roundRect(x, H - barH, barW - 1, barH, [r, r, 0, 0]);
+            ctx.fill();
+            x += barW + 1;
+          }
+          ctx.globalAlpha = 1;
+        } else {
+          const count = small ? 16 : 32;
+          const barW  = (W - count + 1) / count;
+          for (let i = 0; i < count; i++) {
+            const t     = phase * simSpeed[i % simSpeed.length];
+            const amp   = simAmps[i % simAmps.length];
+            const raw   = amp * (0.5 + 0.5 * Math.sin(t + i * 0.7)) *
+                          (0.7 + 0.3 * Math.sin(t * 0.4 + i * 0.3));
+            const barH  = Math.max(3, raw * H * 0.85);
+            const alpha = 0.35 + raw * 0.5;
+            const grad  = ctx.createLinearGradient(0, H - barH, 0, H);
+            grad.addColorStop(0, color);
+            grad.addColorStop(1, `${color}15`);
+            ctx.fillStyle = grad;
+            ctx.globalAlpha = alpha;
+            const r = Math.min(barW / 2, 3);
+            const x = i * (barW + 1);
+            ctx.beginPath();
+            ctx.roundRect(x, H - barH, barW, barH, [r, r, 0, 0]);
+            ctx.fill();
+          }
+          ctx.globalAlpha = 1;
+        }
       }
     };
 
     draw();
     return () => cancelAnimationFrame(rafRef.current);
-  }, [analyserRef, effectivePlaying, rawColor]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [analyserRef, effectivePlaying, rawColor, visualizerStyle]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <canvas
