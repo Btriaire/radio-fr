@@ -160,7 +160,7 @@ const STALL_CONSISTENCY = 2;    // require 2 consecutive stalls to trigger recon
 // icecast mount, silently hung TCP connection) previously had ZERO protection —
 // the stall watchdog only starts once playback has begun. This is the connect-
 // phase equivalent: if we're still waiting after this long, treat it as a drop.
-const CONNECT_TIMEOUT_MS = 12000;
+const CONNECT_TIMEOUT_MS = 20000;
 
 export function useAudioPlayer() {
   // A <video> element (not <audio>) so we can optionally show the picture for
@@ -687,6 +687,22 @@ export function useAudioPlayer() {
     audio.onpause = () => {
       if (sessionIdRef.current !== currentSession) return;
       setIsPlaying(false);
+      // Auto-recovery securise par session token:
+      // Si la pause n est pas voulue (coupure Bluetooth, notification OS, micro-buffering),
+      // et que l intention de lecture persiste, on relance audio.play() apres 1200ms sur la MEME station.
+      if (wantPlayingRef.current && !isSleepingNow()) {
+        setTimeout(() => {
+          if (
+            sessionIdRef.current === currentSession &&
+            wantPlayingRef.current &&
+            audioRef.current === audio &&
+            audio.paused &&
+            !isSleepingNow()
+          ) {
+            audio.play().catch(() => {});
+          }
+        }, 1200);
+      }
     };
     audio.onwaiting = () => {
       if (sessionIdRef.current === currentSession) setIsLoading(true);
