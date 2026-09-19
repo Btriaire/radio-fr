@@ -143,13 +143,19 @@ export default function Home() {
   }, [stationView]);
 
   // Auto-play default station on first load
+  const userInteractedRef = useRef(false);
+
   useEffect(() => {
     if (!defaultStationId) return;
     const station = STATIONS.find((s) => s.id === defaultStationId);
-    if (station && !selectedStation) {
+    if (station && !selectedStation && !userInteractedRef.current) {
       setSelectedStation(station);
       // Small delay to ensure AudioContext is allowed after user gesture on revisit
-      const id = setTimeout(() => playerApi.initAudio(preferredStreamUrl(station)), 300);
+      const id = setTimeout(() => {
+        if (!userInteractedRef.current) {
+          playerApi.initAudio(preferredStreamUrl(station), { station });
+        }
+      }, 300);
       return () => clearTimeout(id);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -190,6 +196,7 @@ export default function Home() {
   // so they play in a separate hidden IFrame mini-player. Starting one stops any
   // other media, and starting any other media (below) clears the YouTube track.
   const handlePlayYouTube = (t: MusicTrack) => {
+    userInteractedRef.current = true;
     playerApi.pause();
     setSelectedStation(null);
     setCurrentPodcast(null);
@@ -197,13 +204,14 @@ export default function Home() {
   };
 
   const handlePlay = useCallback((station: Station) => {
+    userInteractedRef.current = true;
     setCurrentPodcast(null);
     setYoutubeTrack(null);
     if (selectedStation?.id === station.id) {
       playerApi.togglePlay();
     } else {
       setSelectedStation(station);
-      playerApi.initAudio(preferredStreamUrl(station));
+      playerApi.initAudio(preferredStreamUrl(station), { station });
     }
   }, [selectedStation?.id, playerApi]);
 
@@ -220,6 +228,7 @@ export default function Home() {
   }, [filteredStations, selectedStation?.id, handlePlay, withLogo]);
 
   const handlePlayEpisode = useCallback((ep: { title: string; audioUrl: string; duration: string; pubDate: string; fileSize: number; isVideo?: boolean }, pod: { trackName: string; artistName: string; artworkUrl600: string; artworkUrl100: string }, opts?: { kind?: "music" | "podcast"; queue?: { episodes: RSSEpisode[]; index: number } }) => {
+    userInteractedRef.current = true;
     setCurrentPodcast({
       episodeTitle: ep.title,
       audioUrl: ep.audioUrl,
@@ -282,6 +291,7 @@ export default function Home() {
 
   // Skip to the adjacent station (used by lock-screen / headphone next-prev).
   const playAdjacentStation = useCallback((dir: 1 | -1) => {
+    userInteractedRef.current = true;
     setSelectedStation((prev) => {
       const base = prev ?? STATIONS[0];
       const idx = STATIONS.findIndex((s) => s.id === base.id);
@@ -892,7 +902,7 @@ export default function Home() {
                 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.18 }}>
                 <WebRadioPanel
-                  onPlay={(s) => { setCurrentPodcast(null); setSelectedStation(s); playerApi.initAudio(preferredStreamUrl(s), { station: s }); }}
+                  onPlay={(s) => { userInteractedRef.current = true; setCurrentPodcast(null); setSelectedStation(s); playerApi.initAudio(preferredStreamUrl(s), { station: s }); }}
                   currentUrl={playerApi.currentUrl}
                   isPlaying={playerApi.isPlaying}
                   isFavorite={isFavorite}
@@ -906,7 +916,7 @@ export default function Home() {
                 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.18 }}>
                 <RadioSearch
-                  onPlay={(s) => { setCurrentPodcast(null); setSelectedStation(s); playerApi.initAudio(preferredStreamUrl(s), { station: s }); }}
+                  onPlay={(s) => { userInteractedRef.current = true; setCurrentPodcast(null); setSelectedStation(s); playerApi.initAudio(preferredStreamUrl(s), { station: s }); }}
                   onToggleFavorite={toggleFavorite}
                   isFavorite={isFavorite}
                   currentUrl={playerApi.currentUrl}
@@ -1069,6 +1079,7 @@ export default function Home() {
         onPlayStation={(stationId) => {
           const s = STATIONS.find((st) => st.id === stationId);
           if (s) {
+            userInteractedRef.current = true;
             setCurrentPodcast(null);
             setSelectedStation(s);
             playerApi.initAudio(preferredStreamUrl(s), { station: s });
@@ -1088,6 +1099,7 @@ export default function Home() {
         currentPodcast={currentPodcast}
         stations={STATIONS}
         onSelectStation={(s) => {
+          userInteractedRef.current = true;
           setCurrentPodcast(null);
           setSelectedStation(s);
           playerApi.initAudio(preferredStreamUrl(s), { station: s });

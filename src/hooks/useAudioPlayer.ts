@@ -238,6 +238,7 @@ export function useAudioPlayer() {
   // doReconnectRef.current(), which is wired to reconnectNow() via a useEffect.
   const doReconnectRef = useRef<(() => void) | null>(null);
   const stationRef = useRef<StreamCandidateStation | null>(null);
+  const sessionIdRef = useRef(0);
 
   const [reconnecting,     setReconnecting]     = useState(false);
   const [reconnectAttempt, setReconnectAttempt] = useState(0);
@@ -519,6 +520,8 @@ export function useAudioPlayer() {
 
   // ── Load & play a URL via the <audio> element (desktop + non-iOS path) ─────
   const initElementAudio = useCallback((url: string, force = false) => {
+    const currentSession = ++sessionIdRef.current;
+
     // Same URL already loaded → just toggle play. On a forced reconnect we skip
     // this shortcut and rebuild the element from scratch (the old stream dropped).
     if (!force && audioRef.current && currentUrl === url) {
@@ -530,49 +533,54 @@ export function useAudioPlayer() {
       return;
     }
 
-    // Stop & release previous — null ALL handlers first or onerror fires
-    // and re-sets the src, causing the old stream to restart on top of the new one
-    if (audioRef.current) {
-      const old = audioRef.current;
-      old.oncanplay = null;
-      old.onerror = null;
-      old.onplaying = null;
-      old.onpause = null;
-      old.onwaiting = null;
-      old.ontimeupdate = null;
-      old.onloadedmetadata = null;
-      old.onended = null;
-      old.onstalled = null;
-      old.pause();
-      old.src = "";
-      old.load();      // abort any in-flight HTTP request
-      audioRef.current = null;
+    // 1. Hard stop any previous decode pipeline
+    if (decoderRef.current) {
+      try { decoderRef.current.stop(); } catch {}
+      decoderRef.current = null;
     }
-    clearConnectTimer(); // a fresh connect attempt starts below — drop the old one's timer
+
+    // 2. Clear all reconnect, stall watchdog and connection timers
+    clearReconnect();
+    stopWatchdog();
+    clearConnectTimer();
+
+    // 3. Stop and mute any rogue audio/video elements across the document
+    if (typeof document !== "undefined") {
+      document.querySelectorAll("audio, video").forEach((el) => {
+        if (el !== audioRef.current) {
+          try {
+            (el as HTMLMediaElement).pause();
+            (el as HTMLMediaElement).removeAttribute("src");
+            (el as HTMLMediaElement).load();
+          } catch {}
+        }
+      });
+    }
 
     setError(null);
     setIsLoading(true);
     setCurrentUrl(url);
 
-    // Element type matters for iOS background playback: iOS Safari PAUSES a
-    // <video> element as soon as the screen locks / the tab backgrounds, but
-    // keeps an <audio> element playing. So only spin up a <video> when the
-    // episode actually has a picture to show; everything else (radio, music,
-    // audio podcasts) uses <audio> so the sound survives a screen-off / lock.
-    const audio = document.createElement(wantVideoRef.current ? "video" : "audio") as HTMLMediaElement;
-    (audio as any).playsInline = true;  // never auto-fullscreen on iOS (no-op on <audio>)
-    (audio as any).disablePictureInPicture = true;
-    audio.setAttribute("webkit-playsinline", "true");
-    // crossOrigin="anonymous" is only needed to feed the Web Audio EQ graph, and
-    // it has a real cost: most radio streams (all of Web Radio's radio-browser.info
-    // catalogue, RTL/NRJ, etc.) don't send CORS headers or sit behind a redirect to
-    // a cast-point server that doesn't either. Forcing crossOrigin="anonymous" on
-    // those makes the browser refuse the (opaque, cross-origin) redirect/response
-    // outright — the stream never starts or drops immediately, which is the main
-    // cause of "ça bloque / s'arrête souvent" across the station catalogue. Only
-    // request CORS mode for the small whitelist of hosts known to actually send
-    // the header (EQ_CORS_HOSTS) — everything else loads in plain mode, exactly
-    // like iOS already does, and plays reliably (just without the EQ tap).
+    // Re-use or create the single audio instance (avoids multi-element overlap)
+    let audio = audioRef.current;
+    const desiredTag = wantVideoRef.current ? "video" : "audio";
+    if (!audio || audio.tagName.toLowerCase() !== desiredTag) {
+      if (audio) {
+        audio.oncanplay = audio.onerror = audio.onplaying = audio.onpause = audio.onwaiting = null;
+        audio.ontimeupdate = audio.onloadedmetadata = audio.onended = audio.onstalled = null;
+        try { audio.pause(); audio.removeAttribute("src"); audio.load(); } catch {}
+      }
+      audio = document.createElement(desiredTag) as HTMLMediaElement;
+      (audio as any).playsInline = true;
+      (audio as any).disablePictureInPicture = true;
+      audio.setAttribute("webkit-playsinline", "true");
+      audioRef.current = audio;
+    } else {
+      audio.oncanplay = audio.onerror = audio.onplaying = audio.onpause = audio.onwaiting = null;
+      audio.ontimeupdate = audio.onloadedmetadata = audio.onended = audio.onstalled = null;
+      try { audio.pause(); audio.removeAttribute("src"); audio.load(); } catch {}
+    }
+
     let iosEqOptIn = false;
     try { iosEqOptIn = localStorage.getItem("radiofr_ios_eq") === "1"; } catch {}
     audio.crossOrigin = ((!detectIOS() || iosEqOptIn) && isEqCompatible(url)) ? "anonymous" : null;
@@ -582,13 +590,7 @@ export function useAudioPlayer() {
       audio.playbackRate = playbackRateRef.current;
       audio.defaultPlaybackRate = playbackRateRef.current;
     } catch {}
-    audioRef.current = audio;
 
-    // Set src FIRST, then build the Web Audio graph. iOS Safari binds
-    // createMediaElementSource to silence if the element has no source loaded
-    // yet, so the element must already point at a stream before we tap it.
-    // On forced reconnect of live radio, append a cache-buster query parameter so
-    // iOS Safari / Chrome doesn't replay stale or stalled byte segments from internal cache.
     let playUrl = url;
     if (force && liveRef.current && !url.startsWith("blob:") && !url.startsWith("data:")) {
       const sep = url.includes("?") ? "&" : "?";
@@ -597,119 +599,110 @@ export function useAudioPlayer() {
     audio.src = playUrl;
     buildGraph(audio, bands);
 
-    audio.oncanplay      = () => setIsLoading(false);
-    audio.ontimeupdate   = () => {
+    audio.oncanplay = () => {
+      if (sessionIdRef.current === currentSession) setIsLoading(false);
+    };
+    audio.ontimeupdate = () => {
+      if (sessionIdRef.current !== currentSession) return;
       setCurrentTime(audio.currentTime);
-      // Remember the position so a non-live reconnect resumes where we left off.
       if (!liveRef.current) resumeAtRef.current = audio.currentTime;
     };
-    audio.onloadedmetadata = () => setDuration(isFinite(audio.duration) ? audio.duration : 0);
-    audio.onended        = () => {
-      // A live stream that "ends" actually dropped → reconnect at the live edge.
+    audio.onloadedmetadata = () => {
+      if (sessionIdRef.current === currentSession) {
+        setDuration(isFinite(audio.duration) ? audio.duration : 0);
+      }
+    };
+    audio.onended = () => {
+      if (sessionIdRef.current !== currentSession) return;
       if (liveRef.current) { scheduleReconnect("ended"); return; }
       setIsPlaying(false); setCurrentTime(0); onEndedRef.current?.();
     };
-    // onstalled alone is not enough to trigger reconnect (can be normal buffering).
-    // The watchdog detects true stalls (currentTime frozen 15+ seconds).
-    audio.onerror    = () => {
+    audio.onerror = () => {
+      if (sessionIdRef.current !== currentSession) return;
       clearConnectTimer();
-      // Only reconnect on error. If CORS+EQ is available, try the fallback path.
       if (audio.crossOrigin === "anonymous" && eqEnabledRef.current) {
-        // CORS headers said "no" → try without CORS (lose EQ but often works).
         audio.crossOrigin = "";
         eqEnabledRef.current = false;
         setEqActive(false);
         audio.src = url;
-        audio.play().catch(() => { setIsLoading(false); scheduleReconnect("error"); });
+        audio.play().catch(() => {
+          if (sessionIdRef.current === currentSession) {
+            setIsLoading(false);
+            scheduleReconnect("error");
+          }
+        });
       } else {
-        // Check for alternate stream fallback if available for this station
         if (stationRef.current) {
           const fallback = getNextStreamFallback(stationRef.current, url);
           if (fallback && fallback !== url) {
             audio.src = fallback;
             setCurrentUrl(fallback);
             audio.play().catch(() => {
-              setIsLoading(false);
-              scheduleReconnect("fallback-error");
+              if (sessionIdRef.current === currentSession) {
+                setIsLoading(false);
+                scheduleReconnect("fallback-error");
+              }
             });
             return;
           }
         }
-        // Real load/network failure → schedule a reconnect instead of dying.
         setIsLoading(false);
         scheduleReconnect("error");
       }
     };
     audio.onplaying = () => {
+      if (sessionIdRef.current !== currentSession) {
+        try { audio.pause(); audio.removeAttribute("src"); audio.load(); } catch {}
+        return;
+      }
       clearConnectTimer();
       setIsPlaying(true);
       setIsLoading(false);
-      // A successful (re)start clears any reconnect state.
       attemptRef.current = 0;
       setReconnectAttempt(0);
       setReconnecting(false);
       setError(null);
       stallCountRef.current = 0;
-      // Non-live reconnect: jump back to where we were (if meaningfully off).
-      // Only do this on a real reconnect (resumeAtRef > 0), not on normal play.
       if (!liveRef.current && resumeAtRef.current > 0.5 &&
           Math.abs(audio.currentTime - resumeAtRef.current) > 1.5) {
         try { audio.currentTime = resumeAtRef.current; } catch {}
       }
       startWatchdog();
-      // iOS Safari routes MediaElementSource audio straight to hardware and feeds
-      // SILENCE into the Web Audio graph — so the EQ filters never touch the sound.
-      // Detect it (analyser stays all-zero while audio is audible) and honestly mark
-      // EQ unavailable instead of pretending it works.
       if (eqEnabledRef.current) {
         const checkGraphSilent = (attempt: number) => {
+          if (sessionIdRef.current !== currentSession) return;
           const a = analyserRef.current;
           if (!a || !eqEnabledRef.current) return;
           const buf = new Uint8Array(a.frequencyBinCount);
           a.getByteFrequencyData(buf);
           const sum = buf.reduce((s, v) => s + v, 0);
-          if (sum > 0) return;               // graph is live → EQ works
+          if (sum > 0) return;
           if (attempt < 2) { setTimeout(() => checkGraphSilent(attempt + 1), 1200); return; }
-          eqEnabledRef.current = false;       // 3 silent reads → graph bypassed (iOS)
+          eqEnabledRef.current = false;
           setEqActive(false);
         };
         setTimeout(() => checkGraphSilent(0), 1500);
       }
     };
-    audio.onpause   = () => {
+    audio.onpause = () => {
+      if (sessionIdRef.current !== currentSession) return;
       setIsPlaying(false);
-      // Only our own pause()/stop() flip wantPlayingRef to false. If it's still
-      // true here, something else paused the element out from under us — a
-      // phone call, Siri, another app grabbing the audio focus, a Bluetooth
-      // route change, headphones unplugged. The OS doesn't resume these for
-      // us, so without this the stream just sits silently paused forever and
-      // it looks to the user like a random dropout. One delayed retry covers
-      // the common short interruptions; the visibilitychange handler below
-      // covers longer ones (phone call) once the user comes back to the tab.
-      if (wantPlayingRef.current && !isSleepingNow()) {
-        setTimeout(() => {
-          if (wantPlayingRef.current && audioRef.current === audio && audio.paused && !isSleepingNow()) {
-            audio.play().catch(() => {});
-          }
-        }, 1200);
-      }
     };
-    audio.onwaiting = () => setIsLoading(true);
+    audio.onwaiting = () => {
+      if (sessionIdRef.current === currentSession) setIsLoading(true);
+    };
 
     ctxRef.current?.resume();
     audio.play().catch(() => {
+      if (sessionIdRef.current !== currentSession) return;
       clearConnectTimer();
       setError("Cliquez Play pour démarrer (politique du navigateur).");
       setIsLoading(false);
     });
-    // Guard the connect phase itself: if `onplaying` never fires (dead mount,
-    // hung redirect, silently-refused connection), the stall watchdog below
-    // can't help — it only starts once playback has actually begun. This is
-    // the only thing that recovers a stream stuck at "chargement…" forever.
+
     connectTimerRef.current = setTimeout(() => {
       connectTimerRef.current = null;
-      // Still the current element and `onplaying` never fired → genuinely hung.
-      if (audioRef.current === audio && wantPlayingRef.current) {
+      if (sessionIdRef.current === currentSession && audioRef.current === audio && wantPlayingRef.current) {
         scheduleReconnect("connect-timeout");
       }
     }, CONNECT_TIMEOUT_MS);
@@ -717,13 +710,27 @@ export function useAudioPlayer() {
 
   // ── iOS decode pipeline: fetch → decode MP3 → schedule PCM through the EQ ──
   const startDecodedAudio = useCallback(async (url: string) => {
+    const currentSession = ++sessionIdRef.current;
     modeRef.current = "decoder";
 
     // Tear down any element playback so we don't double-play.
     if (audioRef.current) {
       const old = audioRef.current;
       old.oncanplay = old.onerror = old.onplaying = old.onpause = old.onwaiting = null;
-      old.pause(); old.src = ""; old.load();
+      try {
+        old.pause();
+        old.removeAttribute("src");
+        old.load();
+      } catch {}
+    }
+    if (typeof document !== "undefined") {
+      document.querySelectorAll("audio, video").forEach((el) => {
+        try {
+          (el as HTMLMediaElement).pause();
+          (el as HTMLMediaElement).removeAttribute("src");
+          (el as HTMLMediaElement).load();
+        } catch {}
+      });
     }
     // Tear down a previous decoder.
     try { decoderRef.current?.stop(); } catch {}
@@ -741,6 +748,8 @@ export function useAudioPlayer() {
     const ctx = ctxRef.current;
     try { await ctx.resume(); } catch {}
 
+    if (sessionIdRef.current !== currentSession) return;
+
     const input = buildDecoderChain(ctx, bands, volume);
     eqEnabledRef.current = true;
     setEqActive(true);
@@ -748,6 +757,7 @@ export function useAudioPlayer() {
     // A decoder drop (network/airplane mode) routes the replay through the
     // reliable <audio> element path via the reconnect scheduler.
     const fallback = () => {
+      if (sessionIdRef.current !== currentSession) return;
       try { decoderRef.current?.stop(); } catch {}
       decoderRef.current = null;
       modeRef.current = "element";
@@ -759,20 +769,30 @@ export function useAudioPlayer() {
     try {
       // Lazy-load the WASM MP3 decoder so only iOS pays the bundle cost.
       const { playDecodedStream } = await import("@/lib/streamDecoder");
+      if (sessionIdRef.current !== currentSession) return;
       const ctrl = await playDecodedStream({
         url, ctx, destination: input,
         onFirstAudio: () => {
+          if (sessionIdRef.current !== currentSession) {
+            try { ctrl.stop(); } catch {}
+            return;
+          }
           setIsLoading(false); setIsPlaying(true);
           attemptRef.current = 0; setReconnectAttempt(0); setReconnecting(false); setError(null);
         },
         onError: fallback,
       });
-      // A late stop() may have fired while we awaited — honour it.
-      if (modeRef.current !== "decoder") { try { ctrl.stop(); } catch {} return; }
+      // A late stop() or station switch may have fired while we awaited — honour it.
+      if (sessionIdRef.current !== currentSession || modeRef.current !== "decoder") {
+        try { ctrl.stop(); } catch {}
+        return;
+      }
       decoderRef.current = ctrl;
       setIsPlaying(true);
     } catch {
-      fallback();
+      if (sessionIdRef.current === currentSession) {
+        fallback();
+      }
     }
   }, [bands, volume, buildDecoderChain, scheduleReconnect]);
 
@@ -903,12 +923,14 @@ export function useAudioPlayer() {
   }, [currentUrl, startDecodedAudio, clearReconnect]);
 
   const pause = useCallback(() => {
-    // Deliberate pause → no reconnection on the resulting stream drop.
+    // Deliberate pause → invalidate any in-flight promises & timers
+    sessionIdRef.current++;
     wantPlayingRef.current = false;
     clearReconnect();
     stopWatchdog();
     clearConnectTimer();
     setReconnecting(false);
+    setIsLoading(false);
     if (modeRef.current === "decoder") {
       // Live stream → stop the fetch/decode loop; play() rejoins live.
       try { decoderRef.current?.stop(); } catch {}
@@ -916,6 +938,7 @@ export function useAudioPlayer() {
       setIsPlaying(false);
     } else {
       audioRef.current?.pause();
+      setIsPlaying(false);
     }
     // Suspend the Web Audio graph so the browser can idle the audio render
     // thread instead of continuously processing (silent) buffers — a real
@@ -1144,6 +1167,7 @@ export function useAudioPlayer() {
 
   const stop = useCallback(() => {
     // Full stop → cancel any reconnection and forget the source.
+    sessionIdRef.current++;
     wantPlayingRef.current = false;
     clearReconnect();
     stopWatchdog();
@@ -1167,10 +1191,21 @@ export function useAudioPlayer() {
       old.onloadedmetadata = null;
       old.onended = null;
       old.onstalled = null;
-      old.pause();
-      old.src = "";
-      old.load();
+      try {
+        old.pause();
+        old.removeAttribute("src");
+        old.load();
+      } catch {}
       audioRef.current = null;
+    }
+    if (typeof document !== "undefined") {
+      document.querySelectorAll("audio, video").forEach((el) => {
+        try {
+          (el as HTMLMediaElement).pause();
+          (el as HTMLMediaElement).removeAttribute("src");
+          (el as HTMLMediaElement).load();
+        } catch {}
+      });
     }
     setIsPlaying(false);
     setCurrentUrl(null);
