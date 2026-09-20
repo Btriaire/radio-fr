@@ -105,12 +105,16 @@ export async function GET(req: NextRequest) {
       })
     );
 
+    const CACHE_HEADERS = {
+      "Cache-Control": "public, max-age=300, s-maxage=3600, stale-while-revalidate=86400",
+    };
+
     const tracks = settled
       .filter((s): s is PromiseFulfilledResult<ArchiveTrack | null> => s.status === "fulfilled")
       .map((s) => s.value)
       .filter((t): t is ArchiveTrack => !!t);
 
-    return NextResponse.json({ tracks });
+    return NextResponse.json({ tracks }, { headers: CACHE_HEADERS });
   } catch (e: any) {
     const msg = e?.name === "TimeoutError" ? "timeout" : e?.message ?? "error";
     return NextResponse.json({ error: msg }, { status: 502 });

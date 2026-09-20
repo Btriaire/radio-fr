@@ -42,3 +42,17 @@ export function getLogoCandidates(logoUrl: string, domain?: string | null): stri
 
   return candidates.filter(Boolean);
 }
+
+/**
+ * Martha Generative Artwork SVG Fallback Generator.
+ * Creates an elegant gradient artwork with station initials when remote logos fail.
+ */
+export function generateGenerativeArtworkSvg(name: string, genre?: string): string {
+  const init = getStationInitials(name);
+  const hash = (name || "Radio").split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
+  const hue1 = hash % 360;
+  const hue2 = (hue1 + 75) % 360;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256"><defs><linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="hsl(${hue1}, 85%, 45%)"/><stop offset="100%" stop-color="hsl(${hue2}, 90%, 25%)"/></linearGradient></defs><rect width="256" height="256" fill="url(#g)" rx="24"/><circle cx="128" cy="128" r="64" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="6"/><text x="128" y="145" font-family="sans-serif" font-size="52" font-weight="bold" fill="#ffffff" text-anchor="middle">${init}</text></svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
