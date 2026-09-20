@@ -20,14 +20,16 @@ export default function StationCard({
 }: Props) {
   return (
     <motion.div
-      whileHover={{ scale: 1.01 }}
+      whileHover={{ scale: 1.02, y: -2 }}
       whileTap={{ scale: 0.98 }}
-      className={`group flex items-center gap-3 rounded-2xl p-3 transition-all duration-200 glass glass-hover relative overflow-hidden cursor-pointer ${
-        isActive ? "shadow-xl ring-1" : ""
+      className={`group flex items-center gap-3.5 rounded-2xl p-3.5 transition-all duration-300 relative overflow-hidden cursor-pointer border backdrop-blur-xl ${
+        isActive 
+          ? "bg-gradient-to-r from-white/15 to-white/5 border-white/30 shadow-2xl ring-1 ring-white/20" 
+          : "bg-black/30 hover:bg-white/10 border-white/10 hover:border-white/20 shadow-md hover:shadow-xl"
       }`}
       style={isActive ? { 
-        borderColor: `${station.color}80`,
-        boxShadow: `0 8px 30px -4px ${station.color}35, inset 0 1px 0 rgba(255,255,255,0.18)`
+        borderColor: `${station.color}a0`,
+        boxShadow: `0 12px 35px -6px ${station.color}45, inset 0 1px 0 rgba(255,255,255,0.25)`
       } : {}}
       onClick={onClick}
     >

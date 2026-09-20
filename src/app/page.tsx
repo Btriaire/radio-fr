@@ -508,6 +508,58 @@ export default function Home() {
         </>)}
       </div>
 
+      {/* Scandinavian Glassmorphic Console & Theme Header */}
+      <header className="relative z-30 pt-6 pb-4 px-4 sm:px-8 border-b border-white/10 backdrop-blur-2xl bg-black/40">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-500 via-sky-400 to-blue-600 flex items-center justify-center shadow-lg shadow-sky-500/25 ring-2 ring-white/20">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 11a9 9 0 0 1 16 0" />
+                <path d="M7 14a6 6 0 0 1 10 0" />
+                <circle cx="12" cy="17" r="2" fill="white" />
+              </svg>
+            </div>
+            <div>
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white flex items-center gap-2">
+                RADIO PALAMA
+                <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold uppercase tracking-widest bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                  Scandinavian Console 2026
+                </span>
+              </h1>
+              <p className="text-xs text-white/50">Poste Haute-Fidélité, Egaliseur Réseau & Flow Multi-Agents</p>
+            </div>
+          </div>
+
+          {/* Quick Theme Switcher Pill */}
+          <div className="flex items-center gap-1.5 p-1.5 rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 overflow-x-auto max-w-full">
+            {[
+              { id: "steel", name: "Steel", color: "#7090c0" },
+              { id: "bronze", name: "Bronze", color: "#c8830a" },
+              { id: "copper", name: "Copper", color: "#d97706" },
+              { id: "gunmetal", name: "Gunmetal", color: "#64748b" },
+              { id: "cosmic", name: "Cosmic", color: "#a855f7" },
+              { id: "neon", name: "Neon", color: "#06b6d4" },
+              { id: "synthwave", name: "Synthwave", color: "#ec4899" },
+              { id: "wood", name: "Nordic Wood", color: "#b45309" },
+            ].map((t) => (
+              <button
+                key={t.id}
+                onClick={() => {
+                  try {
+                    document.documentElement.setAttribute("data-theme", t.id);
+                    localStorage.setItem("radiofr_theme", t.id);
+                  } catch {}
+                }}
+                className="px-2.5 py-1 rounded-xl text-xs font-medium transition-all duration-200 flex items-center gap-1.5 hover:bg-white/10 text-white/80 hover:text-white flex-shrink-0"
+              >
+                <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: t.color }} />
+                {t.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      </header>
+
       {/* ── Header ── */}
       <header className="sticky top-0 z-40 glass-dark border-b metal-texture relative"
         style={{ borderColor: "var(--glass-border)", paddingTop: "env(safe-area-inset-top)" }}>
