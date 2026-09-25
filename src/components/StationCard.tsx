@@ -20,16 +20,16 @@ export default function StationCard({
 }: Props) {
   return (
     <motion.div
-      whileHover={{ scale: 1.02, y: -2 }}
-      whileTap={{ scale: 0.98 }}
-      className={`group flex items-center gap-3.5 rounded-2xl p-3.5 transition-all duration-300 relative overflow-hidden cursor-pointer border backdrop-blur-xl ${
+      whileHover={{ scale: 1.025, y: -2 }}
+      whileTap={{ scale: 0.96 }}
+      className={`group flex items-center gap-3.5 rounded-2xl p-3.5 transition-all duration-250 relative overflow-hidden cursor-pointer border backdrop-blur-2xl ${
         isActive 
-          ? "bg-gradient-to-r from-white/15 to-white/5 border-white/30 shadow-2xl ring-1 ring-white/20" 
-          : "bg-black/30 hover:bg-white/10 border-white/10 hover:border-white/20 shadow-md hover:shadow-xl"
+          ? "bg-gradient-to-r from-slate-900/90 via-slate-800/80 to-slate-900/90 border-cyan-400/40 shadow-[0_8px_32px_rgba(6,182,212,0.25)] ring-1 ring-cyan-400/30" 
+          : "bg-slate-950/40 hover:bg-slate-900/60 border-white/10 hover:border-cyan-500/30 shadow-[0_4px_12px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_24px_rgba(6,182,212,0.15)] active:scale-[0.97]"
       }`}
       style={isActive ? { 
-        borderColor: `${station.color}a0`,
-        boxShadow: `0 12px 35px -6px ${station.color}45, inset 0 1px 0 rgba(255,255,255,0.25)`
+        borderColor: `${station.color}c0`,
+        boxShadow: `0 12px 40px -6px ${station.color}50, 0 0 15px ${station.color}25, inset 0 1px 0 rgba(255,255,255,0.35)`
       } : {}}
       onClick={onClick}
     >
@@ -80,7 +80,7 @@ export default function StationCard({
           {isEqCompatible(station.streamUrl) && (
             <span
               title="Egaliseur disponible (EQ compatible)"
-              className="flex items-center gap-0.5 text-[9px] font-bold px-1 py-0.5 rounded-md flex-shrink-0"
+              className="flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-md flex-shrink-0"
               style={{ background: `${station.color}22`, color: station.color }}
             >
               <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
@@ -128,11 +128,11 @@ export default function StationCard({
         <button
           onClick={(e) => { e.stopPropagation(); onToggleFavorite(); }}
           aria-label={isFavorite ? "Retirer des favoris" : "Ajouter aux favoris"}
-          className="w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 active:scale-90 hover:bg-white/10"
+          className="w-11 h-11 -mr-1.5 rounded-full flex items-center justify-center transition-all duration-200 active:scale-90 hover:bg-white/10"
         >
           <svg width="15" height="15" viewBox="0 0 24 24"
             fill={isFavorite ? "#fbbf24" : "none"}
-            stroke={isFavorite ? "#fbbf24" : "rgba(255,255,255,0.3)"}
+            stroke={isFavorite ? "#fbbf24" : "rgba(255,255,255,0.5)"}
             strokeWidth="2"
             className="transition-transform duration-200">
             <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />

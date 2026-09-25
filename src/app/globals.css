@@ -445,3 +445,23 @@ input[type=range] { accent-color: var(--accent, #3b82f6); }
   animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+
+/* ─── Accessibility ─────────────────────────────────────────────── */
+/* Keyboard focus was invisible everywhere (WCAG 2.4.7). Ring only on
+   keyboard/assistive focus (:focus-visible), never on mouse/touch taps. */
+:focus-visible {
+  outline: 2px solid var(--accent-2, #06b6d4);
+  outline-offset: 2px;
+  border-radius: 10px;
+}
+input:focus-visible { outline-offset: 0; }
+
+/* Respect the OS "reduce motion" setting: kill decorative loops/transitions. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAudioPlayer } from "@/hooks/useAudioPlayer";
 import { useFavorites } from "@/hooks/useFavorites";
 import { useStationLogos } from "@/hooks/useStationLogos";
-import { useTheme } from "@/context/ThemeContext";
+import { useTheme, THEMES } from "@/context/ThemeContext";
 import { STATIONS, GENRES, Station, isEqCompatible, preferredStreamUrl } from "@/lib/stations";
 import { playableUrl, MusicTrack } from "@/lib/musicSearch";
 import { getOfflineBlobUrl } from "@/lib/offlineStorage";
@@ -91,13 +91,16 @@ export default function Home() {
   const [historyOpen, setHistoryOpen]           = useState(false);
   const [hubOpen, setHubOpen]                   = useState(true);
   const [mobilePlayerExpanded, setMobilePlayerExpanded] = useState(false);
+  const [menuOpen, setMenuOpen]                 = useState(false);
+  const [themeOpen, setThemeOpen]               = useState(false);
+  const [showAllGenres, setShowAllGenres]       = useState(false);
   const spotifyPanelRef                         = useRef<SpotifyPanelHandle>(null);
 
   const playerApi                               = useAudioPlayer();
   const nowPlaying                              = useNowPlaying(selectedStation, playerApi.isPlaying);
   const { favorites, isFavorite, toggleFavorite } = useFavorites();
   const logoMap                                 = useStationLogos(STATIONS);
-  const { defaultStationId, theme }             = useTheme();
+  const { defaultStationId, theme, setTheme }   = useTheme();
   const { markPlayed }                          = usePlayedEpisodes();
 
   // Podcast play-queue for automatic episode chaining (enchaînement auto).
@@ -508,184 +511,159 @@ export default function Home() {
         </>)}
       </div>
 
-      {/* Scandinavian Glassmorphic Console & Theme Header */}
-      <header className="relative z-30 pt-6 pb-4 px-4 sm:px-8 border-b border-white/10 backdrop-blur-2xl bg-black/40">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-500 via-sky-400 to-blue-600 flex items-center justify-center shadow-lg shadow-sky-500/25 ring-2 ring-white/20">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M4 11a9 9 0 0 1 16 0" />
-                <path d="M7 14a6 6 0 0 1 10 0" />
-                <circle cx="12" cy="17" r="2" fill="white" />
-              </svg>
-            </div>
-            <div>
-              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white flex items-center gap-2">
-                RADIO PALAMA
-                <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold uppercase tracking-widest bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                  Scandinavian Console 2026
-                </span>
-              </h1>
-              <p className="text-xs text-white/50">Poste Haute-Fidélité, Egaliseur Réseau & Flow Multi-Agents</p>
-            </div>
-          </div>
-
-          {/* Quick Theme Switcher Pill */}
-          <div className="flex items-center gap-1.5 p-1.5 rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 overflow-x-auto max-w-full">
-            {[
-              { id: "steel", name: "Steel", color: "#7090c0" },
-              { id: "bronze", name: "Bronze", color: "#c8830a" },
-              { id: "copper", name: "Copper", color: "#d97706" },
-              { id: "gunmetal", name: "Gunmetal", color: "#64748b" },
-              { id: "cosmic", name: "Cosmic", color: "#a855f7" },
-              { id: "neon", name: "Neon", color: "#06b6d4" },
-              { id: "synthwave", name: "Synthwave", color: "#ec4899" },
-              { id: "wood", name: "Nordic Wood", color: "#b45309" },
-            ].map((t) => (
-              <button
-                key={t.id}
-                onClick={() => {
-                  try {
-                    document.documentElement.setAttribute("data-theme", t.id);
-                    localStorage.setItem("radiofr_theme", t.id);
-                  } catch {}
-                }}
-                className="px-2.5 py-1 rounded-xl text-xs font-medium transition-all duration-200 flex items-center gap-1.5 hover:bg-white/10 text-white/80 hover:text-white flex-shrink-0"
-              >
-                <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: t.color }} />
-                {t.name}
-              </button>
-            ))}
-          </div>
-        </div>
-      </header>
-
-      {/* ── Header ── */}
+      {/* ── Header — one compact bar (brand + actions), tabs below on ≥sm ── */}
       <header className="sticky top-0 z-40 glass-dark border-b metal-texture relative"
         style={{ borderColor: "var(--glass-border)", paddingTop: "env(safe-area-inset-top)" }}>
-        <div className="max-w-5xl mx-auto px-4 py-3 flex flex-col gap-2.5">
+        <div className="max-w-6xl mx-auto px-3 sm:px-4 py-2.5 flex flex-col gap-2.5">
 
-          {/* ── Line 1 — brand + glassy control banner ── */}
-          <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center justify-between gap-3">
             {/* Brand */}
-            <div className="flex items-center gap-3 flex-shrink-0">
-              <div className="relative">
-                <div className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg"
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="relative flex-shrink-0">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg"
                   style={{ background: "linear-gradient(135deg, var(--accent), var(--accent-2))" }}>
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="white" aria-hidden>
                     <path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
                   </svg>
                 </div>
-                {/* Signal arcs */}
-                <svg className="absolute -right-2 -top-2 pointer-events-none" width="20" height="20" viewBox="0 0 18 18" fill="none" aria-hidden>
-                  <path d="M2 16 Q2 2 16 2" stroke="var(--accent)" strokeWidth="1.4" fill="none" opacity="0.6" />
-                  <path d="M5 16 Q5 5 16 5" stroke="var(--accent-2)" strokeWidth="1" fill="none" opacity="0.4" />
-                  <circle cx="16" cy="2" r="1.6" fill="var(--accent)" opacity="0.8" />
-                </svg>
+                <span className="absolute -right-0.5 -top-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 ring-2 ring-[#050b18]" aria-hidden />
               </div>
-              <div>
+              <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <h1 className="font-bold text-xl sm:text-2xl leading-none text-gradient">RadioFR</h1>
-                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border border-white/10 bg-white/5 text-white/70 tracking-wide">
+                  <h1 className="font-bold text-lg sm:text-xl leading-none text-gradient">RadioFR</h1>
+                  <span className="hidden sm:inline text-[10px] font-semibold px-2 py-0.5 rounded-full border border-white/10 bg-white/5 text-white/70 tracking-wide">
                     Radio-PaLaMa
                   </span>
                 </div>
-                <p className="text-white/40 text-[11px] leading-none mt-1.5 flex items-center gap-1.5">
-                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                  Radios & Podcasts Live
+                <p className="hidden sm:block text-white/50 text-xs leading-none mt-1.5">
+                  Radios, podcasts &amp; musique en direct
                 </p>
-              </div>
-              {/* Mini EQ bars decoration */}
-              <div className="hidden md:flex items-end gap-0.5 h-6 ml-1.5">
-                {[40,70,55,80,45,65,35,75,50,60].map((h, i) => (
-                  <div key={i} className="w-[3px] rounded-sm flex-shrink-0"
-                    style={{
-                      height: `${h}%`,
-                      background: `var(--accent)`,
-                      opacity: 0.25 + i * 0.03,
-                    }} />
-                ))}
               </div>
             </div>
 
-            {/* Glassy control banner — bigger icons */}
-            <div className="flex items-center gap-1 sm:gap-2 glass rounded-2xl p-1.5 sm:p-2"
-              style={{ border: "1px solid var(--glass-border)" }}>
-              {/* Home / hub button */}
-              <button
-                onClick={() => setHubOpen(true)}
-                className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl glass-hover flex items-center justify-center transition-all active:scale-90"
-                title="Accueil" aria-label="Revenir à l'accueil"
-              >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                  strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--accent)" }}>
-                  <path d="M3 10.5 12 3l9 7.5" /><path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5" />
-                  <path d="M9.5 21v-6h5v6" />
-                </svg>
-              </button>
-              {/* iPod button */}
-              <button
-                onClick={() => setIpodOpen(true)}
-                className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl glass-hover flex items-center justify-center transition-all active:scale-90"
-                title="Mode iPod" aria-label="Ouvrir le mode iPod"
-              >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                  strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--accent)" }}>
-                  <rect x="6" y="1" width="12" height="22" rx="3" />
-                  <rect x="8" y="3" width="8" height="6" rx="1" />
-                  <circle cx="12" cy="16" r="4" />
-                  <circle cx="12" cy="16" r="1.5" />
-                </svg>
-              </button>
-              {/* DJ button */}
-              <button
-                onClick={() => { playerApi.pause(); setDjOpen(true); }}
-                className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl glass-hover flex items-center justify-center transition-all active:scale-90"
-                title="Mode DJ" aria-label="Ouvrir le mode DJ"
-              >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                  strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--accent)" }}>
-                  <circle cx="7" cy="12" r="3" /><circle cx="7" cy="12" r="0.5" fill="currentColor" />
-                  <circle cx="17" cy="12" r="3" /><circle cx="17" cy="12" r="0.5" fill="currentColor" />
-                  <path d="M2 19h20M4 19v-3M20 19v-3" />
-                </svg>
-              </button>
-              {/* Recent Tracks History button */}
-              <button
-                onClick={() => setHistoryOpen(true)}
-                className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl glass-hover flex items-center justify-center transition-all active:scale-90"
-                title="Titres recents" aria-label="Ouvrir l'historique des titres recents"
-              >
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            {/* Actions */}
+            <div className="flex items-center gap-1.5 relative">
+              {/* Secondary modes — inline on ≥sm, inside the ⋯ menu on phones */}
+              <div className="hidden sm:flex items-center gap-1 glass rounded-2xl p-1"
+                style={{ border: "1px solid var(--glass-border)" }}>
+                {[
+                  { label: "Accueil", aria: "Revenir à l'accueil", run: () => setHubOpen(true),
+                    icon: <><path d="M3 10.5 12 3l9 7.5" /><path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5" /><path d="M9.5 21v-6h5v6" /></> },
+                  { label: "Mode iPod", aria: "Ouvrir le mode iPod", run: () => setIpodOpen(true),
+                    icon: <><rect x="6" y="1" width="12" height="22" rx="3" /><rect x="8" y="3" width="8" height="6" rx="1" /><circle cx="12" cy="16" r="4" /><circle cx="12" cy="16" r="1.5" /></> },
+                  { label: "Mode DJ", aria: "Ouvrir le mode DJ", run: () => { playerApi.pause(); setDjOpen(true); },
+                    icon: <><circle cx="7" cy="12" r="3" /><circle cx="17" cy="12" r="3" /><path d="M2 19h20M4 19v-3M20 19v-3" /></> },
+                  { label: "Titres récents", aria: "Ouvrir l'historique des titres récents", run: () => setHistoryOpen(true),
+                    icon: <><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></> },
+                ].map((b) => (
+                  <button key={b.label} onClick={b.run} title={b.label} aria-label={b.aria}
+                    className="w-10 h-10 rounded-xl glass-hover flex items-center justify-center transition-all active:scale-90">
+                    <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                      strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--accent)" }}>
+                      {b.icon}
+                    </svg>
+                  </button>
+                ))}
+              </div>
+
+              {/* Theme palette */}
+              <button onClick={() => { setThemeOpen((v) => !v); setMenuOpen(false); }}
+                title="Changer de thème" aria-label="Changer de thème" aria-expanded={themeOpen}
+                className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl glass glass-hover flex items-center justify-center transition-all active:scale-90"
+                style={{ border: "1px solid var(--glass-border)" }}>
+                <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                   strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--accent)" }}>
-                  <circle cx="12" cy="12" r="10" />
-                  <polyline points="12 6 12 12 16 14" />
+                  <path d="M12 3a9 9 0 1 0 0 18c1.1 0 1.8-.9 1.5-1.9-.3-1 .3-2.1 1.4-2.1H17a4 4 0 0 0 4-4c0-5-4-10-9-10z" />
+                  <circle cx="7.5" cy="11" r="1" fill="currentColor" /><circle cx="10" cy="7" r="1" fill="currentColor" /><circle cx="15" cy="7.5" r="1" fill="currentColor" />
                 </svg>
               </button>
-              {/* Config button */}
-              <button
-                onClick={() => setConfigOpen(true)}
-                className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl glass-hover flex items-center justify-center transition-all active:scale-90"
+
+              {/* Settings */}
+              <button onClick={() => setConfigOpen(true)}
                 title="Configuration" aria-label="Ouvrir la configuration"
-              >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl glass glass-hover flex items-center justify-center transition-all active:scale-90"
+                style={{ border: "1px solid var(--glass-border)" }}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                   strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--accent)" }}>
                   <circle cx="12" cy="12" r="3.2" />
                   <path d="M12 2.5v2.4M12 19.1v2.4M21.5 12h-2.4M4.9 12H2.5M18.7 5.3l-1.7 1.7M7 17l-1.7 1.7M18.7 18.7 17 17M7 7 5.3 5.3" />
                 </svg>
               </button>
+
+              {/* Phone-only overflow menu */}
+              <button onClick={() => { setMenuOpen((v) => !v); setThemeOpen(false); }}
+                title="Plus d'options" aria-label="Plus d'options" aria-expanded={menuOpen}
+                className="sm:hidden w-11 h-11 rounded-2xl glass glass-hover flex items-center justify-center transition-all active:scale-90"
+                style={{ border: "1px solid var(--glass-border)" }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style={{ color: "var(--accent)" }} aria-hidden>
+                  <circle cx="5" cy="12" r="1.8" /><circle cx="12" cy="12" r="1.8" /><circle cx="19" cy="12" r="1.8" />
+                </svg>
+              </button>
+
+              {/* Popovers (click-outside overlay + panel) */}
+              {(themeOpen || menuOpen) && (
+                <div className="fixed inset-0 z-40" onClick={() => { setThemeOpen(false); setMenuOpen(false); }} aria-hidden />
+              )}
+              <AnimatePresence>
+                {themeOpen && (
+                  <motion.div key="theme-pop"
+                    initial={{ opacity: 0, y: -6, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -6, scale: 0.97 }} transition={{ duration: 0.15 }}
+                    className="absolute right-0 top-[calc(100%+8px)] w-[min(18rem,calc(100vw-1.5rem))] z-50 rounded-2xl glass-dark p-2 shadow-2xl"
+                    style={{ border: "1px solid var(--glass-border)" }} role="menu" aria-label="Thèmes">
+                    <p className="px-2 pt-1 pb-2 text-[11px] font-semibold uppercase tracking-widest text-white/50">Thème</p>
+                    <div className="grid grid-cols-2 gap-1.5 max-h-[60vh] overflow-y-auto">
+                      {THEMES.map((t) => {
+                        const active = theme === t.id;
+                        return (
+                          <button key={t.id} role="menuitemradio" aria-checked={active}
+                            onClick={() => { setTheme(t.id); setThemeOpen(false); }}
+                            className={`flex items-center gap-2 px-2.5 py-2.5 rounded-xl text-left text-xs font-medium transition-all min-h-[44px] ${
+                              active ? "text-white" : "text-white/70 hover:text-white hover:bg-white/8"
+                            }`}
+                            style={active ? { background: "var(--accent)33", border: "1px solid var(--accent)88" } : { border: "1px solid transparent" }}>
+                            <span className="flex-shrink-0 w-5 h-5 rounded-full ring-1 ring-white/25"
+                              style={{ background: `linear-gradient(135deg, ${t.swatch[1]}, ${t.swatch[2]})` }} />
+                            <span className="truncate">{t.name}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </motion.div>
+                )}
+                {menuOpen && (
+                  <motion.div key="menu-pop"
+                    initial={{ opacity: 0, y: -6, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -6, scale: 0.97 }} transition={{ duration: 0.15 }}
+                    className="absolute right-0 top-[calc(100%+8px)] w-56 z-50 rounded-2xl glass-dark p-1.5 shadow-2xl"
+                    style={{ border: "1px solid var(--glass-border)" }} role="menu">
+                    {[
+                      { label: "Accueil", run: () => setHubOpen(true) },
+                      { label: "Mode iPod", run: () => setIpodOpen(true) },
+                      { label: "Mode DJ", run: () => { playerApi.pause(); setDjOpen(true); } },
+                      { label: "Titres récents", run: () => setHistoryOpen(true) },
+                    ].map((m) => (
+                      <button key={m.label} role="menuitem"
+                        onClick={() => { setMenuOpen(false); m.run(); }}
+                        className="w-full text-left px-3 py-3 rounded-xl text-sm font-medium text-white/85 hover:text-white hover:bg-white/8 transition-all min-h-[44px]">
+                        {m.label}
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
 
-          {/* ── Line 2 — nav tabs with animated sliding pill indicator ── */}
-          <div className="flex flex-wrap glass rounded-2xl p-1 gap-0.5 relative">
+          {/* ── Nav tabs — tablet/desktop only (phones get the bottom bar) ── */}
+          <div className="hidden sm:flex glass rounded-2xl p-1 gap-0.5 relative">
             {TABS.map((t) => {
               const isActive = tab === t.id;
               return (
                 <button key={t.id} onClick={() => setTab(t.id)}
                   aria-label={t.label} aria-current={isActive ? "page" : undefined}
-                  className={`relative flex-1 min-w-fit px-3 py-2.5 rounded-xl text-xs font-semibold transition-colors duration-200 whitespace-nowrap flex items-center justify-center gap-1.5 z-10 ${
-                    isActive ? "text-white" : "text-white/50 hover:text-white/85"
+                  className={`relative flex-1 min-w-fit px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors duration-200 whitespace-nowrap flex items-center justify-center gap-1.5 z-10 ${
+                    isActive ? "text-white" : "text-white/60 hover:text-white/90"
                   }`}>
                   {isActive && (
                     <motion.div
@@ -702,7 +680,7 @@ export default function Home() {
                     <TabIcon id={t.id} size={18} />
                     <span>{t.label}</span>
                     {t.id === "favoris" && favorites.length > 0 && (
-                      <span className="text-[9px] rounded-full px-1.5 py-0.5 leading-none font-bold"
+                      <span className="text-[10px] rounded-full px-1.5 py-0.5 leading-none font-bold"
                         style={{
                           background: isActive ? "rgba(255,255,255,0.22)" : "rgba(255,255,255,0.1)",
                           color: isActive ? "#ffffff" : "var(--accent)"
@@ -718,8 +696,42 @@ export default function Home() {
         </div>
       </header>
 
+      {/* ── Bottom tab bar — phones only ── */}
+      <nav aria-label="Navigation principale"
+        className="sm:hidden fixed bottom-0 inset-x-0 z-40 glass-dark border-t"
+        style={{ borderColor: "var(--glass-border)", paddingBottom: "env(safe-area-inset-bottom)" }}>
+        <div className="grid grid-cols-6 px-1 pt-1.5 pb-1.5">
+          {TABS.map((t) => {
+            const isActive = tab === t.id;
+            const short = t.id === "webradio" ? "Web" : t.id === "audius" ? "SongPOD" : t.label;
+            return (
+              <button key={t.id} onClick={() => setTab(t.id)}
+                aria-label={t.label} aria-current={isActive ? "page" : undefined}
+                className={`relative flex flex-col items-center justify-center gap-1 py-1.5 rounded-xl min-h-[52px] transition-colors ${
+                  isActive ? "text-white" : "text-white/55 active:text-white"
+                }`}>
+                {isActive && (
+                  <motion.span layoutId="bottomTabGlow" aria-hidden
+                    className="absolute inset-x-1 inset-y-0.5 rounded-xl"
+                    style={{ background: "var(--accent)2a", border: "1px solid var(--accent)55" }}
+                    transition={{ type: "spring", stiffness: 450, damping: 35 }} />
+                )}
+                <span className="relative" style={isActive ? { color: "var(--accent)" } : undefined}>
+                  <TabIcon id={t.id} size={22} />
+                  {t.id === "favoris" && favorites.length > 0 && (
+                    <span className="absolute -right-2.5 -top-1.5 min-w-[16px] h-4 px-1 rounded-full text-[10px] leading-4 text-center font-bold text-white"
+                      style={{ background: "var(--accent)" }}>{favorites.length}</span>
+                  )}
+                </span>
+                <span className="relative text-[11px] font-semibold leading-none">{short}</span>
+              </button>
+            );
+          })}
+        </div>
+      </nav>
+
       {/* ── Main ── */}
-      <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-6 grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 relative z-10 items-start pb-28 lg:pb-8">
+      <main className="flex-1 max-w-6xl mx-auto w-full px-3 sm:px-4 py-5 sm:py-6 grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6 relative z-10 items-start pb-44 sm:pb-32 lg:pb-8">
 
         {/* ── Player desktop (hidden on mobile, sticky on lg) ── */}
         <div className="hidden lg:block lg:col-start-2 lg:row-start-1 lg:sticky lg:top-24 space-y-4">
@@ -765,16 +777,18 @@ export default function Home() {
                       value={stationQuery}
                       onChange={(e) => setStationQuery(e.target.value)}
                       placeholder="Rechercher une radio (nom, FM, genre)…"
-                      className="w-full glass rounded-xl pl-8 pr-8 py-2 text-xs text-white placeholder-white/35 outline-none border border-white/10 focus:border-[var(--accent)] transition-all"
+                      aria-label="Rechercher une radio"
+                      enterKeyHint="search"
+                      className="w-full glass rounded-xl pl-10 pr-11 min-h-[44px] text-base sm:text-sm text-white placeholder-white/45 outline-none border border-white/10 focus:border-[var(--accent)] transition-all"
                     />
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="absolute left-2.5 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/50 pointer-events-none" aria-hidden>
                       <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
                     </svg>
                     {stationQuery && (
                       <button
                         onClick={() => setStationQuery("")}
                         aria-label="Effacer la recherche"
-                        className="absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-white/15 hover:bg-white/25 text-white/80 flex items-center justify-center transition-all"
+                        className="absolute right-1 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full hover:bg-white/10 text-white/70 hover:text-white flex items-center justify-center transition-all"
                       >
                         <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                           <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
@@ -787,7 +801,7 @@ export default function Home() {
                   <button
                     onClick={handleRandomZapping}
                     title="Lancer une radio au hasard"
-                    className="px-3 py-2 rounded-xl text-xs font-semibold glass glass-hover text-white flex items-center gap-1.5 transition-all active:scale-95 border border-white/10 flex-shrink-0"
+                    className="px-3.5 min-h-[44px] rounded-xl text-[13px] font-semibold glass glass-hover text-white flex items-center gap-1.5 transition-all active:scale-95 border border-white/10 flex-shrink-0"
                     style={{
                       background: "linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.03))"
                     }}
@@ -815,12 +829,17 @@ export default function Home() {
 
                 {/* ── Genres ── */}
                 <div className="flex flex-wrap gap-2 mb-4">
-                  {GENRES.map((g) => {
+                  {GENRES.map((g, gi) => {
                     const isZen = g === "Zen";
                     const on = genre === g;
+                    // Phones: only the first few genres (+ the active one) so the
+                    // station list isn't pushed 4 rows down; ≥sm always shows all.
+                    const visible = gi < 6 || on || showAllGenres;
                     return (
                       <button key={g} onClick={() => setGenre(g)}
-                        className={`px-3 py-1.5 rounded-full text-xs font-medium flex-shrink-0 transition-all ${
+                        className={`px-3.5 min-h-[40px] rounded-full text-[13px] font-medium flex-shrink-0 transition-all ${
+                          visible ? "" : "hidden sm:inline-block"
+                        } ${
                           on ? "text-white" : isZen
                             ? "glass glass-hover text-emerald-300/80 hover:text-emerald-200"
                             : "glass glass-hover text-white/60 hover:text-white"
@@ -836,34 +855,40 @@ export default function Home() {
                       </button>
                     );
                   })}
+                  <button onClick={() => setShowAllGenres((v) => !v)}
+                    aria-expanded={showAllGenres}
+                    className="sm:hidden px-3.5 min-h-[40px] rounded-full text-[13px] font-semibold glass glass-hover transition-all"
+                    style={{ color: "var(--accent)" }}>
+                    {showAllGenres ? "Moins ▴" : `Plus (${GENRES.length - 6}) ▾`}
+                  </button>
                 </div>
 
                 {/* Section header decoration + Sort & View toggles */}
                 <div className="flex items-center gap-3 mb-3">
-                  <span className="text-[10px] font-medium opacity-40 uppercase" style={{ color: "var(--accent)" }}>
+                  <span className="text-xs font-semibold uppercase tracking-wide opacity-80 tabular-nums" style={{ color: "var(--accent)" }}>
                     {filteredStations.length} STATION{filteredStations.length > 1 ? "S" : ""}
                   </span>
                   <div className="flex-1 h-px opacity-40" style={{ background: "linear-gradient(to right, var(--accent), transparent)" }} />
 
                   {/* Sort Controls */}
-                  <div className="flex items-center gap-1 glass rounded-lg p-0.5 text-[10px] font-medium text-white/50">
+                  <div className="flex items-center gap-0.5 glass rounded-xl p-0.5 text-xs font-medium text-white/60" role="group" aria-label="Trier les stations">
                     <button
                       onClick={() => setStationSort("default")}
-                      className={`px-2 py-1 rounded-md transition-all ${stationSort === "default" ? "bg-white/15 text-white font-semibold" : "hover:text-white"}`}
+                      className={`min-w-[40px] min-h-[36px] px-2.5 rounded-lg transition-all ${stationSort === "default" ? "bg-white/15 text-white font-semibold" : "hover:text-white"}`}
                       title="Ordre recommandé"
                     >
                       Top
                     </button>
                     <button
                       onClick={() => setStationSort("name")}
-                      className={`px-2 py-1 rounded-md transition-all ${stationSort === "name" ? "bg-white/15 text-white font-semibold" : "hover:text-white"}`}
+                      className={`min-w-[40px] min-h-[36px] px-2.5 rounded-lg transition-all ${stationSort === "name" ? "bg-white/15 text-white font-semibold" : "hover:text-white"}`}
                       title="Trier de A à Z"
                     >
                       A-Z
                     </button>
                     <button
                       onClick={() => setStationSort("freq")}
-                      className={`px-2 py-1 rounded-md transition-all ${stationSort === "freq" ? "bg-white/15 text-white font-semibold" : "hover:text-white"}`}
+                      className={`min-w-[40px] min-h-[36px] px-2.5 rounded-lg transition-all ${stationSort === "freq" ? "bg-white/15 text-white font-semibold" : "hover:text-white"}`}
                       title="Trier par fréquence FM"
                     >
                       FM
@@ -871,17 +896,17 @@ export default function Home() {
                   </div>
 
                   {/* List / Grid toggle */}
-                  <div className="flex items-center gap-1 glass rounded-lg p-0.5">
-                    <button onClick={() => setStationView("list")} title="Liste détaillée"
-                      className={`p-1.5 rounded-md transition-all ${stationView === "list" ? "text-white" : "text-white/40 hover:text-white/70"}`}
+                  <div className="flex items-center gap-0.5 glass rounded-xl p-0.5" role="group" aria-label="Affichage">
+                    <button onClick={() => setStationView("list")} aria-label="Liste détaillée" aria-pressed={stationView === "list"} title="Liste détaillée"
+                      className={`w-9 h-9 flex items-center justify-center rounded-lg transition-all ${stationView === "list" ? "text-white" : "text-white/40 hover:text-white/70"}`}
                       style={stationView === "list" ? { background: "var(--accent)" } : {}}>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" />
                         <line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" />
                       </svg>
                     </button>
-                    <button onClick={() => setStationView("grid")} title="Grille de logos"
-                      className={`p-1.5 rounded-md transition-all ${stationView === "grid" ? "text-white" : "text-white/40 hover:text-white/70"}`}
+                    <button onClick={() => setStationView("grid")} title="Grille de logos" aria-label="Grille de logos" aria-pressed={stationView === "grid"}
+                      className={`w-9 h-9 flex items-center justify-center rounded-lg transition-all ${stationView === "grid" ? "text-white" : "text-white/40 hover:text-white/70"}`}
                       style={stationView === "grid" ? { background: "var(--accent)" } : {}}>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" />

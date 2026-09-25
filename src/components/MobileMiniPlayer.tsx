@@ -66,7 +66,7 @@ export default function MobileMiniPlayer({
 
   return (
     <div
-      className="lg:hidden fixed bottom-3 left-3 right-3 z-40"
+      className="lg:hidden fixed bottom-[calc(72px+env(safe-area-inset-bottom))] sm:bottom-3 left-3 right-3 z-40"
       style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
     >
       <motion.div
