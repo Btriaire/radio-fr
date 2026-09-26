@@ -25,6 +25,7 @@ import SplashScreen from "@/components/SplashScreen";
 import HubScreen, { HubChoice } from "@/components/HubScreen";
 import { useMediaSession } from "@/hooks/useMediaSession";
 import MobileMiniPlayer from "@/components/MobileMiniPlayer";
+import NowPlayingSheet from "@/components/NowPlayingSheet";
 import { useNowPlaying } from "@/hooks/useNowPlaying";
 import { saveTrackHistory } from "@/lib/trackHistory";
 import TrackHistoryDrawer from "@/components/TrackHistoryDrawer";
@@ -94,6 +95,7 @@ export default function Home() {
   const [menuOpen, setMenuOpen]                 = useState(false);
   const [themeOpen, setThemeOpen]               = useState(false);
   const [showAllGenres, setShowAllGenres]       = useState(false);
+  const [recentIds, setRecentIds]               = useState<string[]>([]);
   const spotifyPanelRef                         = useRef<SpotifyPanelHandle>(null);
 
   const playerApi                               = useAudioPlayer();
@@ -166,6 +168,25 @@ export default function Home() {
 
   // Curated Google-favicon logo is authoritative (consistent & crisp). The
   // radio-browser fetch is only a fallback for any future station without one.
+  // "Récemment écoutées": ordered ids of stations that actually started playing
+  // (any entry point — tap, zapping, next/prev, history). Nothing auto-plays.
+  useEffect(() => {
+    try {
+      const raw = JSON.parse(localStorage.getItem("radiofr_recent_stations") || "[]");
+      if (Array.isArray(raw)) setRecentIds(raw.filter((x): x is string => typeof x === "string").slice(0, 8));
+    } catch {}
+  }, []);
+  const playingStationId = playerApi.isPlaying ? selectedStation?.id : undefined;
+  useEffect(() => {
+    if (!playingStationId) return;
+    setRecentIds((prev) => {
+      if (prev[0] === playingStationId) return prev;
+      const next = [playingStationId, ...prev.filter((id) => id !== playingStationId)].slice(0, 8);
+      try { localStorage.setItem("radiofr_recent_stations", JSON.stringify(next)); } catch {}
+      return next;
+    });
+  }, [playingStationId]);
+
   const withLogo = (s: Station): Station => ({
     ...s,
     logo: s.logo || logoMap[s.id],
@@ -769,6 +790,31 @@ export default function Home() {
                 initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 16 }} transition={{ duration: 0.18 }}>
 
+                {/* ── Reprendre : stations récemment écoutées (un tap, rien ne démarre seul) ── */}
+                {!stationQuery && genre === "Tous" && recentIds.length > 0 && (
+                  <section aria-label="Récemment écoutées" className="mb-4">
+                    <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-white/60">Reprendre</h2>
+                    <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+                      {recentIds
+                        .map((id) => STATIONS.find((st) => st.id === id))
+                        .filter((st): st is Station => !!st)
+                        .slice(0, 6)
+                        .map((st, i) => {
+                          const on = selectedStation?.id === st.id;
+                          return (
+                            <button key={st.id} onClick={() => handlePlay(st)}
+                              aria-label={`${on && playerApi.isPlaying ? "Mettre en pause" : "Écouter"} ${st.name}`}
+                              className={`${i >= 4 ? "hidden sm:flex" : "flex"} flex-col items-center gap-1.5 rounded-2xl p-2 min-h-[88px] glass glass-hover transition-all active:scale-95`}
+                              style={on ? { border: `1px solid ${st.color}99`, boxShadow: `0 0 18px ${st.color}33` } : { border: "1px solid var(--glass-border)" }}>
+                              <StationLogo logo={withLogo(st).logo} name={st.name} color={st.color} size="md" />
+                              <span className="w-full truncate text-center text-xs font-medium text-white/80">{st.name}</span>
+                            </button>
+                          );
+                        })}
+                    </div>
+                  </section>
+                )}
+
                 {/* ── Radio Search & Random Zapping Bar ── */}
                 <div className="flex items-center gap-2 mb-3">
                   <div className="relative flex-1">
@@ -1111,41 +1157,40 @@ export default function Home() {
         )}
       </AnimatePresence>
 
-      {/* ── Mobile Expandable Bottom Sheet / Drawer ── */}
+      {/* ── Mobile full-screen "En lecture" sheet ── */}
       <AnimatePresence>
         {mobilePlayerExpanded && (currentStation || currentPodcast) && (
-          <div className="fixed inset-0 z-50 lg:hidden flex flex-col justify-end">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setMobilePlayerExpanded(false)}
-              className="fixed inset-0 bg-black/75 backdrop-blur-sm"
-            />
-            <motion.div
-              initial={{ y: "100%" }}
-              animate={{ y: 0 }}
-              exit={{ y: "100%" }}
-              transition={{ type: "spring", damping: 28, stiffness: 280 }}
-              className="relative z-10 max-h-[92vh] overflow-y-auto rounded-t-[32px] bg-[#0c1322] border-t border-white/15 p-3 pb-8 shadow-2xl space-y-4"
-            >
-              <Player
-                station={currentStation}
-                podcast={currentPodcast}
-                playerApi={playerApi}
-                ipodOpen={ipodOpen}
-                isFavorite={selectedStation ? isFavorite(selectedStation.id) : false}
-                onToggleFavorite={selectedStation ? () => toggleFavorite(selectedStation) : undefined}
-                nowPlaying={nowPlaying}
-                onClose={() => setMobilePlayerExpanded(false)}
-              />
-              <ClipVisualizer
-                analyserRef={playerApi.analyserRef}
-                isPlaying={playerApi.isPlaying}
-                color={currentStation?.color ?? "var(--accent)"}
-              />
-            </motion.div>
-          </div>
+          <NowPlayingSheet
+            key="now-playing-sheet"
+            station={currentStation}
+            podcast={currentPodcast}
+            playerApi={playerApi}
+            nowPlaying={nowPlaying}
+            isFavorite={selectedStation ? isFavorite(selectedStation.id) : false}
+            onToggleFavorite={selectedStation ? () => toggleFavorite(selectedStation) : undefined}
+            onNext={() => playAdjacentStation(1)}
+            onPrev={() => playAdjacentStation(-1)}
+            onClose={() => setMobilePlayerExpanded(false)}
+            advanced={
+              <div className="space-y-4">
+                <Player
+                  station={currentStation}
+                  podcast={currentPodcast}
+                  playerApi={playerApi}
+                  ipodOpen={ipodOpen}
+                  isFavorite={selectedStation ? isFavorite(selectedStation.id) : false}
+                  onToggleFavorite={selectedStation ? () => toggleFavorite(selectedStation) : undefined}
+                  nowPlaying={nowPlaying}
+                  onClose={() => setMobilePlayerExpanded(false)}
+                />
+                <ClipVisualizer
+                  analyserRef={playerApi.analyserRef}
+                  isPlaying={playerApi.isPlaying}
+                  color={currentStation?.color ?? "var(--accent)"}
+                />
+              </div>
+            }
+          />
         )}
       </AnimatePresence>
 
