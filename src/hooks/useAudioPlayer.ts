@@ -27,6 +27,15 @@ function lowBatteryMode(): boolean {
   try { return localStorage.getItem("radiofr_low_battery") === "1"; } catch { return false; }
 }
 
+// blob:/data: URLs (downloaded podcast episodes played back from IndexedDB,
+// see offlineStorage.ts) never touch the network — the offline short-circuits
+// below must not apply to them, or an already-downloaded episode becomes
+// unplayable the moment navigator.onLine is false, which defeats the entire
+// point of downloading it for offline listening in the first place.
+function isLocalUrl(url: string | undefined | null): boolean {
+  return !!url && (url.startsWith("blob:") || url.startsWith("data:"));
+}
+
 // Mode "Sommeil" — auto-pauses playback during a configured daily time window
 // (e.g. bedtime) so the radio doesn't keep playing all night unattended.
 function readSleepSchedule(): { enabled: boolean; start: string; end: string } {
@@ -454,7 +463,7 @@ export function useAudioPlayer() {
     // backoff — there's nothing to retry until it's back. The "online" handler
     // below already calls reconnectNow() the instant it returns; this just
     // avoids ticking through a pointless countdown in the meantime.
-    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+    if (typeof navigator !== "undefined" && navigator.onLine === false && !isLocalUrl(lastInitRef.current?.url)) {
       setOffline(true);
       setReconnecting(false);
       setIsLoading(false);
@@ -850,8 +859,10 @@ export function useAudioPlayer() {
     // browser already knows there isn't one. wantPlayingRef/lastInitRef are
     // already set above, so the online/offline effect's `onOnline` handler
     // auto-resumes this exact station the moment connectivity returns — no
-    // extra plumbing needed here.
-    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+    // extra plumbing needed here. Exempt blob:/data: URLs (a downloaded
+    // podcast episode) — those play from IndexedDB, not the network, so
+    // "offline" is irrelevant to them.
+    if (typeof navigator !== "undefined" && navigator.onLine === false && !isLocalUrl(url)) {
       setOffline(true);
       setIsLoading(false);
       setError("Pas de connexion internet.");
@@ -895,7 +906,7 @@ export function useAudioPlayer() {
   const reconnectNow = useCallback(() => {
     const last = lastInitRef.current;
     if (!last || !wantPlayingRef.current) return;
-    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+    if (typeof navigator !== "undefined" && navigator.onLine === false && !isLocalUrl(last.url)) {
       setOffline(true);
       setIsLoading(false);
       return; // onOnline() retries this same station once connectivity is back
