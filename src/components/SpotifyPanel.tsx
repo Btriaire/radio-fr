@@ -121,11 +121,15 @@ interface SpotifyPanelProps {
   currentEpisodeUrl: string | null;
   isPlaying: boolean;
   onPlayEpisode: (ep: RSSEpisode, pod: iTunesPodcast, opts?: { kind?: PlayKind; queue?: { episodes: RSSEpisode[]; index: number } }) => void;
+  // Absent/true = normal behavior (existing callers unaffected). When false,
+  // episodes already downloaded via useOfflinePodcasts stay fully playable —
+  // only network-dependent search/discovery is affected.
+  online?: boolean;
 }
 
 // ═══════════════════════════════════════════════════════════════════════
 const SpotifyPanel = forwardRef<SpotifyPanelHandle, SpotifyPanelProps>(
-function SpotifyPanel({ currentEpisodeUrl, isPlaying, onPlayEpisode }, ref) {
+function SpotifyPanel({ currentEpisodeUrl, isPlaying, onPlayEpisode, online = true }, ref) {
   const [podcasts, setPodcasts]   = useState<iTunesPodcast[]>([]);
   const [query, setQuery]         = useState("");
   const [loading, setLoading]     = useState(true);
@@ -141,6 +145,11 @@ function SpotifyPanel({ currentEpisodeUrl, isPlaying, onPlayEpisode }, ref) {
   useImperativeHandle(ref, () => ({ pause: () => {} }));
 
   const doSearch = useCallback(async (q: string, genreId?: number | null) => {
+    if (!navigator.onLine) {
+      setLoading(false);
+      setError("Hors ligne — la recherche reprendra une fois reconnecté.");
+      return;
+    }
     setLoading(true); setError(null);
     try {
       let results: iTunesPodcast[];
@@ -163,6 +172,12 @@ function SpotifyPanel({ currentEpisodeUrl, isPlaying, onPlayEpisode }, ref) {
   }, []);
 
   useEffect(() => { doSearch("", null); }, []); // eslint-disable-line
+
+  // Losing connectivity mid-session: jump straight to what's actually still
+  // playable instead of leaving the user stuck on a dead search/results view.
+  useEffect(() => {
+    if (!online) setShowOffline(true);
+  }, [online]);
 
   const handleSearch = () => { setShowFavorites(false); doSearch(query, activeGenre); };
   const handleTag    = (tag: string) => { setShowFavorites(false); setQuery(tag); doSearch(tag, activeGenre); };
@@ -253,11 +268,12 @@ function SpotifyPanel({ currentEpisodeUrl, isPlaying, onPlayEpisode }, ref) {
           </svg>
           <input value={query} onChange={e => setQuery(e.target.value)}
             onKeyDown={e => e.key === "Enter" && handleSearch()}
-            placeholder="Cherche un podcast français…"
-            className="w-full glass rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder-white/30 outline-none border border-transparent hover:border-white/10 focus:border-[var(--accent)] transition-all" />
+            placeholder={online ? "Cherche un podcast français…" : "Indisponible hors ligne"}
+            disabled={!online}
+            className="w-full glass rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder-white/30 outline-none border border-transparent hover:border-white/10 focus:border-[var(--accent)] transition-all disabled:opacity-50" />
         </div>
-        <button onClick={handleSearch}
-          className="px-4 py-2.5 rounded-xl text-sm font-medium text-white transition-all"
+        <button onClick={handleSearch} disabled={!online}
+          className="px-4 py-2.5 rounded-xl text-sm font-medium text-white transition-all disabled:opacity-50"
           style={{ background: "var(--accent)" }}>
           {loading && !podcasts.length ? "…" : "OK"}
         </button>

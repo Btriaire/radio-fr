@@ -765,7 +765,7 @@ export default function Home() {
               <div role="status" className="flex items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-medium text-amber-100"
                 style={{ background: "rgba(217,119,6,0.18)", border: "1px solid rgba(217,119,6,0.35)" }}>
                 <span className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0 animate-pulse" />
-                Hors ligne — Favoris et Radio restent utilisables, la recherche et les podcasts sont en pause.
+                Hors ligne — Favoris, Radio et tes épisodes téléchargés restent utilisables ; la recherche est en pause.
               </div>
             </div>
           </motion.div>
@@ -1135,16 +1135,17 @@ export default function Home() {
               <motion.div key="podcasts"
                 initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.18 }}>
-                {online ? (
-                  <SpotifyPanel
-                    ref={spotifyPanelRef}
-                    currentEpisodeUrl={currentPodcast?.audioUrl ?? null}
-                    isPlaying={playerApi.isPlaying}
-                    onPlayEpisode={handlePlayEpisode}
-                  />
-                ) : (
-                  <OfflineNotice feature="Les podcasts" />
-                )}
+                {/* Never gated behind `online`: episodes already downloaded via
+                    useOfflinePodcasts stay fully playable with no connection —
+                    SpotifyPanel itself degrades the search/discovery parts and
+                    jumps to the "Hors-ligne" list when `online` is false. */}
+                <SpotifyPanel
+                  ref={spotifyPanelRef}
+                  currentEpisodeUrl={currentPodcast?.audioUrl ?? null}
+                  isPlaying={playerApi.isPlaying}
+                  onPlayEpisode={handlePlayEpisode}
+                  online={online}
+                />
               </motion.div>
             )}
 
