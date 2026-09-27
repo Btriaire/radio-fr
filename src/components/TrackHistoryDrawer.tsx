@@ -77,7 +77,7 @@ export default function TrackHistoryDrawer({ isOpen, onClose, onPlayStation }: P
             {/* Header */}
             <div className="p-4 border-b border-white/10 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-400">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="" style={{ color: "var(--accent)" }}>
                   <circle cx="12" cy="12" r="10" />
                   <polyline points="12 6 12 12 16 14" />
                 </svg>
@@ -128,7 +128,10 @@ export default function TrackHistoryDrawer({ isOpen, onClose, onPlayStation }: P
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Rechercher un titre, un artiste, une radio..."
-                  className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder-white/30 focus:outline-none focus:border-blue-500 transition-colors"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder-white/30 focus:outline-none transition-colors"
+                  style={{ borderColor: "var(--glass-border)" }}
+                  onFocus={(e) => (e.currentTarget.style.borderColor = "var(--accent)")}
+                  onBlur={(e) => (e.currentTarget.style.borderColor = "var(--glass-border)")}
                 />
                 {search && (
                   <button
@@ -160,7 +163,8 @@ export default function TrackHistoryDrawer({ isOpen, onClose, onPlayStation }: P
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 mb-0.5">
-                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-blue-500/15 text-blue-400 border border-blue-500/20 truncate max-w-[120px]">
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md truncate max-w-[120px]"
+                        style={{ background: "var(--accent)26", color: "var(--accent)", border: "1px solid var(--accent)33" }}>
                           {item.stationName}
                         </span>
                         <span className="text-[10px] text-white/30 font-mono">
@@ -199,7 +203,7 @@ export default function TrackHistoryDrawer({ isOpen, onClose, onPlayStation }: P
                         }}
                         title={`Ecouter ${item.stationName}`}
                         aria-label={`Ecouter ${item.stationName}`}
-                        className="p-1.5 rounded-lg text-white/40 hover:text-blue-400 hover:bg-blue-500/10 transition-colors cursor-pointer"
+                        className="p-1.5 rounded-lg text-white/40 transition-colors cursor-pointer hover:text-[var(--accent)] hover:bg-[color-mix(in_srgb,var(--accent)_10%,transparent)]"
                       >
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
                           <polygon points="5 3 19 12 5 21 5 3" />

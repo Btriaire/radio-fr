@@ -357,7 +357,7 @@ export default function ConfigPanel({ open, onClose }: Props) {
                       <button
                         onClick={toggleLowBandwidth}
                         className={`w-12 h-7 rounded-full transition-all relative flex-shrink-0 ${
-                          lowBandwidth ? "bg-emerald-500" : "bg-white/15"
+                          lowBandwidth ? "bg-[var(--accent)]" : "bg-white/15"
                         }`}
                       >
                         <span className={`absolute top-1 w-5 h-5 rounded-full bg-white transition-all shadow-md ${
@@ -375,7 +375,7 @@ export default function ConfigPanel({ open, onClose }: Props) {
                       <button
                         onClick={toggleAutoReconnect}
                         className={`w-12 h-7 rounded-full transition-all relative flex-shrink-0 ${
-                          autoReconnect ? "bg-emerald-500" : "bg-white/15"
+                          autoReconnect ? "bg-[var(--accent)]" : "bg-white/15"
                         }`}
                       >
                         <span className={`absolute top-1 w-5 h-5 rounded-full bg-white transition-all shadow-md ${
@@ -393,7 +393,7 @@ export default function ConfigPanel({ open, onClose }: Props) {
                       <button
                         onClick={toggleVolumeNormalization}
                         className={`w-12 h-7 rounded-full transition-all relative flex-shrink-0 ${
-                          volumeNormalization ? "bg-emerald-500" : "bg-white/15"
+                          volumeNormalization ? "bg-[var(--accent)]" : "bg-white/15"
                         }`}
                       >
                         <span className={`absolute top-1 w-5 h-5 rounded-full bg-white transition-all shadow-md ${
@@ -413,7 +413,7 @@ export default function ConfigPanel({ open, onClose }: Props) {
                       <button
                         onClick={toggleIosEq}
                         className={`w-12 h-7 rounded-full transition-all relative flex-shrink-0 ${
-                          iosEq ? "bg-amber-500" : "bg-white/15"
+                          iosEq ? "bg-[var(--accent)]" : "bg-white/15"
                         }`}
                       >
                         <span className={`absolute top-1 w-5 h-5 rounded-full bg-white transition-all shadow-md ${
@@ -437,7 +437,7 @@ export default function ConfigPanel({ open, onClose }: Props) {
                     <button
                       onClick={toggleLowBattery}
                       className={`w-12 h-7 rounded-full transition-all relative flex-shrink-0 ${
-                        lowBattery ? "bg-emerald-500" : "bg-white/15"
+                        lowBattery ? "bg-[var(--accent)]" : "bg-white/15"
                       }`}
                     >
                       <span className={`absolute top-1 w-5 h-5 rounded-full bg-white transition-all shadow-md ${
@@ -456,7 +456,7 @@ export default function ConfigPanel({ open, onClose }: Props) {
                       <button
                         onClick={toggleSleep}
                         className={`w-12 h-7 rounded-full transition-all relative flex-shrink-0 ${
-                          sleepEnabled ? "bg-indigo-500" : "bg-white/15"
+                          sleepEnabled ? "bg-[var(--accent)]" : "bg-white/15"
                         }`}
                       >
                         <span className={`absolute top-1 w-5 h-5 rounded-full bg-white transition-all shadow-md ${
@@ -535,7 +535,7 @@ export default function ConfigPanel({ open, onClose }: Props) {
                     <button
                       onClick={togglePodcastAutoplay}
                       className={`w-12 h-7 rounded-full transition-all relative flex-shrink-0 ${
-                        podcastAutoplay ? "bg-emerald-500" : "bg-white/15"
+                        podcastAutoplay ? "bg-[var(--accent)]" : "bg-white/15"
                       }`}
                     >
                       <span className={`absolute top-1 w-5 h-5 rounded-full bg-white transition-all shadow-md ${

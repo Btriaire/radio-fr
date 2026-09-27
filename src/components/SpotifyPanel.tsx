@@ -254,7 +254,7 @@ function SpotifyPanel({ currentEpisodeUrl, isPlaying, onPlayEpisode }, ref) {
           <input value={query} onChange={e => setQuery(e.target.value)}
             onKeyDown={e => e.key === "Enter" && handleSearch()}
             placeholder="Cherche un podcast français…"
-            className="w-full glass rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder-white/30 outline-none border border-transparent focus:border-blue-500/40 transition-all" />
+            className="w-full glass rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder-white/30 outline-none border border-transparent hover:border-white/10 focus:border-[var(--accent)] transition-all" />
         </div>
         <button onClick={handleSearch}
           className="px-4 py-2.5 rounded-xl text-sm font-medium text-white transition-all"
@@ -503,7 +503,7 @@ function SongsView({ onPlayEpisode }: { onPlayEpisode: SpotifyPanelProps["onPlay
           <input value={query} onChange={e => setQuery(e.target.value)}
             onKeyDown={e => e.key === "Enter" && run(query)}
             placeholder="Cherche une chanson, un artiste…"
-            className="w-full glass rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder-white/30 outline-none border border-transparent focus:border-blue-500/40 transition-all" />
+            className="w-full glass rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder-white/30 outline-none border border-transparent hover:border-white/10 focus:border-[var(--accent)] transition-all" />
         </div>
         <button onClick={() => run(query)}
           className="px-4 py-2.5 rounded-xl text-sm font-medium text-white transition-all"
@@ -757,7 +757,7 @@ export function AudiusView({ onPlayEpisode, onPlayYouTube, youtubeTrackId, curre
               <input value={query} onChange={e => setQuery(e.target.value)}
                 onKeyDown={e => e.key === "Enter" && run(query)}
                 placeholder="Cherche un titre, un artiste…"
-                className="w-full glass rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder-white/30 outline-none border border-transparent focus:border-blue-500/40 transition-all" />
+                className="w-full glass rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder-white/30 outline-none border border-transparent hover:border-white/10 focus:border-[var(--accent)] transition-all" />
             </div>
             <button onClick={() => run(query)}
               className="px-4 py-2.5 rounded-xl text-sm font-medium text-white transition-all"

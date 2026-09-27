@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { ThemeProvider } from "@/context/ThemeContext";
+import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 
 export const metadata: Metadata = {
   title: "RadioFR — Radios & Podcasts Français",
@@ -40,6 +41,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className="min-h-screen antialiased" style={{ background: "var(--bg-0)" }}>
+        <ServiceWorkerRegister />
         <ThemeProvider>
           {/* Ambient blobs */}
           <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10 ambient-bg">

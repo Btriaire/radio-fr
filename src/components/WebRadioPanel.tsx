@@ -109,7 +109,7 @@ export default function WebRadioPanel({ onPlay, currentUrl, isPlaying, isFavorit
           </svg>
           <input value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Filtrer par nom ou tag…"
-            className="w-full glass rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder-white/30 outline-none border border-transparent focus:border-blue-500/40 transition-all" />
+            className="w-full glass rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder-white/30 outline-none border border-transparent transition-all hover:border-white/10 focus:border-[var(--accent)]" />
           {search && (
             <button onClick={() => setSearch("")}
               className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-white/10 hover:bg-white/25 flex items-center justify-center text-white/60 hover:text-white transition-all">

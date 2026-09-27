@@ -22,14 +22,16 @@ export default function StationCard({
     <motion.div
       whileHover={{ scale: 1.025, y: -2 }}
       whileTap={{ scale: 0.96 }}
-      className={`group flex items-center gap-3.5 rounded-2xl p-3.5 transition-all duration-250 relative overflow-hidden cursor-pointer border backdrop-blur-2xl ${
-        isActive 
-          ? "bg-gradient-to-r from-slate-900/90 via-slate-800/80 to-slate-900/90 border-cyan-400/40 shadow-[0_8px_32px_rgba(6,182,212,0.25)] ring-1 ring-cyan-400/30" 
-          : "bg-slate-950/40 hover:bg-slate-900/60 border-white/10 hover:border-cyan-500/30 shadow-[0_4px_12px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_24px_rgba(6,182,212,0.15)] active:scale-[0.97]"
+      className={`group glass-dark flex items-center gap-3.5 rounded-2xl p-3.5 transition-all duration-250 relative overflow-hidden cursor-pointer border ${
+        isActive
+          ? "ring-1"
+          : "border-white/10 hover:border-[var(--accent)] hover:shadow-[0_8px_24px_color-mix(in_srgb,var(--accent)_18%,transparent)] active:scale-[0.97]"
       }`}
-      style={isActive ? { 
+      style={isActive ? {
         borderColor: `${station.color}c0`,
-        boxShadow: `0 12px 40px -6px ${station.color}50, 0 0 15px ${station.color}25, inset 0 1px 0 rgba(255,255,255,0.35)`
+        boxShadow: `0 12px 40px -6px ${station.color}50, 0 0 15px ${station.color}25, inset 0 1px 0 rgba(255,255,255,0.35)`,
+        // @ts-ignore -- CSS custom property, not a real React style key
+        "--tw-ring-color": `${station.color}4d`,
       } : {}}
       onClick={onClick}
     >

@@ -450,6 +450,16 @@ export function useAudioPlayer() {
     if (reconnectTimerRef.current) return;       // a retry is already queued
     stopWatchdog();
     clearConnectTimer();
+    // A drop caused by the network actually vanishing doesn't need a timed
+    // backoff — there's nothing to retry until it's back. The "online" handler
+    // below already calls reconnectNow() the instant it returns; this just
+    // avoids ticking through a pointless countdown in the meantime.
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      setOffline(true);
+      setReconnecting(false);
+      setIsLoading(false);
+      return;
+    }
     if (attemptRef.current >= MAX_RECONNECT_ATTEMPTS) {
       setReconnecting(false);
       setIsLoading(false);
@@ -834,6 +844,20 @@ export function useAudioPlayer() {
     setReconnecting(false);
     resumeAtRef.current = 0;
 
+    // No point even trying: an immediate network attempt would just sit there
+    // for the full connect-timeout + reconnect backoff (up to ~1 min of fake
+    // "Reconnexion… (1)…(6)") before admitting there's no network, when the
+    // browser already knows there isn't one. wantPlayingRef/lastInitRef are
+    // already set above, so the online/offline effect's `onOnline` handler
+    // auto-resumes this exact station the moment connectivity returns — no
+    // extra plumbing needed here.
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      setOffline(true);
+      setIsLoading(false);
+      setError("Pas de connexion internet.");
+      return;
+    }
+
     // Same source already loaded → just resume if paused (unless forced switch requested).
     if (!opts?.forceSwitch && currentUrl === url && (audioRef.current || decoderRef.current)) {
       if (!isPlaying) {
@@ -871,6 +895,11 @@ export function useAudioPlayer() {
   const reconnectNow = useCallback(() => {
     const last = lastInitRef.current;
     if (!last || !wantPlayingRef.current) return;
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      setOffline(true);
+      setIsLoading(false);
+      return; // onOnline() retries this same station once connectivity is back
+    }
     setReconnecting(true);
     setIsLoading(true);
     let iosEqOptIn = false;

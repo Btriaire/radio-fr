@@ -26,6 +26,8 @@ import HubScreen, { HubChoice } from "@/components/HubScreen";
 import { useMediaSession } from "@/hooks/useMediaSession";
 import MobileMiniPlayer from "@/components/MobileMiniPlayer";
 import NowPlayingSheet from "@/components/NowPlayingSheet";
+import OfflineNotice from "@/components/OfflineNotice";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { useNowPlaying } from "@/hooks/useNowPlaying";
 import { saveTrackHistory } from "@/lib/trackHistory";
 import TrackHistoryDrawer from "@/components/TrackHistoryDrawer";
@@ -99,6 +101,7 @@ export default function Home() {
   const spotifyPanelRef                         = useRef<SpotifyPanelHandle>(null);
 
   const playerApi                               = useAudioPlayer();
+  const online                                  = useOnlineStatus();
   const nowPlaying                              = useNowPlaying(selectedStation, playerApi.isPlaying);
   const { favorites, isFavorite, toggleFavorite } = useFavorites();
   const logoMap                                 = useStationLogos(STATIONS);
@@ -751,6 +754,24 @@ export default function Home() {
         </div>
       </nav>
 
+      {/* ── Global offline banner — independent of whether anything is playing ── */}
+      <AnimatePresence>
+        {!online && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }} className="overflow-hidden relative z-20"
+          >
+            <div className="max-w-6xl mx-auto px-3 sm:px-4 pt-3">
+              <div role="status" className="flex items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-medium text-amber-100"
+                style={{ background: "rgba(217,119,6,0.18)", border: "1px solid rgba(217,119,6,0.35)" }}>
+                <span className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0 animate-pulse" />
+                Hors ligne — Favoris et Radio restent utilisables, la recherche et les podcasts sont en pause.
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* ── Main ── */}
       <main className="flex-1 max-w-6xl mx-auto w-full px-3 sm:px-4 py-5 sm:py-6 grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6 relative z-10 items-start pb-44 sm:pb-32 lg:pb-8">
 
@@ -1024,13 +1045,17 @@ export default function Home() {
               <motion.div key="webradio"
                 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.18 }}>
-                <WebRadioPanel
-                  onPlay={(s) => { userInteractedRef.current = true; setCurrentPodcast(null); setSelectedStation(s); playerApi.initAudio(preferredStreamUrl(s), { station: s }); }}
-                  currentUrl={playerApi.currentUrl}
-                  isPlaying={playerApi.isPlaying}
-                  isFavorite={isFavorite}
-                  onToggleFavorite={toggleFavorite}
-                />
+                {online ? (
+                  <WebRadioPanel
+                    onPlay={(s) => { userInteractedRef.current = true; setCurrentPodcast(null); setSelectedStation(s); playerApi.initAudio(preferredStreamUrl(s), { station: s }); }}
+                    currentUrl={playerApi.currentUrl}
+                    isPlaying={playerApi.isPlaying}
+                    isFavorite={isFavorite}
+                    onToggleFavorite={toggleFavorite}
+                  />
+                ) : (
+                  <OfflineNotice feature="La recherche de web radios" />
+                )}
               </motion.div>
             )}
 
@@ -1038,13 +1063,17 @@ export default function Home() {
               <motion.div key="search"
                 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.18 }}>
-                <RadioSearch
-                  onPlay={(s) => { userInteractedRef.current = true; setCurrentPodcast(null); setSelectedStation(s); playerApi.initAudio(preferredStreamUrl(s), { station: s }); }}
-                  onToggleFavorite={toggleFavorite}
-                  isFavorite={isFavorite}
-                  currentUrl={playerApi.currentUrl}
-                  isPlaying={playerApi.isPlaying}
-                />
+                {online ? (
+                  <RadioSearch
+                    onPlay={(s) => { userInteractedRef.current = true; setCurrentPodcast(null); setSelectedStation(s); playerApi.initAudio(preferredStreamUrl(s), { station: s }); }}
+                    onToggleFavorite={toggleFavorite}
+                    isFavorite={isFavorite}
+                    currentUrl={playerApi.currentUrl}
+                    isPlaying={playerApi.isPlaying}
+                  />
+                ) : (
+                  <OfflineNotice feature="La recherche de radios" />
+                )}
               </motion.div>
             )}
 
@@ -1106,12 +1135,16 @@ export default function Home() {
               <motion.div key="podcasts"
                 initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.18 }}>
-                <SpotifyPanel
-                  ref={spotifyPanelRef}
-                  currentEpisodeUrl={currentPodcast?.audioUrl ?? null}
-                  isPlaying={playerApi.isPlaying}
-                  onPlayEpisode={handlePlayEpisode}
-                />
+                {online ? (
+                  <SpotifyPanel
+                    ref={spotifyPanelRef}
+                    currentEpisodeUrl={currentPodcast?.audioUrl ?? null}
+                    isPlaying={playerApi.isPlaying}
+                    onPlayEpisode={handlePlayEpisode}
+                  />
+                ) : (
+                  <OfflineNotice feature="Les podcasts" />
+                )}
               </motion.div>
             )}
 
@@ -1119,13 +1152,17 @@ export default function Home() {
               <motion.div key="audius"
                 initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.18 }}>
-                <AudiusView
-                  currentEpisodeUrl={currentPodcast?.audioUrl ?? null}
-                  isPlaying={playerApi.isPlaying}
-                  onPlayEpisode={handlePlayEpisode}
-                  onPlayYouTube={handlePlayYouTube}
-                  youtubeTrackId={youtubeTrack?.id ?? null}
-                />
+                {online ? (
+                  <AudiusView
+                    currentEpisodeUrl={currentPodcast?.audioUrl ?? null}
+                    isPlaying={playerApi.isPlaying}
+                    onPlayEpisode={handlePlayEpisode}
+                    onPlayYouTube={handlePlayYouTube}
+                    youtubeTrackId={youtubeTrack?.id ?? null}
+                  />
+                ) : (
+                  <OfflineNotice feature="SongPOD" />
+                )}
               </motion.div>
             )}
 
