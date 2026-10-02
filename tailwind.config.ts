@@ -10,6 +10,7 @@ const config: Config = {
     extend: {
       fontFamily: {
         sans: ["var(--font-outfit)", "system-ui", "sans-serif"],
+        dot: ["var(--font-dot)", "'Silkscreen'", "monospace"],
       },
       colors: {
         navy: {

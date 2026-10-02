@@ -20,6 +20,7 @@ import IpodOverlay from "@/components/IpodOverlay";
 import DjMode from "@/components/DjMode";
 import YouTubeMiniPlayer from "@/components/YouTubeMiniPlayer";
 import ZenBackground from "@/components/ZenBackground";
+import NothingGlyphBackground from "@/components/NothingGlyphBackground";
 import StationLogo from "@/components/StationLogo";
 import SplashScreen from "@/components/SplashScreen";
 import HubScreen, { HubChoice } from "@/components/HubScreen";
@@ -444,6 +445,11 @@ export default function Home() {
       {/* ── Synthwave sun + perspective grid (only in synthwave theme) ── */}
       {theme === "synthwave" && (
         <div className="synthwave-grid fixed inset-0 pointer-events-none z-0 overflow-hidden" aria-hidden />
+      )}
+
+      {/* ── Nothing Glyph Matrix & Tech Grid (Nothing themes) ── */}
+      {(theme === "nothing" || theme === "nothing-dark") && (
+        <NothingGlyphBackground isPlaying={playerApi.isPlaying} />
       )}
 
       {/* ── Decorative SVG background ── */}

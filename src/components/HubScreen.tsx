@@ -4,6 +4,7 @@
 // Radio, Podcasts, Audius (music), iPod. Tapping one jumps straight to that part
 // of the app. Pure SVG + CSS so it paints instantly; framer-motion for entrance.
 import { motion } from "framer-motion";
+import { useTheme } from "@/context/ThemeContext";
 
 export type HubChoice = "radio" | "podcasts" | "audius" | "ipod";
 
@@ -15,6 +16,9 @@ const A = "var(--accent, #3b82f6)";
 const A2 = "var(--accent-2, #22d3ee)";
 
 export default function HubScreen({ onChoose }: HubScreenProps) {
+  const { theme } = useTheme();
+  const isNothing = theme === "nothing" || theme === "nothing-dark";
+  const isNothingLight = theme === "nothing";
   const cards: {
     id: HubChoice; title: string; subtitle: string; icon: React.ReactNode;
   }[] = [
@@ -153,9 +157,24 @@ export default function HubScreen({ onChoose }: HubScreenProps) {
         position: "fixed", inset: 0, zIndex: 150,
         display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
         padding: "calc(env(safe-area-inset-top) + 24px) 20px calc(env(safe-area-inset-bottom) + 24px)",
-        background: "radial-gradient(120% 100% at 50% 20%, #0b1220 0%, #060a14 55%, #03060d 100%)",
+        background: isNothing
+          ? (isNothingLight ? "#f4f4f4" : "#080808")
+          : "radial-gradient(120% 100% at 50% 20%, #0b1220 0%, #060a14 55%, #03060d 100%)",
       }}
     >
+      {/* Nothing technical dot background inside Hub */}
+      {isNothing && (
+        <div
+          className="absolute inset-0 pointer-events-none opacity-[0.35]"
+          style={{
+            backgroundImage: isNothingLight
+              ? "radial-gradient(rgba(0, 0, 0, 0.15) 1px, transparent 1px)"
+              : "radial-gradient(rgba(255, 255, 255, 0.15) 1px, transparent 1px)",
+            backgroundSize: "24px 24px",
+          }}
+        />
+      )}
+
       <style>{`
         @keyframes hubWave  { 0%{ r:16; opacity:.85 } 100%{ r:46; opacity:0 } }
         @keyframes hubBar   { 0%,100%{ transform:scaleY(.35) } 50%{ transform:scaleY(1) } }
@@ -169,25 +188,30 @@ export default function HubScreen({ onChoose }: HubScreenProps) {
         style={{ textAlign: "center", marginBottom: 36 }}
       >
         <h1 style={{
-          margin: 0, fontSize: 34, fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1,
-          fontFamily: "system-ui, -apple-system, sans-serif",
+          margin: 0, fontSize: isNothing ? 36 : 34, fontWeight: isNothing ? 700 : 800,
+          letterSpacing: isNothing ? "0.08em" : "-0.02em", lineHeight: 1,
+          fontFamily: isNothing ? "var(--font-dot), 'Silkscreen', monospace" : "system-ui, -apple-system, sans-serif",
+          textTransform: isNothing ? "uppercase" : "none",
         }}>
-          <span style={{ color: "#fff" }}>Radio</span>
+          <span style={{ color: isNothing ? (isNothingLight ? "#111" : "#fff") : "#fff" }}>Radio</span>
           <span style={{
-            background: `linear-gradient(135deg, ${A}, ${A2})`,
+            background: isNothing
+              ? "#d71921"
+              : `linear-gradient(135deg, ${A}, ${A2})`,
             WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent",
           }}>FR</span>
         </h1>
         <p style={{
-          margin: "10px 0 0", fontSize: 12, letterSpacing: "0.28em", textTransform: "uppercase",
-          color: "rgba(255,255,255,0.4)",
+          margin: "10px 0 0", fontSize: 11, letterSpacing: isNothing ? "0.32em" : "0.28em", textTransform: "uppercase",
+          color: isNothing ? (isNothingLight ? "rgba(0,0,0,0.5)" : "rgba(255,255,255,0.45)") : "rgba(255,255,255,0.4)",
+          fontFamily: isNothing ? "monospace" : "inherit",
         }}>
-          Choisis ton écoute
+          {isNothing ? "// SELECT AUDIO INPUT //" : "Choisis ton écoute"}
         </p>
       </motion.div>
 
       {/* Cards — 2×2 on mobile, single row on desktop */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 w-full max-w-4xl">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 w-full max-w-4xl relative z-10">
         {cards.map((c, i) => (
           <motion.button
             key={c.id}
@@ -198,24 +222,59 @@ export default function HubScreen({ onChoose }: HubScreenProps) {
             transition={{ delay: 0.12 + i * 0.09, type: "spring", stiffness: 240, damping: 22 }}
             whileHover={{ y: -6, scale: 1.03 }}
             whileTap={{ scale: 0.97 }}
-            className="glass glass-hover w-full rounded-3xl flex flex-col items-center justify-center gap-3 px-5 py-7 sm:py-9 cursor-pointer relative overflow-hidden"
+            className={`w-full rounded-3xl flex flex-col items-center justify-center gap-3 px-5 py-7 sm:py-9 cursor-pointer relative overflow-hidden ${
+              isNothing
+                ? (isNothingLight ? "bg-white/85 hover:bg-white text-black" : "bg-[#141416]/85 hover:bg-[#18181b] text-white")
+                : "glass glass-hover"
+            }`}
             style={{
-              border: "1px solid var(--glass-border)",
-              boxShadow: "0 10px 40px rgba(0,0,0,0.35)",
+              border: isNothing
+                ? (isNothingLight ? "1px solid rgba(0,0,0,0.12)" : "1px solid rgba(255,255,255,0.15)")
+                : "1px solid var(--glass-border)",
+              boxShadow: isNothing
+                ? (isNothingLight ? "0 8px 30px rgba(0,0,0,0.06)" : "0 10px 40px rgba(0,0,0,0.6)")
+                : "0 10px 40px rgba(0,0,0,0.35)",
               minHeight: 180,
             }}
           >
             {/* Glow behind icon */}
             <div className="absolute -z-10 rounded-full blur-3xl"
-              style={{ width: 140, height: 140, top: 24, background: `${A}22` }} />
-            <div style={{ filter: `drop-shadow(0 6px 18px ${A}44)` }}>{c.icon}</div>
+              style={{
+                width: 140, height: 140, top: 24,
+                background: isNothing ? "rgba(215,25,33,0.12)" : `${A}22`
+              }} />
+            <div style={{ filter: isNothing ? "none" : `drop-shadow(0 6px 18px ${A}44)` }}>
+              {c.icon}
+            </div>
             <div className="text-center">
-              <p className="text-white font-bold text-lg leading-none">{c.title}</p>
-              <p className="text-white/45 text-xs mt-1.5">{c.subtitle}</p>
+              <p
+                className={`font-bold text-lg leading-none ${
+                  isNothing ? (isNothingLight ? "text-black" : "text-white") : "text-white"
+                }`}
+                style={{
+                  fontFamily: isNothing ? "var(--font-dot), 'Silkscreen', monospace" : "inherit",
+                  letterSpacing: isNothing ? "0.04em" : "normal",
+                  fontSize: isNothing ? "0.95rem" : "1.125rem",
+                }}
+              >
+                {c.title}
+              </p>
+              <p
+                className={`text-xs mt-1.5 ${
+                  isNothing ? (isNothingLight ? "text-black/55 font-mono text-[10px]" : "text-white/45 font-mono text-[10px]") : "text-white/45"
+                }`}
+              >
+                {c.subtitle}
+              </p>
             </div>
             {/* Bottom accent line */}
             <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[3px] rounded-full"
-              style={{ width: 48, background: `linear-gradient(90deg, ${A}, ${A2})` }} />
+              style={{
+                width: 48,
+                background: isNothing
+                  ? "#d71921"
+                  : `linear-gradient(90deg, ${A}, ${A2})`
+              }} />
           </motion.button>
         ))}
       </div>

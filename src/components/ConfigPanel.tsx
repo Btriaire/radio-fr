@@ -297,11 +297,12 @@ export default function ConfigPanel({ open, onClose }: Props) {
                   {/* Visualizer Style */}
                   <section className="space-y-3">
                     <h3 className="text-xs font-bold tracking-wider uppercase text-white/50">Style du visualiseur audio</h3>
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       {[
                         { id: "bars" as const, label: "Spectre", desc: "Barres EQ" },
                         { id: "wave" as const, label: "Onde", desc: "Waveform" },
                         { id: "dots" as const, label: "Néon", desc: "Points pulse" },
+                        { id: "glyph" as const, label: "Glyph", desc: "Nothing LED" },
                       ].map((v) => (
                         <button
                           key={v.id}
@@ -320,7 +321,7 @@ export default function ConfigPanel({ open, onClose }: Props) {
                   {/* iPod Skins */}
                   <section className="space-y-3">
                     <h3 className="text-xs font-bold tracking-wider uppercase text-white/50">Habillage du mode iPod</h3>
-                    <div className="grid grid-cols-3 gap-2.5">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                       {IPOD_SKINS.map((sk) => (
                         <button
                           key={sk.id}

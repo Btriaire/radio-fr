@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=Silkscreen:wght@400;700&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -22,8 +22,47 @@
   --metal-lo:    rgba(0,0,0,0.35);
   --text-primary:#e2e8f0;
   --font-main:   'Space Grotesk', 'Outfit', system-ui, sans-serif;
+  --font-dot:    'Silkscreen', 'Space Mono', monospace;
   /* legacy alias */
   --font-outfit: var(--font-main);
+}
+
+/* ─── Nothing OS (Light) - Iconic Nothing.tech aesthetic ────────── */
+[data-theme="nothing"] {
+  --bg-0:        #f5f5f5;
+  --bg-1:        #eaeaea;
+  --bg-2:        #e0e0e0;
+  --accent:      #d71921; /* Signature Nothing red */
+  --accent-2:    #111111;
+  --blob-1:      rgba(0,0,0,0.04);
+  --blob-2:      rgba(215,25,33,0.06);
+  --blob-3:      rgba(0,0,0,0.03);
+  --glass-bg:    rgba(255,255,255,0.78);
+  --glass-bg-d:  rgba(245,245,245,0.92);
+  --glass-border:rgba(0,0,0,0.12);
+  --metal-hi:    rgba(255,255,255,0.9);
+  --metal-lo:    rgba(0,0,0,0.1);
+  --text-primary:#111111;
+  --font-main:   'Space Grotesk', system-ui, sans-serif;
+}
+
+/* ─── Nothing OS (Dark) - Transparent OLED & Glyph aesthetic ─────── */
+[data-theme="nothing-dark"] {
+  --bg-0:        #080808;
+  --bg-1:        #121212;
+  --bg-2:        #1c1c1e;
+  --accent:      #d71921; /* Signature Nothing red */
+  --accent-2:    #f5f5f7;
+  --blob-1:      rgba(255,255,255,0.03);
+  --blob-2:      rgba(215,25,33,0.08);
+  --blob-3:      rgba(255,255,255,0.02);
+  --glass-bg:    rgba(22,22,24,0.72);
+  --glass-bg-d:  rgba(12,12,14,0.94);
+  --glass-border:rgba(255,255,255,0.14);
+  --metal-hi:    rgba(255,255,255,0.18);
+  --metal-lo:    rgba(0,0,0,0.7);
+  --text-primary:#f4f4f5;
+  --font-main:   'Space Grotesk', system-ui, sans-serif;
 }
 
 [data-theme="steel"] {
@@ -275,6 +314,84 @@
   );
   pointer-events: none;
   z-index: 1;
+}
+
+/* ─── Nothing OS Styling Overrides ─── */
+[data-theme="nothing"] .glass {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="nothing"] .glass-dark {
+  background: rgba(245, 245, 245, 0.94);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="nothing"] .glass-hover:hover {
+  background: #ffffff;
+  border-color: rgba(0, 0, 0, 0.2);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="nothing"] h1,
+[data-theme="nothing"] h2,
+[data-theme="nothing"] h3,
+[data-theme="nothing"] .text-white {
+  color: #111111 !important;
+}
+
+[data-theme="nothing"] .text-white\/40,
+[data-theme="nothing"] .text-white\/45,
+[data-theme="nothing"] .text-white\/50,
+[data-theme="nothing"] .text-white\/60 {
+  color: rgba(0, 0, 0, 0.6) !important;
+}
+
+[data-theme="nothing"] .text-white\/70,
+[data-theme="nothing"] .text-white\/80,
+[data-theme="nothing"] .text-white\/90 {
+  color: rgba(0, 0, 0, 0.85) !important;
+}
+
+[data-theme="nothing"] .border-white\/10,
+[data-theme="nothing"] .border-white\/15,
+[data-theme="nothing"] .border-white\/20 {
+  border-color: rgba(0, 0, 0, 0.12) !important;
+}
+
+[data-theme="nothing"] .bg-white\/5,
+[data-theme="nothing"] .bg-white\/8,
+[data-theme="nothing"] .bg-white\/10 {
+  background-color: rgba(0, 0, 0, 0.05) !important;
+}
+
+[data-theme="nothing-dark"] .glass {
+  background: rgba(18, 18, 20, 0.78);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.6);
+}
+
+[data-theme="nothing-dark"] .glass-dark {
+  background: rgba(12, 12, 14, 0.92);
+  backdrop-filter: blur(32px);
+  -webkit-backdrop-filter: blur(32px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.8);
+}
+
+/* Nothing Dot Matrix font accents */
+[data-theme="nothing"] .font-dot,
+[data-theme="nothing-dark"] .font-dot {
+  font-family: var(--font-dot), 'Silkscreen', monospace;
+  letter-spacing: 0.05em;
 }
 
 /* ─── Base ──────────────────────────────────────────────────────── */

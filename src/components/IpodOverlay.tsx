@@ -430,17 +430,21 @@ export default function IpodOverlay({
                 boxShadow: `inset 0 ${Math.round(2*scale)}px ${Math.round(6*scale)}px rgba(0,0,0,0.8), 0 1px 0 rgba(255,255,255,0.25)`,
               }}>
                 <div style={{
-                  background: "linear-gradient(180deg, #b2ccec 0%, #c5daf5 30%, #d2e6ff 100%)",
+                  background: skin.id === "nothing"
+                    ? "linear-gradient(180deg, #111113 0%, #1a1a1d 30%, #202024 100%)"
+                    : "linear-gradient(180deg, #b2ccec 0%, #c5daf5 30%, #d2e6ff 100%)",
                   borderRadius: Math.round(7*scale), height: screenH,
-                  overflow: "hidden", position: "relative", fontFamily: "system-ui, -apple-system, sans-serif",
+                  overflow: "hidden", position: "relative", fontFamily: skin.id === "nothing" ? "var(--font-dot), monospace" : "system-ui, -apple-system, sans-serif",
                 }}>
                   {/* Title bar */}
                   <div style={{
-                    background: "linear-gradient(180deg, #4880bc 0%, #3870aa 100%)",
+                    background: skin.id === "nothing"
+                      ? "linear-gradient(180deg, #2a2a2e 0%, #18181b 100%)"
+                      : "linear-gradient(180deg, #4880bc 0%, #3870aa 100%)",
                     height: Math.round(18*scale), display: "flex", alignItems: "center",
                     justifyContent: "space-between", padding: `0 ${fs(5)}px`,
                   }}>
-                    <span style={{ color: "white", fontSize: fs(7.5), fontWeight: 700, letterSpacing: 0.4 }}>
+                    <span style={{ color: skin.id === "nothing" ? "#d71921" : "white", fontSize: fs(7.5), fontWeight: 700, letterSpacing: 0.6 }}>
                       {screen === "nowplaying"    ? "Now Playing"
                        : screen === "menu"        ? "RadioFR"
                        : screen === "stations"    ? "Stations"
@@ -670,7 +674,17 @@ export default function IpodOverlay({
                 </button>
               </div>
 
-              <p style={{ textAlign: "center", marginTop: Math.round(10*scale), fontSize: fs(7), color: skin.footColor, letterSpacing: 0.5, fontFamily: "system-ui" }}>RadioFR iPod</p>
+              <p style={{
+                textAlign: "center",
+                marginTop: Math.round(10*scale),
+                fontSize: fs(7),
+                color: skin.footColor,
+                letterSpacing: skin.id === "nothing" ? 1.5 : 0.5,
+                fontFamily: skin.id === "nothing" ? "var(--font-dot), monospace" : "system-ui",
+                textTransform: skin.id === "nothing" ? "uppercase" : "none",
+              }}>
+                {skin.id === "nothing" ? "Nothing (R) 01" : "RadioFR iPod"}
+              </p>
             </div>
           </motion.div>
 

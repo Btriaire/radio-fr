@@ -165,6 +165,42 @@ export default function AudioVisualizer({ analyserRef, isPlaying, color: rawColo
           ctx.fill();
         }
         ctx.shadowBlur = 0;
+      } else if (visualizerStyle === "glyph") {
+        // Nothing Glyph Matrix: discrete square pixel LEDs with red peak dots
+        const cols = small ? 16 : 32;
+        const rows = small ? 5 : 9;
+        const colW = W / cols;
+        const dotSize = Math.max(2, Math.floor(colW * 0.65));
+        const rowH = H / rows;
+
+        for (let c = 0; c < cols; c++) {
+          let factor = 0.3;
+          if (useReal && data) {
+            const idx = Math.floor((c / cols) * (data.length * 0.7));
+            factor = (data[idx] || 0) / 255;
+          } else {
+            const t = phase * simSpeed[c % simSpeed.length];
+            factor = simAmps[c % simAmps.length] * (0.3 + 0.7 * Math.sin(t + c * 0.4));
+          }
+
+          const activeCount = Math.min(rows, Math.max(1, Math.round(factor * rows)));
+          const cx = Math.floor(c * colW + (colW - dotSize) / 2);
+
+          for (let r = 0; r < rows; r++) {
+            const cy = Math.floor(H - (r + 1) * rowH + (rowH - dotSize) / 2);
+            const isActive = r < activeCount;
+            const isPeak = r === activeCount - 1 && activeCount > 2;
+
+            ctx.fillStyle = isPeak
+              ? "#d71921"
+              : isActive
+              ? (color || "#ffffff")
+              : "rgba(128, 128, 128, 0.15)";
+
+            // Draw square pixel LED characteristic of Nothing OS
+            ctx.fillRect(cx, cy, dotSize, dotSize);
+          }
+        }
       } else {
         // Default: spectrum bars with floating peak caps and gravity decay
         const peaks = peaksRef.current;

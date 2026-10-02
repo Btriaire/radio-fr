@@ -1,7 +1,7 @@
 "use client";
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
 
-export type ThemeId = "default" | "steel" | "bronze" | "copper" | "gunmetal" | "cosmic" | "neon" | "synthwave" | "wood";
+export type ThemeId = "default" | "nothing" | "nothing-dark" | "steel" | "bronze" | "copper" | "gunmetal" | "cosmic" | "neon" | "synthwave" | "wood";
 
 export interface ThemeMeta {
   id: ThemeId;
@@ -11,6 +11,18 @@ export interface ThemeMeta {
 }
 
 export const THEMES: ThemeMeta[] = [
+  {
+    id: "nothing",
+    name: "Nothing OS (Light)",
+    swatch: ["#f4f4f4", "#121212", "#d71921"],
+    description: "Matrice de points, glyphes & rouge Nothing",
+  },
+  {
+    id: "nothing-dark",
+    name: "Nothing OS (Dark)",
+    swatch: ["#0a0a0a", "#ffffff", "#d71921"],
+    description: "Fond OLED transparent, accents glyphes",
+  },
   {
     id: "default",
     name: "Bleu Nuit",
@@ -68,8 +80,8 @@ export const THEMES: ThemeMeta[] = [
 ];
 
 // ── iPod overlay color skins ──────────────────────────────────────────────
-export type IpodSkin = "white" | "grey" | "black";
-export type VisualizerStyle = "bars" | "wave" | "dots";
+export type IpodSkin = "white" | "grey" | "black" | "nothing";
+export type VisualizerStyle = "bars" | "wave" | "dots" | "glyph";
 
 export interface IpodSkinMeta {
   id: IpodSkin;
@@ -87,6 +99,20 @@ export interface IpodSkinMeta {
 }
 
 export const IPOD_SKINS: IpodSkinMeta[] = [
+  {
+    id: "nothing",
+    name: "Nothing Phone (Glyph)",
+    shell: "linear-gradient(160deg, #18181b 0%, #0d0d0f 50%, #000000 100%)",
+    wheel: "linear-gradient(145deg, #141416 0%, #0a0a0c 50%, #000000 100%)",
+    wheelRing: "linear-gradient(145deg, #222225 0%, #111113 100%)",
+    centerOuter: "linear-gradient(145deg, #2a2a2e 0%, #151518 100%)",
+    centerInner: "linear-gradient(145deg, #d71921, #990f15)",
+    btnColor: "#f4f4f5",
+    footColor: "#a1a1aa",
+    closeBg: "rgba(215,25,33,0.22)",
+    closeColor: "#ffffff",
+    preview: ["#18181b", "#d71921"],
+  },
   {
     id: "white",
     name: "Blanc",
