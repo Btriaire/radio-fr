@@ -5,6 +5,7 @@ import StationLogo from "./StationLogo";
 import { Station } from "@/lib/stations";
 import { NowPlayingInfo } from "@/hooks/useNowPlaying";
 import { useSwipeGesture } from "@/hooks/useSwipeGesture";
+import { useTheme } from "@/context/ThemeContext";
 
 interface PodcastNowPlaying {
   episodeTitle: string;
@@ -42,6 +43,9 @@ export default function MobileMiniPlayer({
   onNextStation,
   onPrevStation,
 }: Props) {
+  const { theme } = useTheme();
+  const isNothing = theme === "nothing" || theme === "nothing-dark";
+
   const swipeHandlers = useSwipeGesture({
     onSwipeUp: onExpand,
     onSwipeLeft: onNextStation,
@@ -52,7 +56,7 @@ export default function MobileMiniPlayer({
   if (!station && !podcast) return null;
 
   const isPodcast = !!podcast && !station;
-  const accentColor = station?.color ?? "var(--accent, #3b82f6)";
+  const accentColor = isNothing ? "#d71921" : (station?.color ?? "var(--accent, #3b82f6)");
 
   const title = isPodcast
     ? podcast!.episodeTitle
@@ -125,15 +129,16 @@ export default function MobileMiniPlayer({
         {/* Title & Live Metadata */}
         <div className="flex-1 min-w-0 pr-1">
           <div className="flex items-center gap-1.5">
-            <p className="text-white font-semibold text-sm leading-tight truncate">
+            <p className="text-white font-semibold text-sm leading-tight truncate"
+              style={{ fontFamily: isNothing ? "var(--font-dot), monospace" : "inherit" }}>
               {title}
             </p>
             {!isPodcast && isPlaying && (
-              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 text-[10px] font-bold tracking-wider border border-red-500/30 flex-shrink-0">
-                <div className="flex items-end gap-[2px] h-2.5">
-                  <span className="w-0.5 bg-red-400 rounded-full animate-eq-1" />
-                  <span className="w-0.5 bg-red-400 rounded-full animate-eq-2" />
-                  <span className="w-0.5 bg-red-400 rounded-full animate-eq-3" />
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-red-500/20 text-red-400 text-[9px] font-bold tracking-wider border border-red-500/30 flex-shrink-0 font-mono">
+                <div className="flex items-end gap-[2px] h-2">
+                  <span className="w-0.5 bg-[#d71921] rounded-full animate-eq-1" />
+                  <span className="w-0.5 bg-[#d71921] rounded-full animate-eq-2" />
+                  <span className="w-0.5 bg-[#d71921] rounded-full animate-eq-3" />
                 </div>
                 LIVE
               </span>
@@ -141,13 +146,13 @@ export default function MobileMiniPlayer({
           </div>
           <div className="flex items-center gap-1.5 mt-0.5">
             {nowPlaying?.songTitle && !isPodcast && (
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-accent flex-shrink-0">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-accent flex-shrink-0" style={{ color: accentColor }}>
                 <path d="M9 18V5l12-2v13" />
                 <circle cx="6" cy="18" r="3" />
                 <circle cx="18" cy="16" r="3" />
               </svg>
             )}
-            <p className="text-white/60 text-xs truncate leading-tight">
+            <p className="text-white/60 text-xs truncate leading-tight font-mono text-[11px]">
               {subtitle}
             </p>
           </div>

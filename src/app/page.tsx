@@ -560,13 +560,22 @@ export default function Home() {
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <h1 className="font-bold text-lg sm:text-xl leading-none text-gradient">RadioFR</h1>
-                  <span className="hidden sm:inline text-[10px] font-semibold px-2 py-0.5 rounded-full border border-white/10 bg-white/5 text-white/70 tracking-wide">
-                    Radio-PaLaMa
-                  </span>
+                  <h1 className={`font-bold text-lg sm:text-xl leading-none ${(theme === "nothing" || theme === "nothing-dark") ? "font-dot tracking-wider text-white" : "text-gradient"}`}>
+                    {(theme === "nothing" || theme === "nothing-dark") ? "RADIOFR //" : "RadioFR"}
+                  </h1>
+                  {(theme === "nothing" || theme === "nothing-dark") ? (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded border border-[#d71921]/40 bg-[#d71921]/15 text-[#d71921] font-bold tracking-widest">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#d71921] animate-ping" />
+                      OS.01
+                    </span>
+                  ) : (
+                    <span className="hidden sm:inline text-[10px] font-semibold px-2 py-0.5 rounded-full border border-white/10 bg-white/5 text-white/70 tracking-wide">
+                      Radio-PaLaMa
+                    </span>
+                  )}
                 </div>
-                <p className="hidden sm:block text-white/50 text-xs leading-none mt-1.5">
-                  Radios, podcasts &amp; musique en direct
+                <p className="hidden sm:block text-white/50 text-xs leading-none mt-1.5 font-mono text-[11px]">
+                  {(theme === "nothing" || theme === "nothing-dark") ? "SYSTEM // LIVE AUDIO &amp; TELEMETRY" : "Radios, podcasts &amp; musique en direct"}
                 </p>
               </div>
             </div>

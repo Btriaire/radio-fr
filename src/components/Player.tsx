@@ -17,6 +17,7 @@ import StationLogo from "./StationLogo";
 import TascamPlayer from "./TascamPlayer";
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTheme } from "@/context/ThemeContext";
 
 import { NowPlayingInfo } from "@/hooks/useNowPlaying";
 
@@ -147,7 +148,10 @@ export default function Player({
     box.appendChild(el);
     return () => { if (el.parentNode === box) box.removeChild(el); };
   }, [isVideo, podcast?.audioUrl, mediaElRef, ipodOpen]);
-  const accentColor = station?.color ?? "var(--accent)";
+  const { theme } = useTheme();
+  const isNothing = theme === "nothing" || theme === "nothing-dark";
+
+  const accentColor = isNothing ? "#d71921" : (station?.color ?? "var(--accent)");
 
   const anyBandActive = bands.some((b) => b.gain !== 0);
 
@@ -279,22 +283,34 @@ export default function Player({
           <div className="flex-1 min-w-0">
             {isPodcast ? (
               <>
-                <h2 className="font-semibold text-white text-sm leading-tight line-clamp-2">{podcast!.episodeTitle}</h2>
-                <p className="text-white/50 text-xs mt-0.5 truncate">{podcast!.podcastName}</p>
+                <h2 className="font-semibold text-white text-sm leading-tight line-clamp-2"
+                  style={{ fontFamily: isNothing ? "var(--font-dot), monospace" : "inherit" }}>
+                  {podcast!.episodeTitle}
+                </h2>
+                <p className="text-white/50 text-xs mt-0.5 truncate font-mono">{podcast!.podcastName}</p>
               </>
             ) : (
               <>
-                <h2 className="font-semibold text-white text-lg leading-tight truncate">{station!.name}</h2>
-                <p className="text-white/50 text-sm">{station!.tagline}</p>
+                <div className="flex items-center gap-2">
+                  <h2 className="font-semibold text-white text-lg leading-tight truncate tracking-tight"
+                    style={{ fontFamily: isNothing ? "var(--font-dot), monospace" : "inherit" }}>
+                    {station!.name}
+                  </h2>
+                  {isNothing && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#d71921] animate-ping" />
+                  )}
+                </div>
+                <p className="text-white/50 text-sm font-mono text-xs mt-0.5">{station!.tagline}</p>
                 {station!.freq && (
-                  <span className="text-xs px-2 py-0.5 rounded-full mt-1 inline-block font-medium"
-                    style={{ background: `${station!.color}22`, color: station!.color }}>
+                  <span className="text-xs px-2 py-0.5 rounded-full mt-1 inline-block font-medium font-mono"
+                    style={{ background: isNothing ? "rgba(215,25,33,0.15)" : `${station!.color}22`, color: isNothing ? "#d71921" : station!.color }}>
                     {station!.freq}
                   </span>
                 )}
                 {/* Live now playing track info */}
                 {!isPodcast && nowPlaying?.songTitle && (
-                  <div className="mt-2.5 flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-white/[0.07] border border-white/10">
+                  <div className="mt-2.5 flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-white/[0.07] border border-white/10"
+                    style={{ borderColor: isNothing ? "rgba(215,25,33,0.3)" : "rgba(255,255,255,0.1)" }}>
                     <div className="flex items-end gap-0.5 h-3 flex-shrink-0">
                       <span className="w-0.5 rounded-full animate-[pulse_0.7s_ease-in-out_infinite] h-full" style={{ background: accentColor }} />
                       <span className="w-0.5 rounded-full animate-[pulse_0.9s_ease-in-out_0.2s_infinite] h-2/3" style={{ background: accentColor }} />
@@ -580,7 +596,7 @@ export default function Player({
             <input type="range" min={0} max={1} step={0.02} value={volume}
               onChange={(e) => changeVolume(Number(e.target.value))}
               aria-label="Volume" title={`Volume ${Math.round(volume * 100)}%`}
-              className="flex-1" style={{ accentColor: "var(--accent)" }} />
+              className="flex-1" style={{ accentColor: isNothing ? "#d71921" : "var(--accent)" }} />
             <span className="text-xs text-white/30 w-7 text-right tabular-nums">
               {Math.round(volume * 100)}
             </span>

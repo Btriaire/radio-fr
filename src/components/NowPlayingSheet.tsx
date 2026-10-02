@@ -5,6 +5,7 @@ import StationLogo from "./StationLogo";
 import { Station } from "@/lib/stations";
 import type { NowPlayingInfo } from "@/hooks/useNowPlaying";
 import type { useAudioPlayer } from "@/hooks/useAudioPlayer";
+import { useTheme } from "@/context/ThemeContext";
 
 interface PodcastNowPlaying {
   episodeTitle: string;
@@ -49,6 +50,9 @@ const Icon = {
 export default function NowPlayingSheet({
   station, podcast, playerApi, nowPlaying, isFavorite, onToggleFavorite, onNext, onPrev, onClose, advanced,
 }: Props) {
+  const { theme } = useTheme();
+  const isNothing = theme === "nothing" || theme === "nothing-dark";
+
   const {
     isPlaying, isLoading, togglePlay, currentTime, duration, seekTo, volume, changeVolume,
     reconnecting, reconnectAttempt, offline, error, retry,
@@ -59,7 +63,7 @@ export default function NowPlayingSheet({
   const dragControls = useDragControls();
 
   const isPodcast = !!podcast && !station;
-  const accent = station?.color ?? "#3b82f6";
+  const accent = isNothing ? "#d71921" : (station?.color ?? "#3b82f6");
   const title = isPodcast ? podcast!.episodeTitle : station!.name;
   const subtitle = isPodcast
     ? podcast!.podcastName
@@ -138,13 +142,22 @@ export default function NowPlayingSheet({
         {/* Title block */}
         <div className="text-center space-y-1.5 min-w-0">
           <div className="flex items-center justify-center gap-2">
-            <h2 className="text-2xl font-bold text-white leading-tight line-clamp-2">{title}</h2>
+            <h2 className="text-2xl font-bold text-white leading-tight line-clamp-2"
+              style={{ fontFamily: isNothing ? "var(--font-dot), monospace" : "inherit" }}>
+              {title}
+            </h2>
           </div>
-          <p className="text-base text-white/70 leading-snug line-clamp-2">{subtitle}</p>
+          <p className="text-base text-white/70 leading-snug line-clamp-2 font-mono text-sm">{subtitle}</p>
           {!isPodcast && (
-            <span className="inline-flex items-center gap-1.5 mt-1 px-2.5 py-1 rounded-full text-[11px] font-bold tracking-widest bg-red-500/15 text-red-300">
-              <span className={`w-1.5 h-1.5 rounded-full bg-red-400 ${isPlaying ? "animate-pulse" : "opacity-50"}`} />
-              DIRECT{station!.freq ? ` · ${station!.freq}` : ""}
+            <span className="inline-flex items-center gap-1.5 mt-1 px-2.5 py-1 rounded-full text-[11px] font-bold tracking-widest font-mono"
+              style={{
+                backgroundColor: isNothing ? "rgba(215,25,33,0.15)" : "rgba(239,68,68,0.15)",
+                color: isNothing ? "#d71921" : "#fca5a5",
+                border: isNothing ? "1px solid rgba(215,25,33,0.35)" : "none",
+              }}>
+              <span className={`w-1.5 h-1.5 rounded-full ${isPlaying ? "animate-pulse" : "opacity-50"}`}
+                style={{ backgroundColor: isNothing ? "#d71921" : "#f87171" }} />
+              {isNothing ? "LIVE // DIRECT" : "DIRECT"}{station!.freq ? ` · ${station!.freq}` : ""}
             </span>
           )}
           {/* Connection status */}
