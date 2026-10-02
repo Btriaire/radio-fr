@@ -15,6 +15,7 @@ import AudioVisualizer from "./AudioVisualizer";
 import Equalizer from "./Equalizer";
 import StationLogo from "./StationLogo";
 import TascamPlayer from "./TascamPlayer";
+import AudioRecorderModal from "./AudioRecorderModal";
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "@/context/ThemeContext";
@@ -63,7 +64,7 @@ export default function Player({
     isPlaying, volume, isLoading, error, eqActive,
     currentTime, duration,
     reconnecting, reconnectAttempt, offline, retry,
-    analyserRef, filtersRef, mediaElRef, togglePlay, play, pause, changeVolume, seekTo,
+    analyserRef, filtersRef, mediaElRef, ctxRef, gainRef, togglePlay, play, pause, changeVolume, seekTo,
     bands, updateBand, applyPreset, resetEQ, initAudio,
     playbackRate, setPlaybackRate, seekRelative,
     sleepTimerRemaining, addSleepMinutes, cancelSleepTimer,
@@ -601,6 +602,16 @@ export default function Player({
               {Math.round(volume * 100)}
             </span>
           </div>
+
+          {/* Live Audio Recorder (REC DVR) */}
+          <AudioRecorderModal
+            mediaElRef={mediaElRef}
+            ctxRef={ctxRef}
+            gainRef={gainRef}
+            currentStationName={station?.name || podcast?.episodeTitle}
+            currentSongTitle={nowPlaying?.songTitle}
+            isPlaying={isPlaying}
+          />
 
           {/* EQ toggle */}
           <motion.button

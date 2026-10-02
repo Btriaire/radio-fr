@@ -1398,7 +1398,7 @@ export function useAudioPlayer() {
     isPlaying, volume, currentUrl, bands, isLoading, error, eqActive,
     currentTime, duration,
     reconnecting, reconnectAttempt, offline,
-    analyserRef, filtersRef, mediaElRef: audioRef,
+    analyserRef, filtersRef, mediaElRef: audioRef, ctxRef, gainRef,
     initAudio, play, pause, togglePlay, seekTo,
     changeVolume, updateBand, applyPreset, resetEQ, stop,
     setOnEnded, retry,

@@ -6,6 +6,7 @@ import { Station } from "@/lib/stations";
 import type { NowPlayingInfo } from "@/hooks/useNowPlaying";
 import type { useAudioPlayer } from "@/hooks/useAudioPlayer";
 import { useTheme } from "@/context/ThemeContext";
+import AudioRecorderModal from "./AudioRecorderModal";
 
 interface PodcastNowPlaying {
   episodeTitle: string;
@@ -225,6 +226,18 @@ export default function NowPlayingSheet({
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{Icon.next}</svg>
             </button>
           )}
+        </div>
+
+        {/* Live Audio Recorder (REC DVR) button */}
+        <div className="flex justify-center">
+          <AudioRecorderModal
+            mediaElRef={playerApi.mediaElRef}
+            ctxRef={playerApi.ctxRef}
+            gainRef={playerApi.gainRef}
+            currentStationName={title}
+            currentSongTitle={nowPlaying?.songTitle}
+            isPlaying={isPlaying}
+          />
         </div>
 
         {/* Volume */}
