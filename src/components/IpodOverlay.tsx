@@ -5,6 +5,8 @@ import { Station } from "@/lib/stations";
 import { getEpisodesForPodcast, iTunesPodcast, RSSEpisode } from "@/lib/podcastUtils";
 import { IPOD_SKINS, useTheme } from "@/context/ThemeContext";
 
+import RetroGamesCanvas, { GameType } from "./RetroGamesCanvas";
+
 interface PodcastNowPlaying {
   episodeTitle: string;
   audioUrl: string;
@@ -35,13 +37,29 @@ interface Props {
   onPlayEpisode: (ep: RSSEpisode, pod: iTunesPodcast) => void;
 }
 
-type IpodScreen = "nowplaying" | "menu" | "stations" | "podcasts" | "episodes";
+type IpodScreen =
+  | "nowplaying"
+  | "menu"
+  | "stations"
+  | "podcasts"
+  | "episodes"
+  | "games"
+  | "game_tetris"
+  | "game_invader"
+  | "game_pong";
 
 const MENU_ITEMS = [
   { id: "nowplaying", label: "Now Playing", icon: ">" },
   { id: "stations",   label: "Stations",    icon: "FM" },
   { id: "podcasts",   label: "Podcasts",    icon: "POD" },
+  { id: "games",      label: "Jeux Retro",  icon: "JEU" },
   { id: "volume",     label: "Volume",      icon: "VOL" },
+];
+
+const GAME_ITEMS: { id: GameType; label: string; icon: string }[] = [
+  { id: "tetris",  label: "Tetris",         icon: "TET" },
+  { id: "invader", label: "Space Invaders", icon: "INV" },
+  { id: "pong",    label: "Ping-Pong",      icon: "PNG" },
 ];
 
 async function fetchTopPodcasts(genreId?: number): Promise<iTunesPodcast[]> {
@@ -74,6 +92,9 @@ export default function IpodOverlay({
   const [stationIdx, setStationIdx]   = useState(0);
   const [podcastIdx, setPodcastIdx]   = useState(0);
   const [episodeIdx, setEpisodeIdx]   = useState(0);
+  const [gameIdx, setGameIdx]         = useState(0);
+  const [gameClickAction, setGameClickAction] = useState(0);
+  const [gameWheelDelta, setGameWheelDelta]   = useState(0);
   const [showVol, setShowVol]         = useState(false);
   const [pressed, setPressed]         = useState<string | null>(null);
   const [winW, setWinW]               = useState(375);
@@ -134,16 +155,21 @@ export default function IpodOverlay({
     return Math.atan2(y, x) * (180 / Math.PI);
   };
 
+  const isPlayingGame = screen === "game_tetris" || screen === "game_invader" || screen === "game_pong";
+
   const scrollList = useCallback((steps: number) => {
-    if (screen === "menu")     setMenuIdx(i => Math.min(MENU_ITEMS.length - 1, Math.max(0, i + steps)));
+    if (screen === "menu")          setMenuIdx(i => Math.min(MENU_ITEMS.length - 1, Math.max(0, i + steps)));
     else if (screen === "stations") setStationIdx(i => Math.min(stations.length - 1, Math.max(0, i + steps)));
     else if (screen === "podcasts") setPodcastIdx(i => Math.min(podcasts.length - 1, Math.max(0, i + steps)));
     else if (screen === "episodes") setEpisodeIdx(i => Math.min(episodes.length - 1, Math.max(0, i + steps)));
-    else { // nowplaying: adjust volume
+    else if (screen === "games")    setGameIdx(i => Math.min(GAME_ITEMS.length - 1, Math.max(0, i + steps)));
+    else if (isPlayingGame) {
+      setGameWheelDelta(prev => prev + steps);
+    } else { // nowplaying: adjust volume
       playerApi.changeVolume(Math.min(1, Math.max(0, playerApi.volume + steps * 0.05)));
       setShowVol(true);
     }
-  }, [screen, stations.length, podcasts.length, episodes.length, playerApi]);
+  }, [screen, isPlayingGame, stations.length, podcasts.length, episodes.length, playerApi]);
 
   const handleWheelMove = useCallback((e: MouseEvent | TouchEvent) => {
     if (!wheelRef.current || lastAngle.current === null) return;
@@ -188,16 +214,28 @@ export default function IpodOverlay({
   }, [handleWheelMove, handleWheelUp, wheelD]);
 
   const handleMenu = () => {
-    if (screen === "episodes") setScreen("podcasts");
+    if (isPlayingGame) setScreen("games");
+    else if (screen === "games") setScreen("menu");
+    else if (screen === "episodes") setScreen("podcasts");
     else if (screen !== "nowplaying") setScreen("nowplaying");
     else setScreen("menu");
   };
 
   const handleCenter = () => {
+    if (isPlayingGame) {
+      setGameClickAction(c => c + 1);
+      return;
+    }
+
     if (screen === "menu") {
       const item = MENU_ITEMS[menuIdx];
       if (item.id === "volume") { setShowVol(true); setScreen("nowplaying"); }
       else setScreen(item.id as IpodScreen);
+    } else if (screen === "games") {
+      const g = GAME_ITEMS[gameIdx];
+      if (g.id === "tetris") setScreen("game_tetris");
+      else if (g.id === "invader") setScreen("game_invader");
+      else if (g.id === "pong") setScreen("game_pong");
     } else if (screen === "stations") {
       const s = stations[stationIdx];
       if (s) { onSelectStation(s); setScreen("nowplaying"); }
@@ -213,6 +251,10 @@ export default function IpodOverlay({
   };
 
   const handleNext = () => {
+    if (isPlayingGame) {
+      setGameWheelDelta(d => d + 2);
+      return;
+    }
     if (screen === "nowplaying") {
       if (station) {
         const idx = stations.findIndex(s => s.id === station.id);
@@ -225,6 +267,10 @@ export default function IpodOverlay({
   };
 
   const handlePrev = () => {
+    if (isPlayingGame) {
+      setGameWheelDelta(d => d - 2);
+      return;
+    }
     if (screen === "nowplaying") {
       if (station) {
         const idx = stations.findIndex(s => s.id === station.id);
@@ -245,16 +291,25 @@ export default function IpodOverlay({
   useEffect(() => {
     if (!open) return;
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-      if (e.key === "ArrowUp")   scrollList(-1);
-      if (e.key === "ArrowDown") scrollList(1);
-      if (e.key === "Enter") handleCenter();
-      if (e.key === " ") { e.preventDefault(); playerApi.togglePlay(); }
+      if (e.key === "Escape") {
+        if (isPlayingGame) setScreen("games");
+        else onClose();
+      }
+      if (e.key === "ArrowUp")   { e.preventDefault(); scrollList(-1); }
+      if (e.key === "ArrowDown") { e.preventDefault(); scrollList(1); }
+      if (e.key === "ArrowLeft") { e.preventDefault(); handlePrev(); }
+      if (e.key === "ArrowRight"){ e.preventDefault(); handleNext(); }
+      if (e.key === "Enter")     handleCenter();
+      if (e.key === " ") {
+        e.preventDefault();
+        if (isPlayingGame) handleCenter();
+        else playerApi.togglePlay();
+      }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, screen, menuIdx, stationIdx, podcastIdx, episodeIdx]);
+  }, [open, screen, isPlayingGame, menuIdx, stationIdx, podcastIdx, episodeIdx, gameIdx]);
 
   const vol = playerApi.volume;
   const isPlayingPodcast = !!currentPodcast && !station;
@@ -386,10 +441,14 @@ export default function IpodOverlay({
                     justifyContent: "space-between", padding: `0 ${fs(5)}px`,
                   }}>
                     <span style={{ color: "white", fontSize: fs(7.5), fontWeight: 700, letterSpacing: 0.4 }}>
-                      {screen === "nowplaying" ? "Now Playing"
-                       : screen === "menu"     ? "RadioFR"
-                       : screen === "stations" ? "Stations"
-                       : screen === "podcasts" ? "Podcasts"
+                      {screen === "nowplaying"    ? "Now Playing"
+                       : screen === "menu"        ? "RadioFR"
+                       : screen === "stations"    ? "Stations"
+                       : screen === "podcasts"    ? "Podcasts"
+                       : screen === "games"       ? "Jeux Retro"
+                       : screen === "game_tetris" ? "Tetris"
+                       : screen === "game_invader"? "Invaders"
+                       : screen === "game_pong"   ? "Ping-Pong"
                        : selectedPod?.trackName ?? "Épisodes"}
                     </span>
                     <div style={{ display: "flex", gap: 1 }}>
@@ -533,6 +592,46 @@ export default function IpodOverlay({
                                 if (selectedPod) { onPlayEpisode(ep, selectedPod); setScreen("nowplaying"); }
                               },
                             )
+                    )}
+
+                    {/* ── Games Menu ── */}
+                    {screen === "games" && (
+                      <div>
+                        {GAME_ITEMS.map((item, i) => (
+                          <div key={item.id} onClick={() => { setGameIdx(i); setScreen(`game_${item.id}` as IpodScreen); }}
+                            style={{
+                              display: "flex", alignItems: "center", gap: fs(5),
+                              padding: `${fs(4)}px ${fs(5)}px`, borderRadius: Math.round(3*scale),
+                              background: i === gameIdx ? "linear-gradient(135deg, #3870aa, #5890c8)" : "transparent",
+                              cursor: "pointer", marginBottom: Math.round(1*scale),
+                            }}>
+                            <span style={{ fontSize: fs(8), fontWeight: 700, opacity: 0.85 }}>{item.icon}</span>
+                            <span style={{ fontSize: fs(8.5), fontWeight: i === gameIdx ? 700 : 500, color: i === gameIdx ? "white" : "#18182e", flex: 1 }}>
+                              {item.label}
+                            </span>
+                            {i === gameIdx && <span style={{ fontSize: fs(9), color: "rgba(255,255,255,0.8)" }}>›</span>}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* ── Active Game Screen ── */}
+                    {isPlayingGame && (
+                      <div style={{ width: "100%", height: "100%", margin: `-${fs(4)}px -${fs(6)}px`, padding: 0 }}>
+                        <RetroGamesCanvas
+                          game={
+                            screen === "game_tetris" ? "tetris"
+                            : screen === "game_invader" ? "invader"
+                            : "pong"
+                          }
+                          scale={scale}
+                          width={bodyW - pad * 2}
+                          height={screenH - Math.round(18 * scale)}
+                          clickAction={gameClickAction}
+                          wheelDelta={gameWheelDelta}
+                          onExit={() => setScreen("games")}
+                        />
+                      </div>
                     )}
                   </div>
                 </div>
