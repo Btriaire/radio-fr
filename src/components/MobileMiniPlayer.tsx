@@ -129,8 +129,12 @@ export default function MobileMiniPlayer({
               {title}
             </p>
             {!isPodcast && isPlaying && (
-              <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-full bg-red-500/20 text-red-400 text-[9px] font-bold tracking-wider">
-                <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping" />
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 text-[10px] font-bold tracking-wider border border-red-500/30 flex-shrink-0">
+                <div className="flex items-end gap-[2px] h-2.5">
+                  <span className="w-0.5 bg-red-400 rounded-full animate-eq-1" />
+                  <span className="w-0.5 bg-red-400 rounded-full animate-eq-2" />
+                  <span className="w-0.5 bg-red-400 rounded-full animate-eq-3" />
+                </div>
                 LIVE
               </span>
             )}
@@ -150,12 +154,15 @@ export default function MobileMiniPlayer({
         </div>
 
         {/* Actions (do not propagate click to expand) */}
-        <div className="flex items-center gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-1.5 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
           {/* Favorite button */}
           {!isPodcast && onToggleFavorite && (
-            <button
+            <motion.button
+              whileTap={{ scale: 0.72, rotate: -15 }}
+              whileHover={{ scale: 1.15 }}
+              transition={{ type: "spring", stiffness: 500, damping: 25 }}
               onClick={onToggleFavorite}
-              className="w-9 h-9 rounded-xl flex items-center justify-center text-white/40 hover:text-white active:scale-90 transition-all"
+              className="w-9 h-9 rounded-xl flex items-center justify-center text-white/40 hover:text-white transition-colors"
               aria-label={isFavorite ? "Retirer des favoris" : "Ajouter aux favoris"}
             >
               <svg
@@ -168,43 +175,57 @@ export default function MobileMiniPlayer({
               >
                 <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
               </svg>
-            </button>
+            </motion.button>
           )}
 
-          {/* Play/Pause Button */}
-          <button
-            onClick={onTogglePlay}
-            disabled={isLoading}
-            className="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg active:scale-90 transition-transform"
-            style={{
-              background: `linear-gradient(135deg, ${accentColor}, var(--accent-2, #22d3ee))`,
-            }}
-            aria-label={isPlaying ? "Pause" : "Lecture"}
-          >
-            {isLoading ? (
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            ) : isPlaying ? (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                <rect x="6" y="4" width="4" height="16" rx="1.5" />
-                <rect x="14" y="4" width="4" height="16" rx="1.5" />
-              </svg>
-            ) : (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" className="translate-x-0.5">
-                <polygon points="5 3 19 12 5 21 5 3" />
-              </svg>
+          {/* Play/Pause Button with Acoustic Ripple */}
+          <div className="relative flex items-center justify-center">
+            {isPlaying && !isLoading && (
+              <div
+                className="absolute -inset-1 rounded-xl animate-sound-ripple pointer-events-none"
+                style={{ background: `${accentColor}40` }}
+              />
             )}
-          </button>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.88 }}
+              transition={{ type: "spring", stiffness: 450, damping: 25 }}
+              onClick={onTogglePlay}
+              disabled={isLoading}
+              className="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg relative z-10"
+              style={{
+                background: `linear-gradient(135deg, ${accentColor}, var(--accent-2, #22d3ee))`,
+                boxShadow: isPlaying ? `0 0 16px ${accentColor}60` : undefined,
+              }}
+              aria-label={isPlaying ? "Pause" : "Lecture"}
+            >
+              {isLoading ? (
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : isPlaying ? (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                  <rect x="6" y="4" width="4" height="16" rx="1.5" />
+                  <rect x="14" y="4" width="4" height="16" rx="1.5" />
+                </svg>
+              ) : (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" className="translate-x-0.5">
+                  <polygon points="5 3 19 12 5 21 5 3" />
+                </svg>
+              )}
+            </motion.button>
+          </div>
 
           {/* Chevron expand */}
-          <button
+          <motion.button
+            whileTap={{ scale: 0.85 }}
+            transition={{ type: "spring", stiffness: 500, damping: 25 }}
             onClick={onExpand}
-            className="w-7 h-9 rounded-lg flex items-center justify-center text-white/40 hover:text-white active:scale-90 transition-all"
+            className="w-7 h-9 rounded-lg flex items-center justify-center text-white/40 hover:text-white transition-colors"
             aria-label="Agrandir le lecteur"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <path d="m18 15-6-6-6 6" />
             </svg>
-          </button>
+          </motion.button>
         </div>
       </motion.div>
     </div>

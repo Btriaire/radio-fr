@@ -581,7 +581,7 @@ export default function Home() {
                     icon: <><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></> },
                 ].map((b) => (
                   <button key={b.label} onClick={b.run} title={b.label} aria-label={b.aria}
-                    className="w-10 h-10 rounded-xl glass-hover flex items-center justify-center transition-all active:scale-90">
+                    className="w-10 h-10 rounded-xl glass-hover btn-spring flex items-center justify-center">
                     <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                       strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--accent)" }}>
                       {b.icon}
@@ -593,7 +593,7 @@ export default function Home() {
               {/* Theme palette */}
               <button onClick={() => { setThemeOpen((v) => !v); setMenuOpen(false); }}
                 title="Changer de thème" aria-label="Changer de thème" aria-expanded={themeOpen}
-                className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl glass glass-hover flex items-center justify-center transition-all active:scale-90"
+                className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl glass glass-hover btn-spring flex items-center justify-center"
                 style={{ border: "1px solid var(--glass-border)" }}>
                 <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                   strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--accent)" }}>
@@ -605,7 +605,7 @@ export default function Home() {
               {/* Settings */}
               <button onClick={() => setConfigOpen(true)}
                 title="Configuration" aria-label="Ouvrir la configuration"
-                className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl glass glass-hover flex items-center justify-center transition-all active:scale-90"
+                className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl glass glass-hover btn-spring flex items-center justify-center"
                 style={{ border: "1px solid var(--glass-border)" }}>
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                   strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--accent)" }}>
@@ -617,7 +617,7 @@ export default function Home() {
               {/* Phone-only overflow menu */}
               <button onClick={() => { setMenuOpen((v) => !v); setThemeOpen(false); }}
                 title="Plus d'options" aria-label="Plus d'options" aria-expanded={menuOpen}
-                className="sm:hidden w-11 h-11 rounded-2xl glass glass-hover flex items-center justify-center transition-all active:scale-90"
+                className="sm:hidden w-11 h-11 rounded-2xl glass glass-hover btn-spring flex items-center justify-center"
                 style={{ border: "1px solid var(--glass-border)" }}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style={{ color: "var(--accent)" }} aria-hidden>
                   <circle cx="5" cy="12" r="1.8" /><circle cx="12" cy="12" r="1.8" /><circle cx="19" cy="12" r="1.8" />
@@ -808,8 +808,8 @@ export default function Home() {
 
             {tab === "radio" && (
               <motion.div key="radio"
-                initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 16 }} transition={{ duration: 0.18 }}>
+                initial={{ opacity: 0, y: 12, scale: 0.995 }} animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -8, scale: 0.995 }} transition={{ type: "spring", stiffness: 360, damping: 28 }}>
 
                 {/* ── Reprendre : stations récemment écoutées (un tap, rien ne démarre seul) ── */}
                 {!stationQuery && genre === "Tous" && recentIds.length > 0 && (
@@ -885,8 +885,11 @@ export default function Home() {
                 <AnimatePresence>
                   {zappingFeedback && (
                     <motion.div
-                      initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}
-                      className="mb-3 p-2 rounded-xl text-center text-xs font-semibold text-white glass border border-[var(--accent)]/40 shadow-lg flex items-center justify-center gap-2"
+                      initial={{ opacity: 0, y: -10, scale: 0.96 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -10, scale: 0.96 }}
+                      transition={{ type: "spring", stiffness: 450, damping: 26 }}
+                      className="mb-3 p-2.5 rounded-xl text-center text-xs font-semibold text-white glass border border-[var(--accent)]/40 shadow-lg flex items-center justify-center gap-2"
                     >
                       <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
                       <span>Zapping vers : <strong className="text-[var(--accent)]">{zappingFeedback}</strong></span>
@@ -1043,8 +1046,8 @@ export default function Home() {
 
             {tab === "webradio" && (
               <motion.div key="webradio"
-                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.18 }}>
+                initial={{ opacity: 0, y: 12, scale: 0.995 }} animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -8, scale: 0.995 }} transition={{ type: "spring", stiffness: 360, damping: 28 }}>
                 {online ? (
                   <WebRadioPanel
                     onPlay={(s) => { userInteractedRef.current = true; setCurrentPodcast(null); setSelectedStation(s); playerApi.initAudio(preferredStreamUrl(s), { station: s }); }}
@@ -1061,8 +1064,8 @@ export default function Home() {
 
             {tab === "search" && (
               <motion.div key="search"
-                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.18 }}>
+                initial={{ opacity: 0, y: 12, scale: 0.995 }} animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -8, scale: 0.995 }} transition={{ type: "spring", stiffness: 360, damping: 28 }}>
                 {online ? (
                   <RadioSearch
                     onPlay={(s) => { userInteractedRef.current = true; setCurrentPodcast(null); setSelectedStation(s); playerApi.initAudio(preferredStreamUrl(s), { station: s }); }}
@@ -1079,8 +1082,8 @@ export default function Home() {
 
             {tab === "favoris" && (
               <motion.div key="favoris"
-                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.18 }}>
+                initial={{ opacity: 0, y: 12, scale: 0.995 }} animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -8, scale: 0.995 }} transition={{ type: "spring", stiffness: 360, damping: 28 }}>
                 {favorites.length === 0 ? (
                   <div className="flex flex-col items-center gap-4 py-14 text-center">
                     {/* SVG star constellation illustration */}
@@ -1133,8 +1136,8 @@ export default function Home() {
 
             {tab === "podcasts" && (
               <motion.div key="podcasts"
-                initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.18 }}>
+                initial={{ opacity: 0, y: 12, scale: 0.995 }} animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -8, scale: 0.995 }} transition={{ type: "spring", stiffness: 360, damping: 28 }}>
                 {/* Never gated behind `online`: episodes already downloaded via
                     useOfflinePodcasts stay fully playable with no connection —
                     SpotifyPanel itself degrades the search/discovery parts and

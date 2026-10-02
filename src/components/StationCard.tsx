@@ -20,12 +20,13 @@ export default function StationCard({
 }: Props) {
   return (
     <motion.div
-      whileHover={{ scale: 1.025, y: -2 }}
-      whileTap={{ scale: 0.96 }}
-      className={`group glass-dark flex items-center gap-3.5 rounded-2xl p-3.5 transition-all duration-250 relative overflow-hidden cursor-pointer border ${
+      whileHover={{ scale: 1.018, y: -2 }}
+      whileTap={{ scale: 0.97 }}
+      transition={{ type: "spring", stiffness: 400, damping: 28 }}
+      className={`group glass-dark flex items-center gap-3.5 rounded-2xl p-3.5 transition-all duration-200 relative overflow-hidden cursor-pointer border ${
         isActive
           ? "ring-1"
-          : "border-white/10 hover:border-[var(--accent)] hover:shadow-[0_8px_24px_color-mix(in_srgb,var(--accent)_18%,transparent)] active:scale-[0.97]"
+          : "border-white/10 hover:border-[var(--accent)] hover:shadow-[0_8px_24px_color-mix(in_srgb,var(--accent)_18%,transparent)]"
       }`}
       style={isActive ? {
         borderColor: `${station.color}c0`,
@@ -38,7 +39,7 @@ export default function StationCard({
       {/* Active glow */}
       {isActive && (
         <div
-          className="absolute inset-0 pointer-events-none opacity-15"
+          className={`absolute inset-0 pointer-events-none ${isPlaying ? "opacity-25 animate-glow-breathing" : "opacity-15"}`}
           style={{ background: `radial-gradient(circle at 20% 50%, ${station.color}, transparent 70%)` }}
         />
       )}
@@ -95,11 +96,12 @@ export default function StationCard({
           {isActive && isPlaying && (
             <span
               title="En direct"
-              className="flex items-end gap-[2px] h-3.5 px-1 py-0.5 rounded bg-red-500/15 border border-red-500/30 flex-shrink-0"
+              className="flex items-end gap-[2px] h-3.5 px-1.5 py-0.5 rounded bg-red-500/15 border border-red-500/30 flex-shrink-0"
             >
-              <span className="w-0.5 bg-red-400 rounded-full animate-pulse" style={{ height: "60%" }} />
-              <span className="w-0.5 bg-red-400 rounded-full animate-pulse" style={{ height: "100%", animationDelay: "150ms" }} />
-              <span className="w-0.5 bg-red-400 rounded-full animate-pulse" style={{ height: "40%", animationDelay: "300ms" }} />
+              <span className="w-0.5 bg-red-400 rounded-full animate-eq-1" />
+              <span className="w-0.5 bg-red-400 rounded-full animate-eq-2" />
+              <span className="w-0.5 bg-red-400 rounded-full animate-eq-3" />
+              <span className="w-0.5 bg-red-400 rounded-full animate-eq-4" />
             </span>
           )}
         </div>
@@ -127,10 +129,13 @@ export default function StationCard({
         </span>
 
         {/* Star */}
-        <button
+        <motion.button
+          whileTap={{ scale: 0.72, rotate: -18 }}
+          whileHover={{ scale: 1.15 }}
+          transition={{ type: "spring", stiffness: 500, damping: 25 }}
           onClick={(e) => { e.stopPropagation(); onToggleFavorite(); }}
           aria-label={isFavorite ? "Retirer des favoris" : "Ajouter aux favoris"}
-          className="w-11 h-11 -mr-1.5 rounded-full flex items-center justify-center transition-all duration-200 active:scale-90 hover:bg-white/10"
+          className="w-11 h-11 -mr-1.5 rounded-full flex items-center justify-center transition-colors duration-150 hover:bg-white/10"
         >
           <svg width="15" height="15" viewBox="0 0 24 24"
             fill={isFavorite ? "#fbbf24" : "none"}
@@ -139,7 +144,7 @@ export default function StationCard({
             className="transition-transform duration-200">
             <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
           </svg>
-        </button>
+        </motion.button>
       </div>
     </motion.div>
   );

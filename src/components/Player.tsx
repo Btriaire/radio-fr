@@ -345,9 +345,17 @@ export default function Player({
                 Podcast
               </span>
             ) : (
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full glass">
-                <div className={`w-2 h-2 rounded-full ${isPlaying ? "bg-red-500 animate-pulse" : "bg-white/20"}`} />
-                <span className="text-xs text-white/60 font-medium">LIVE</span>
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full glass border border-white/10">
+                {isPlaying ? (
+                  <div className="flex items-end gap-[2px] h-3">
+                    <span className="w-0.5 bg-red-400 rounded-full animate-eq-1" />
+                    <span className="w-0.5 bg-red-400 rounded-full animate-eq-2" />
+                    <span className="w-0.5 bg-red-400 rounded-full animate-eq-3" />
+                  </div>
+                ) : (
+                  <div className="w-2 h-2 rounded-full bg-white/20" />
+                )}
+                <span className="text-xs text-white/70 font-semibold tracking-wide">LIVE</span>
               </div>
             )}
             {/* Share button */}
@@ -457,68 +465,97 @@ export default function Player({
         <div className="flex items-center gap-2 sm:gap-3">
           {/* Quick Skip -15s for Podcasts / Tracks */}
           {(isPodcast || duration > 0) && (
-            <button
+            <motion.button
+              whileTap={{ scale: 0.88, rotate: -6 }}
+              whileHover={{ scale: 1.08 }}
+              transition={{ type: "spring", stiffness: 450, damping: 25 }}
               onClick={() => seekRelative(-15)}
               aria-label="Reculer de 15 secondes"
               title="Reculer de 15 secondes"
-              className="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center glass glass-hover text-white/70 hover:text-white transition-all active:scale-90 flex-shrink-0"
+              className="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center glass glass-hover text-white/70 hover:text-white flex-shrink-0 cursor-pointer"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M1 4v6h6" />
                 <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
                 <text x="12" y="15" fontSize="7.5" fontWeight="bold" fill="currentColor" textAnchor="middle" stroke="none">15</text>
               </svg>
-            </button>
+            </motion.button>
           )}
 
-          {/* Play/Pause */}
-          <button
-            onClick={() => {
-              triggerHaptic(15);
-              togglePlay();
-            }}
-            disabled={isLoading}
-            aria-label={isPlaying ? "Pause" : "Lecture"}
-            className="w-12 h-12 rounded-full flex items-center justify-center transition-all active:scale-95 flex-shrink-0 cursor-pointer"
-            style={{ background: `linear-gradient(135deg, ${accentColor}, ${accentColor}99)`,
-              boxShadow: `0 0 16px ${accentColor}55` }}
-          >
-            {(isLoading || reconnecting) ? (
-              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            ) : isPlaying ? (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="white">
-                <rect x="6" y="4" width="4" height="16" rx="1" />
-                <rect x="14" y="4" width="4" height="16" rx="1" />
-              </svg>
-            ) : (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="white">
-                <path d="M8 5.14v14l11-7-11-7z" />
-              </svg>
+          {/* Play/Pause with Acoustic Sound Ripple */}
+          <div className="relative flex-shrink-0 flex items-center justify-center">
+            {isPlaying && !isLoading && (
+              <>
+                <div
+                  className="absolute -inset-1 rounded-full animate-sound-ripple pointer-events-none"
+                  style={{ background: `${accentColor}40` }}
+                />
+                <div
+                  className="absolute -inset-1 rounded-full animate-sound-ripple-delayed pointer-events-none"
+                  style={{ background: `${accentColor}25` }}
+                />
+              </>
             )}
-          </button>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.92 }}
+              transition={{ type: "spring", stiffness: 400, damping: 24 }}
+              onClick={() => {
+                triggerHaptic(15);
+                togglePlay();
+              }}
+              disabled={isLoading}
+              aria-label={isPlaying ? "Pause" : "Lecture"}
+              className="w-12 h-12 rounded-full flex items-center justify-center relative z-10 cursor-pointer shadow-lg transition-shadow"
+              style={{
+                background: `linear-gradient(135deg, ${accentColor}, ${accentColor}cc)`,
+                boxShadow: isPlaying
+                  ? `0 0 24px ${accentColor}65, 0 4px 16px rgba(0,0,0,0.4)`
+                  : `0 0 14px ${accentColor}35`,
+              }}
+            >
+              {(isLoading || reconnecting) ? (
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : isPlaying ? (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="white">
+                  <rect x="6" y="4" width="4" height="16" rx="1.5" />
+                  <rect x="14" y="4" width="4" height="16" rx="1.5" />
+                </svg>
+              ) : (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="white" className="translate-x-0.5">
+                  <path d="M8 5.14v14l11-7-11-7z" />
+                </svg>
+              )}
+            </motion.button>
+          </div>
 
           {/* Quick Skip +30s for Podcasts / Tracks */}
           {(isPodcast || duration > 0) && (
-            <button
+            <motion.button
+              whileTap={{ scale: 0.88, rotate: 6 }}
+              whileHover={{ scale: 1.08 }}
+              transition={{ type: "spring", stiffness: 450, damping: 25 }}
               onClick={() => {
                 triggerHaptic(8);
                 seekRelative(30);
               }}
               aria-label="Avancer de 30 secondes"
               title="Avancer de 30 secondes"
-              className="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center glass glass-hover text-white/70 hover:text-white transition-all active:scale-90 flex-shrink-0 cursor-pointer"
+              className="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center glass glass-hover text-white/70 hover:text-white flex-shrink-0 cursor-pointer"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M23 4v6h-6" />
                 <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
                 <text x="12" y="15" fontSize="7.5" fontWeight="bold" fill="currentColor" textAnchor="middle" stroke="none">30</text>
               </svg>
-            </button>
+            </motion.button>
           )}
 
           {/* Volume with mute toggle */}
           <div className="flex items-center gap-2 flex-1">
-            <button
+            <motion.button
+              whileTap={{ scale: 0.85 }}
+              transition={{ type: "spring", stiffness: 500, damping: 25 }}
               onClick={() => {
                 triggerHaptic(8);
                 toggleMute();
@@ -539,7 +576,7 @@ export default function Player({
                   <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
                 </svg>
               )}
-            </button>
+            </motion.button>
             <input type="range" min={0} max={1} step={0.02} value={volume}
               onChange={(e) => changeVolume(Number(e.target.value))}
               aria-label="Volume" title={`Volume ${Math.round(volume * 100)}%`}
@@ -550,10 +587,13 @@ export default function Player({
           </div>
 
           {/* EQ toggle */}
-          <button
+          <motion.button
+            whileTap={{ scale: 0.92 }}
+            whileHover={{ scale: 1.05 }}
+            transition={{ type: "spring", stiffness: 450, damping: 25 }}
             onClick={() => setShowEQ((v) => !v)}
             aria-label="Afficher l'égaliseur" aria-expanded={showEQ}
-            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all glass glass-hover flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all glass glass-hover flex items-center gap-1.5 cursor-pointer ${
               showEQ ? "" : "text-white/40"
             }`}
             style={showEQ ? { color: "var(--accent)" } : {}}
@@ -567,13 +607,15 @@ export default function Player({
             {!eqActive && (
               <span className="text-[9px] text-white/25">off</span>
             )}
-          </button>
+          </motion.button>
         </div>
 
         {/* One-tap audio modes */}
         <div className="space-y-1.5">
           <div className="flex items-center gap-2">
-            <button
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              transition={{ type: "spring", stiffness: 450, damping: 28 }}
               onClick={() => {
                 if (!eqActive) {
                   notifyEqUnavailable();
@@ -596,8 +638,10 @@ export default function Player({
               {bassOn && (
                 <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: "var(--accent)" }} />
               )}
-            </button>
-            <button
+            </motion.button>
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              transition={{ type: "spring", stiffness: 450, damping: 28 }}
               onClick={() => {
                 if (!eqActive) {
                   notifyEqUnavailable();
@@ -619,7 +663,7 @@ export default function Player({
               {voiceOn && (
                 <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: "var(--accent)" }} />
               )}
-            </button>
+            </motion.button>
           </div>
 
           {!eqActive && (
