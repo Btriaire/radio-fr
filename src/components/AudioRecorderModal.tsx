@@ -10,6 +10,7 @@ interface Props {
   gainRef?: React.MutableRefObject<GainNode | null>;
   currentStationName?: string;
   currentSongTitle?: string | null;
+  currentStreamUrl?: string | null;
   isPlaying: boolean;
 }
 
@@ -19,6 +20,7 @@ export default function AudioRecorderModal({
   gainRef,
   currentStationName,
   currentSongTitle,
+  currentStreamUrl,
   isPlaying,
 }: Props) {
   const { theme } = useTheme();
@@ -37,6 +39,7 @@ export default function AudioRecorderModal({
     gainRef,
     currentStationName,
     currentSongTitle,
+    currentStreamUrl,
   });
 
   const [isOpen, setIsOpen] = useState(false);

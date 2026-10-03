@@ -236,6 +236,7 @@ export default function NowPlayingSheet({
             gainRef={playerApi.gainRef}
             currentStationName={title}
             currentSongTitle={nowPlaying?.songTitle}
+            currentStreamUrl={station?.streamUrl || podcast?.audioUrl}
             isPlaying={isPlaying}
           />
         </div>

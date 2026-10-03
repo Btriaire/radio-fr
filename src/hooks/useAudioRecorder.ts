@@ -17,6 +17,7 @@ interface UseAudioRecorderProps {
   gainRef?: React.MutableRefObject<GainNode | null>;
   currentStationName?: string;
   currentSongTitle?: string | null;
+  currentStreamUrl?: string | null;
 }
 
 export function useAudioRecorder({
@@ -25,6 +26,7 @@ export function useAudioRecorder({
   gainRef,
   currentStationName = "RadioFR",
   currentSongTitle,
+  currentStreamUrl,
 }: UseAudioRecorderProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
@@ -36,16 +38,84 @@ export function useAudioRecorder({
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startTimeRef = useRef<number>(0);
   const activeStreamRef = useRef<MediaStream | null>(null);
+  const abortCtrlRef = useRef<AbortController | null>(null);
 
   // Clear timer on unmount
   useEffect(() => {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
+      if (abortCtrlRef.current) {
+        try { abortCtrlRef.current.abort(); } catch {}
+      }
       if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
         try { mediaRecorderRef.current.stop(); } catch {}
       }
     };
   }, []);
+
+  const startStreamFetchRecording = useCallback(async (url: string) => {
+    try {
+      const abortCtrl = new AbortController();
+      abortCtrlRef.current = abortCtrl;
+      startTimeRef.current = Date.now();
+      setIsRecording(true);
+      setRecordingSeconds(0);
+
+      timerRef.current = setInterval(() => {
+        setRecordingSeconds((s) => s + 1);
+      }, 1000);
+
+      // Route through local edge proxy to bypass CORS restrictions
+      const proxyUrl = `/api/audio?url=${encodeURIComponent(url)}`;
+      const res = await fetch(proxyUrl, { signal: abortCtrl.signal });
+
+      if (!res.ok || !res.body) {
+        throw new Error(`Erreur flux (${res.status})`);
+      }
+
+      const reader = res.body.getReader();
+      chunksRef.current = [];
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done || abortCtrl.signal.aborted) break;
+        if (value && value.byteLength > 0) {
+          chunksRef.current.push(new Blob([value]));
+        }
+      }
+
+      // Finish recording
+      const duration = Math.max(1, Math.round((Date.now() - startTimeRef.current) / 1000));
+      if (chunksRef.current.length > 0) {
+        const blob = new Blob(chunksRef.current, { type: "audio/mpeg" });
+        const blobUrl = URL.createObjectURL(blob);
+
+        const newRec: RecordedTrack = {
+          id: `rec_${Date.now()}`,
+          stationName: currentStationName,
+          trackTitle: currentSongTitle || undefined,
+          timestamp: Date.now(),
+          durationSec: duration,
+          blobUrl,
+          blobSize: blob.size,
+        };
+
+        setRecordings((prev) => [newRec, ...prev]);
+      }
+    } catch (err: any) {
+      if (err?.name !== "AbortError") {
+        setError("Erreur lors de l'enregistrement du flux.");
+      }
+    } finally {
+      setIsRecording(false);
+      setRecordingSeconds(0);
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+      abortCtrlRef.current = null;
+    }
+  }, [currentStationName, currentSongTitle]);
 
   const startRecording = useCallback(() => {
     setError(null);
@@ -78,8 +148,13 @@ export function useAudioRecorder({
       }
     }
 
+    // 3. If browser blocks stream capture due to CORS, use Direct Stream Fetch recording
     if (!stream || stream.getAudioTracks().length === 0) {
-      setError("Enregistrement non supporté ou flux audio protégé par le navigateur.");
+      if (currentStreamUrl) {
+        startStreamFetchRecording(currentStreamUrl);
+        return;
+      }
+      setError("Flux protégé ou non capturable.");
       return;
     }
 
@@ -151,6 +226,9 @@ export function useAudioRecorder({
   }, [ctxRef, gainRef, mediaElRef, currentStationName, currentSongTitle]);
 
   const stopRecording = useCallback(() => {
+    if (abortCtrlRef.current) {
+      try { abortCtrlRef.current.abort(); } catch {}
+    }
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
       try {
         mediaRecorderRef.current.stop();

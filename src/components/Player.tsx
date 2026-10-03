@@ -610,6 +610,7 @@ export default function Player({
             gainRef={gainRef}
             currentStationName={station?.name || podcast?.episodeTitle}
             currentSongTitle={nowPlaying?.songTitle}
+            currentStreamUrl={currentStream?.url || station?.streamUrl || podcast?.audioUrl}
             isPlaying={isPlaying}
           />
 
