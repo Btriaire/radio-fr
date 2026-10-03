@@ -470,9 +470,16 @@ export function useAudioPlayer() {
       return;
     }
     if (attemptRef.current >= MAX_RECONNECT_ATTEMPTS) {
-      setReconnecting(false);
-      setIsLoading(false);
-      setError("Connexion perdue. Réessayer ?");
+      // Rather than giving up completely and permanently stopping sound,
+      // schedule a gentle background retry every 20 seconds.
+      // As soon as 4G/WiFi recovers or a tunnel is cleared, audio resumes automatically.
+      setReconnecting(true);
+      setIsLoading(true);
+      setError("Reconnexion en arrière-plan...");
+      reconnectTimerRef.current = setTimeout(() => {
+        reconnectTimerRef.current = null;
+        doReconnectRef.current?.();
+      }, 20000);
       return;
     }
     const n = attemptRef.current;

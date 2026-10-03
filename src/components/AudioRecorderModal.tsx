@@ -117,7 +117,23 @@ export default function AudioRecorderModal({
               isRecording ? "bg-[#d71921] animate-ping" : "bg-[#d71921]"
             }`}
           />
-          <span>{isRecording ? `REC ${fmtTime(recordingSeconds)}` : "REC"}</span>
+          <span className="flex items-center gap-1.5">
+            {isRecording ? (
+              <>
+                <span className="tabular-nums font-mono font-bold tracking-tight text-[#d71921]">
+                  REC {fmtTime(recordingSeconds)}
+                </span>
+                {/* 3 mini equalizer bars in pure Nothing SVG style */}
+                <span className="inline-flex items-end gap-[2px] h-3 ml-0.5">
+                  <span className="w-[2px] h-2 bg-[#d71921] animate-pulse" />
+                  <span className="w-[2px] h-3 bg-[#d71921] animate-pulse [animation-delay:150ms]" />
+                  <span className="w-[2px] h-1.5 bg-[#d71921] animate-pulse [animation-delay:300ms]" />
+                </span>
+              </>
+            ) : (
+              "REC"
+            )}
+          </span>
         </button>
 
         {/* Dedicated Enregistrements / Drawer opener button */}
