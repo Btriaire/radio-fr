@@ -33,23 +33,71 @@ function openDB(): Promise<IDBDatabase> {
   });
 }
 
+// Key for auto-download preference (e.g. auto-download new episodes of favorite podcasts)
+export const AUTO_DOWNLOAD_KEY = "radiofr_auto_download_favs";
+
+export function isAutoDownloadEnabled(): boolean {
+  try {
+    return localStorage.getItem(AUTO_DOWNLOAD_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function setAutoDownloadEnabled(enabled: boolean): void {
+  try {
+    localStorage.setItem(AUTO_DOWNLOAD_KEY, enabled ? "1" : "0");
+  } catch {}
+}
+
 export async function saveOfflineEpisode(
   ep: { title: string; audioUrl: string; duration: string; pubDate: string; fileSize?: number; isVideo?: boolean },
   pod: { trackName: string; artworkUrl600?: string; artworkUrl100?: string },
   onProgress?: (percent: number) => void
 ): Promise<void> {
-  // Fetch audio blob (direct or proxied)
+  // Fetch audio with streaming progress
   let blob: Blob;
+  
+  const fetchWithProgress = async (url: string): Promise<Blob> => {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+    const contentLength = res.headers.get("content-length");
+    const totalBytes = contentLength ? parseInt(contentLength, 10) : (ep.fileSize || 0);
+
+    if (!res.body || totalBytes <= 0) {
+      if (onProgress) onProgress(50);
+      return await res.blob();
+    }
+
+    const reader = res.body.getReader();
+    const chunks: Uint8Array[] = [];
+    let receivedBytes = 0;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (value) {
+        chunks.push(value);
+        receivedBytes += value.length;
+        if (totalBytes > 0 && onProgress) {
+          const pct = Math.min(99, Math.round((receivedBytes / totalBytes) * 100));
+          onProgress(pct);
+        }
+      }
+    }
+
+    const contentType = res.headers.get("content-type") || "audio/mpeg";
+    return new Blob(chunks as BlobPart[], { type: contentType });
+  };
+
   try {
-    const res = await fetch(ep.audioUrl, { mode: "cors" });
-    if (!res.ok) throw new Error("CORS or stream error");
-    blob = await res.blob();
+    // Try direct fetch first
+    blob = await fetchWithProgress(ep.audioUrl);
   } catch {
-    // Fallback via our server proxy
+    // Fallback to our dedicated Edge streaming proxy
     const proxyUrl = `/api/audio?url=${encodeURIComponent(ep.audioUrl)}`;
-    const res = await fetch(proxyUrl);
-    if (!res.ok) throw new Error("Impossible de télécharger le fichier audio");
-    blob = await res.blob();
+    blob = await fetchWithProgress(proxyUrl);
   }
 
   const db = await openDB();

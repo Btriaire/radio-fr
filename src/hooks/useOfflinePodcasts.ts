@@ -6,13 +6,28 @@ import {
   saveOfflineEpisode,
   deleteOfflineEpisode,
   clearAllOfflineEpisodes,
-  getOfflineBlobUrl
+  getOfflineBlobUrl,
+  isAutoDownloadEnabled,
+  setAutoDownloadEnabled
 } from "@/lib/offlineStorage";
 
 export function useOfflinePodcasts() {
   const [offlineEpisodes, setOfflineEpisodes] = useState<OfflineEpisode[]>([]);
   const [downloadingIds, setDownloadingIds] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
+  const [autoDownload, setAutoDownload] = useState(false);
+
+  useEffect(() => {
+    setAutoDownload(isAutoDownloadEnabled());
+  }, []);
+
+  const toggleAutoDownload = useCallback(() => {
+    setAutoDownload((prev) => {
+      const next = !prev;
+      setAutoDownloadEnabled(next);
+      return next;
+    });
+  }, []);
 
   const refresh = useCallback(async () => {
     try {
@@ -87,5 +102,7 @@ export function useOfflinePodcasts() {
     loading,
     refresh,
     getOfflineBlobUrl,
+    autoDownload,
+    toggleAutoDownload,
   };
 }

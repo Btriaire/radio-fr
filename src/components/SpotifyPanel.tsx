@@ -179,6 +179,40 @@ function SpotifyPanel({ currentEpisodeUrl, isPlaying, onPlayEpisode, online = tr
     if (!online) setShowOffline(true);
   }, [online]);
 
+  // ── Auto-Download for Favorite Podcasts ─────────────────────────────────────
+  // When autoDownload is enabled and the app is online, check the latest episode
+  // of each favorite podcast and download it automatically in the background
+  // if not already downloaded.
+  useEffect(() => {
+    if (!online || !offline.autoDownload || podFavorites.length === 0) return;
+    let cancelled = false;
+
+    const runAutoDownloads = async () => {
+      for (const fav of podFavorites) {
+        if (cancelled) break;
+        try {
+          const eps = await getEpisodesForPodcast(fav);
+          if (!eps || eps.length === 0) continue;
+          const latestEp = eps[0];
+          // Skip if already in local storage or currently downloading
+          if (
+            latestEp &&
+            !offline.isDownloaded(latestEp.audioUrl) &&
+            offline.downloadingIds[latestEp.audioUrl] == null
+          ) {
+            await offline.downloadEpisode(latestEp, fav);
+          }
+        } catch {}
+      }
+    };
+
+    const timer = setTimeout(runAutoDownloads, 3000);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [online, offline.autoDownload, podFavorites, offline.isDownloaded, offline.downloadingIds, offline.downloadEpisode]);
+
   const handleSearch = () => { setShowFavorites(false); doSearch(query, activeGenre); };
   const handleTag    = (tag: string) => { setShowFavorites(false); setQuery(tag); doSearch(tag, activeGenre); };
   const handleGenre  = (id: number | null) => {
@@ -310,14 +344,28 @@ function SpotifyPanel({ currentEpisodeUrl, isPlaying, onPlayEpisode, online = tr
                 {offline.offlineEpisodes.length} épisode{offline.offlineEpisodes.length > 1 ? "s" : ""} · {Math.round(offline.totalBytes / 1024 / 1024)} Mo en mémoire locale
               </p>
             </div>
-            {offline.offlineEpisodes.length > 0 && (
+            <div className="flex items-center gap-2">
               <button
-                onClick={() => { if (confirm("Supprimer tous les épisodes hors-ligne ?")) offline.clearAll(); }}
-                className="text-[10px] text-red-400 hover:text-red-300 font-bold px-2 py-1 rounded-lg border border-red-500/30 hover:bg-red-500/10 transition-all"
+                onClick={offline.toggleAutoDownload}
+                title="Télécharger automatiquement les nouveaux épisodes des podcasts favoris"
+                className={`text-[10px] font-bold px-2.5 py-1 rounded-lg border transition-all flex items-center gap-1.5 ${
+                  offline.autoDownload
+                    ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300"
+                    : "bg-white/5 border-white/10 text-white/40 hover:text-white/70"
+                }`}
               >
-                Tout effacer
+                <span className={`w-1.5 h-1.5 rounded-full ${offline.autoDownload ? "bg-emerald-400 animate-pulse" : "bg-white/30"}`} />
+                <span>Auto-DL favoris {offline.autoDownload ? "ON" : "OFF"}</span>
               </button>
-            )}
+              {offline.offlineEpisodes.length > 0 && (
+                <button
+                  onClick={() => { if (confirm("Supprimer tous les épisodes hors-ligne ?")) offline.clearAll(); }}
+                  className="text-[10px] text-red-400 hover:text-red-300 font-bold px-2 py-1 rounded-lg border border-red-500/30 hover:bg-red-500/10 transition-all"
+                >
+                  Tout effacer
+                </button>
+              )}
+            </div>
           </div>
 
           {offline.offlineEpisodes.length === 0 ? (
@@ -1065,17 +1113,40 @@ function PodcastDetail({ podcast, currentEpisodeUrl, isPlaying, offline, onPlay,
                 </span>
               )}
             </p>
-            <button onClick={toggleAutoplay}
-              title="Lire les épisodes à la suite automatiquement"
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wide transition-all active:scale-95"
-              style={autoplay
-                ? { background: "var(--accent)22", color: "var(--accent)", border: "1px solid var(--accent)55" }
-                : { background: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.45)", border: "1px solid rgba(255,255,255,0.12)" }}>
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
-                <polygon points="4,4 13,12 4,20"/><rect x="15" y="4" width="3" height="16"/>
-              </svg>
-              Enchaînement {autoplay ? "auto" : "off"}
-            </button>
+            <div className="flex items-center gap-1.5">
+              {!loading && episodes.length > 0 && (
+                <button
+                  onClick={async () => {
+                    const toDownload = episodes.slice(0, 3).filter(
+                      ep => !offline.isDownloaded(ep.audioUrl) && offline.downloadingIds[ep.audioUrl] == null
+                    );
+                    for (const ep of toDownload) {
+                      await offline.downloadEpisode(ep, podcast);
+                    }
+                  }}
+                  title="Télécharger les 3 derniers épisodes pour une écoute hors-ligne"
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wide transition-all active:scale-95 bg-white/5 hover:bg-white/10 text-emerald-400 border border-emerald-500/30"
+                >
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="7 10 12 15 17 10" />
+                    <line x1="12" y1="15" x2="12" y2="3" />
+                  </svg>
+                  <span>DL récents (3)</span>
+                </button>
+              )}
+              <button onClick={toggleAutoplay}
+                title="Lire les épisodes à la suite automatiquement"
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wide transition-all active:scale-95"
+                style={autoplay
+                  ? { background: "var(--accent)22", color: "var(--accent)", border: "1px solid var(--accent)55" }
+                  : { background: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.45)", border: "1px solid rgba(255,255,255,0.12)" }}>
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
+                  <polygon points="4,4 13,12 4,20"/><rect x="15" y="4" width="3" height="16"/>
+                </svg>
+                Enchaînement {autoplay ? "auto" : "off"}
+              </button>
+            </div>
           </div>
 
           {/* Instant episode search / filter bar */}
