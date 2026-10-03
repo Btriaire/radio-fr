@@ -1,5 +1,11 @@
 "use client";
 import { useState, useRef, useEffect, useCallback } from "react";
+import {
+  saveRecordingToDB,
+  getAllRecordingsFromDB,
+  deleteRecordingFromDB,
+  StoredRecording,
+} from "@/lib/recordingsStorage";
 
 export interface RecordedTrack {
   id: string;
@@ -9,6 +15,8 @@ export interface RecordedTrack {
   durationSec: number;
   blobUrl: string;
   blobSize: number;
+  mimeType: string;
+  blob: Blob;
 }
 
 interface UseAudioRecorderProps {
@@ -18,6 +26,7 @@ interface UseAudioRecorderProps {
   currentStationName?: string;
   currentSongTitle?: string | null;
   currentStreamUrl?: string | null;
+  onRecordingFinished?: (track: RecordedTrack) => void;
 }
 
 export function useAudioRecorder({
@@ -27,6 +36,7 @@ export function useAudioRecorder({
   currentStationName = "RadioFR",
   currentSongTitle,
   currentStreamUrl,
+  onRecordingFinished,
 }: UseAudioRecorderProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
@@ -40,7 +50,44 @@ export function useAudioRecorder({
   const activeStreamRef = useRef<MediaStream | null>(null);
   const abortCtrlRef = useRef<AbortController | null>(null);
 
-  // Clear timer on unmount
+  // Keep track of active blob URLs for cleanup
+  const activeUrlsRef = useRef<string[]>([]);
+  const onFinishedCallbackRef = useRef(onRecordingFinished);
+  onFinishedCallbackRef.current = onRecordingFinished;
+
+  // Load existing recordings from IndexedDB on mount
+  useEffect(() => {
+    let mounted = true;
+    getAllRecordingsFromDB().then((storedList) => {
+      if (!mounted) return;
+      const loaded: RecordedTrack[] = storedList.map((item) => {
+        const url = URL.createObjectURL(item.blob);
+        activeUrlsRef.current.push(url);
+        return {
+          id: item.id,
+          stationName: item.stationName,
+          trackTitle: item.trackTitle,
+          timestamp: item.timestamp,
+          durationSec: item.durationSec,
+          blobUrl: url,
+          blobSize: item.blobSize,
+          mimeType: item.mimeType,
+          blob: item.blob,
+        };
+      });
+      setRecordings(loaded);
+    }).catch(() => {});
+
+    return () => {
+      mounted = false;
+      // Revoke any created blob URLs
+      activeUrlsRef.current.forEach((url) => {
+        try { URL.revokeObjectURL(url); } catch {}
+      });
+    };
+  }, []);
+
+  // Clear timer and ongoing recorders on unmount
   useEffect(() => {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
@@ -52,6 +99,46 @@ export function useAudioRecorder({
       }
     };
   }, []);
+
+  const handleNewRecording = useCallback(async (blob: Blob, mimeType: string) => {
+    const duration = Math.max(1, Math.round((Date.now() - startTimeRef.current) / 1000));
+    const blobUrl = URL.createObjectURL(blob);
+    activeUrlsRef.current.push(blobUrl);
+
+    const newRec: RecordedTrack = {
+      id: `rec_${Date.now()}`,
+      stationName: currentStationName,
+      trackTitle: currentSongTitle || undefined,
+      timestamp: Date.now(),
+      durationSec: duration,
+      blobUrl,
+      blobSize: blob.size,
+      mimeType,
+      blob,
+    };
+
+    // Save to IndexedDB for persistent storage across refreshes
+    try {
+      const storedItem: StoredRecording = {
+        id: newRec.id,
+        stationName: newRec.stationName,
+        trackTitle: newRec.trackTitle,
+        timestamp: newRec.timestamp,
+        durationSec: newRec.durationSec,
+        blobSize: newRec.blobSize,
+        mimeType: newRec.mimeType,
+        blob: newRec.blob,
+      };
+      await saveRecordingToDB(storedItem);
+    } catch (e) {
+      console.error("Failed to save recording to IndexedDB", e);
+    }
+
+    setRecordings((prev) => [newRec, ...prev]);
+    if (onFinishedCallbackRef.current) {
+      onFinishedCallbackRef.current(newRec);
+    }
+  }, [currentStationName, currentSongTitle]);
 
   const startStreamFetchRecording = useCallback(async (url: string) => {
     try {
@@ -85,22 +172,10 @@ export function useAudioRecorder({
       }
 
       // Finish recording
-      const duration = Math.max(1, Math.round((Date.now() - startTimeRef.current) / 1000));
       if (chunksRef.current.length > 0) {
-        const blob = new Blob(chunksRef.current, { type: "audio/mpeg" });
-        const blobUrl = URL.createObjectURL(blob);
-
-        const newRec: RecordedTrack = {
-          id: `rec_${Date.now()}`,
-          stationName: currentStationName,
-          trackTitle: currentSongTitle || undefined,
-          timestamp: Date.now(),
-          durationSec: duration,
-          blobUrl,
-          blobSize: blob.size,
-        };
-
-        setRecordings((prev) => [newRec, ...prev]);
+        const mime = "audio/mpeg";
+        const blob = new Blob(chunksRef.current, { type: mime });
+        await handleNewRecording(blob, mime);
       }
     } catch (err: any) {
       if (err?.name !== "AbortError") {
@@ -115,7 +190,7 @@ export function useAudioRecorder({
       }
       abortCtrlRef.current = null;
     }
-  }, [currentStationName, currentSongTitle]);
+  }, [handleNewRecording]);
 
   const startRecording = useCallback(() => {
     setError(null);
@@ -186,22 +261,11 @@ export function useAudioRecorder({
         }
       };
 
-      mr.onstop = () => {
-        const duration = Math.max(1, Math.round((Date.now() - startTimeRef.current) / 1000));
-        const blob = new Blob(chunksRef.current, { type: selectedMime || "audio/webm" });
-        const blobUrl = URL.createObjectURL(blob);
+      mr.onstop = async () => {
+        const mime = selectedMime || "audio/webm";
+        const blob = new Blob(chunksRef.current, { type: mime });
+        await handleNewRecording(blob, mime);
 
-        const newRec: RecordedTrack = {
-          id: `rec_${Date.now()}`,
-          stationName: currentStationName,
-          trackTitle: currentSongTitle || undefined,
-          timestamp: Date.now(),
-          durationSec: duration,
-          blobUrl,
-          blobSize: blob.size,
-        };
-
-        setRecordings((prev) => [newRec, ...prev]);
         setIsRecording(false);
         setRecordingSeconds(0);
         if (timerRef.current) {
@@ -223,7 +287,7 @@ export function useAudioRecorder({
       setError(e?.message || "Impossible de démarrer l'enregistrement.");
       setIsRecording(false);
     }
-  }, [ctxRef, gainRef, mediaElRef, currentStationName, currentSongTitle]);
+  }, [ctxRef, gainRef, mediaElRef, currentStreamUrl, handleNewRecording, startStreamFetchRecording]);
 
   const stopRecording = useCallback(() => {
     if (abortCtrlRef.current) {
@@ -247,6 +311,7 @@ export function useAudioRecorder({
   }, [isRecording, startRecording, stopRecording]);
 
   const deleteRecording = useCallback((id: string) => {
+    deleteRecordingFromDB(id).catch(() => {});
     setRecordings((prev) => {
       const target = prev.find((r) => r.id === id);
       if (target?.blobUrl) {
