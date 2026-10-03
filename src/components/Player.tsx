@@ -206,7 +206,11 @@ export default function Player({
   const streams = station?.streams ?? [];
 
   return (
-    <div className="glass-dark rounded-3xl overflow-hidden shadow-glass-lg relative">
+    <div className={`rounded-3xl overflow-hidden relative ${
+      isNothing
+        ? "bg-[#111111] dark:bg-[#111111] border border-black/15 dark:border-white/12 shadow-none"
+        : "glass-dark shadow-glass-lg"
+    }`}>
       {/* ── Decorative SVG background ── */}
       <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-[0.06]"
         viewBox="0 0 340 260" preserveAspectRatio="none" aria-hidden>
@@ -284,24 +288,22 @@ export default function Player({
           <div className="flex-1 min-w-0">
             {isPodcast ? (
               <>
-                <h2 className="font-semibold text-white text-sm leading-tight line-clamp-2"
-                  style={{ fontFamily: isNothing ? "var(--font-dot), monospace" : "inherit" }}>
+                <h2 className="font-semibold text-white text-sm leading-tight line-clamp-2">
                   {podcast!.episodeTitle}
                 </h2>
-                <p className="text-white/50 text-xs mt-0.5 truncate font-mono">{podcast!.podcastName}</p>
+                <p className="text-white/50 text-xs mt-0.5 truncate">{podcast!.podcastName}</p>
               </>
             ) : (
               <>
                 <div className="flex items-center gap-2">
-                  <h2 className="font-semibold text-white text-lg leading-tight truncate tracking-tight"
-                    style={{ fontFamily: isNothing ? "var(--font-dot), monospace" : "inherit" }}>
+                  <h2 className="font-semibold text-white text-lg leading-tight truncate tracking-tight">
                     {station!.name}
                   </h2>
                   {isNothing && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#d71921] animate-ping" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#d71921]" />
                   )}
                 </div>
-                <p className="text-white/50 text-sm font-mono text-xs mt-0.5">{station!.tagline}</p>
+                <p className="text-white/50 text-xs mt-0.5">{station!.tagline}</p>
                 {station!.freq && (
                   <span className="text-xs px-2 py-0.5 rounded-full mt-1 inline-block font-medium font-mono"
                     style={{ background: isNothing ? "rgba(215,25,33,0.15)" : `${station!.color}22`, color: isNothing ? "#d71921" : station!.color }}>

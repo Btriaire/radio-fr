@@ -188,10 +188,10 @@ export default function HubScreen({ onChoose }: HubScreenProps) {
         style={{ textAlign: "center", marginBottom: 36 }}
       >
         <h1 style={{
-          margin: 0, fontSize: isNothing ? 36 : 34, fontWeight: isNothing ? 700 : 800,
-          letterSpacing: isNothing ? "0.08em" : "-0.02em", lineHeight: 1,
-          fontFamily: isNothing ? "var(--font-dot), 'Silkscreen', monospace" : "system-ui, -apple-system, sans-serif",
-          textTransform: isNothing ? "uppercase" : "none",
+          margin: 0, fontSize: isNothing ? 32 : 34, fontWeight: isNothing ? 600 : 800,
+          letterSpacing: isNothing ? "-0.02em" : "-0.02em", lineHeight: 1,
+          fontFamily: isNothing ? "var(--font-main), 'Space Grotesk', sans-serif" : "system-ui, -apple-system, sans-serif",
+          textTransform: "none",
         }}>
           <span style={{ color: isNothing ? (isNothingLight ? "#111" : "#fff") : "#fff" }}>Radio</span>
           <span style={{
@@ -202,11 +202,12 @@ export default function HubScreen({ onChoose }: HubScreenProps) {
           }}>FR</span>
         </h1>
         <p style={{
-          margin: "10px 0 0", fontSize: 11, letterSpacing: isNothing ? "0.32em" : "0.28em", textTransform: "uppercase",
+          margin: "8px 0 0", fontSize: 11, letterSpacing: isNothing ? "0.15em" : "0.28em", textTransform: "uppercase",
           color: isNothing ? (isNothingLight ? "rgba(0,0,0,0.5)" : "rgba(255,255,255,0.45)") : "rgba(255,255,255,0.4)",
-          fontFamily: isNothing ? "monospace" : "inherit",
+          fontFamily: isNothing ? "var(--font-main), sans-serif" : "inherit",
+          fontWeight: isNothing ? 500 : 400,
         }}>
-          {isNothing ? "// SELECT AUDIO INPUT //" : "Choisis ton écoute"}
+          {isNothing ? "AUDIO INPUT // SELECT" : "Choisis ton écoute"}
         </p>
       </motion.div>
 
@@ -220,57 +221,52 @@ export default function HubScreen({ onChoose }: HubScreenProps) {
             initial={{ opacity: 0, y: 24, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ delay: 0.12 + i * 0.09, type: "spring", stiffness: 240, damping: 22 }}
-            whileHover={{ y: -6, scale: 1.03 }}
-            whileTap={{ scale: 0.97 }}
-            className={`w-full rounded-3xl flex flex-col items-center justify-center gap-3 px-5 py-7 sm:py-9 cursor-pointer relative overflow-hidden ${
+            whileHover={{ y: isNothing ? -3 : -6, scale: isNothing ? 1.015 : 1.03 }}
+            whileTap={{ scale: 0.98 }}
+            className={`w-full rounded-2xl flex flex-col items-center justify-center gap-3 px-5 py-7 sm:py-9 cursor-pointer relative overflow-hidden transition-colors ${
               isNothing
-                ? (isNothingLight ? "bg-white/85 hover:bg-white text-black" : "bg-[#141416]/85 hover:bg-[#18181b] text-white")
+                ? (isNothingLight ? "bg-white hover:bg-neutral-50 text-black" : "bg-[#111111] hover:bg-[#161616] text-white")
                 : "glass glass-hover"
             }`}
             style={{
               border: isNothing
-                ? (isNothingLight ? "1px solid rgba(0,0,0,0.12)" : "1px solid rgba(255,255,255,0.15)")
+                ? (isNothingLight ? "1px solid rgba(0,0,0,0.14)" : "1px solid rgba(255,255,255,0.12)")
                 : "1px solid var(--glass-border)",
-              boxShadow: isNothing
-                ? (isNothingLight ? "0 8px 30px rgba(0,0,0,0.06)" : "0 10px 40px rgba(0,0,0,0.6)")
-                : "0 10px 40px rgba(0,0,0,0.35)",
+              boxShadow: "none",
               minHeight: 180,
             }}
           >
-            {/* Glow behind icon */}
-            <div className="absolute -z-10 rounded-full blur-3xl"
-              style={{
-                width: 140, height: 140, top: 24,
-                background: isNothing ? "rgba(215,25,33,0.12)" : `${A}22`
-              }} />
+            {/* Subtle glow behind icon only in non-Nothing */}
+            {!isNothing && (
+              <div className="absolute -z-10 rounded-full blur-3xl"
+                style={{
+                  width: 140, height: 140, top: 24,
+                  background: `${A}22`
+                }} />
+            )}
             <div style={{ filter: isNothing ? "none" : `drop-shadow(0 6px 18px ${A}44)` }}>
               {c.icon}
             </div>
             <div className="text-center">
               <p
-                className={`font-bold text-lg leading-none ${
-                  isNothing ? (isNothingLight ? "text-black" : "text-white") : "text-white"
+                className={`font-medium text-base leading-none tracking-tight ${
+                  isNothing ? (isNothingLight ? "text-black" : "text-white") : "text-white font-bold text-lg"
                 }`}
-                style={{
-                  fontFamily: isNothing ? "var(--font-dot), 'Silkscreen', monospace" : "inherit",
-                  letterSpacing: isNothing ? "0.04em" : "normal",
-                  fontSize: isNothing ? "0.95rem" : "1.125rem",
-                }}
               >
                 {c.title}
               </p>
               <p
                 className={`text-xs mt-1.5 ${
-                  isNothing ? (isNothingLight ? "text-black/55 font-mono text-[10px]" : "text-white/45 font-mono text-[10px]") : "text-white/45"
+                  isNothing ? (isNothingLight ? "text-black/55 text-[11px]" : "text-white/45 text-[11px]") : "text-white/45"
                 }`}
               >
                 {c.subtitle}
               </p>
             </div>
             {/* Bottom accent line */}
-            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[3px] rounded-full"
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[2px] rounded-full"
               style={{
-                width: 48,
+                width: 36,
                 background: isNothing
                   ? "#d71921"
                   : `linear-gradient(90deg, ${A}, ${A2})`

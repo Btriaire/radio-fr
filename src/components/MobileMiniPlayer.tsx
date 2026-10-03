@@ -129,8 +129,7 @@ export default function MobileMiniPlayer({
         {/* Title & Live Metadata */}
         <div className="flex-1 min-w-0 pr-1">
           <div className="flex items-center gap-1.5">
-            <p className="text-white font-semibold text-sm leading-tight truncate"
-              style={{ fontFamily: isNothing ? "var(--font-dot), monospace" : "inherit" }}>
+            <p className="text-white font-semibold text-sm leading-tight truncate tracking-tight">
               {title}
             </p>
             {!isPodcast && isPlaying && (

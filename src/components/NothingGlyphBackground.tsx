@@ -17,125 +17,111 @@ export default function NothingGlyphBackground({ isPlaying = false }: Props) {
       className="fixed inset-0 pointer-events-none z-0 overflow-hidden select-none"
       aria-hidden="true"
     >
-      {/* ── Subtle Technical Dot Matrix Grid ── */}
+      {/* ── Ultra-crisp, razor-sharp Dot Grid (1px dots on 32px grid, strictly non-blurry) ── */}
       <div
-        className="absolute inset-0 opacity-[0.45]"
+        className="absolute inset-0 opacity-[0.22] dark:opacity-[0.16]"
         style={{
           backgroundImage: isLight
-            ? "radial-gradient(rgba(0, 0, 0, 0.12) 1px, transparent 1px)"
-            : "radial-gradient(rgba(255, 255, 255, 0.12) 1px, transparent 1px)",
-          backgroundSize: "24px 24px",
+            ? "radial-gradient(circle, #000000 0.75px, transparent 0.75px)"
+            : "radial-gradient(circle, #ffffff 0.75px, transparent 0.75px)",
+          backgroundSize: "32px 32px",
           backgroundPosition: "0 0",
         }}
       />
 
-      {/* ── Fine Technical Coordinate Marks & Crosshairs ── */}
-      <div className="absolute top-24 left-8 font-mono text-[9px] tracking-widest uppercase opacity-25 hidden sm:block">
-        + SYS.GLYPH // NTHG.IO-01
-      </div>
-      <div className="absolute top-24 right-8 font-mono text-[9px] tracking-widest uppercase opacity-25 hidden sm:block">
-        [RADIO.FR.CORE] // 48.8566° N
-      </div>
-      <div className="absolute bottom-28 left-8 font-mono text-[9px] tracking-widest uppercase opacity-25 hidden sm:block">
-        MATRIX.BUS // 48kHz PCM
-      </div>
-      <div className="absolute bottom-28 right-8 font-mono text-[9px] tracking-widest uppercase opacity-25 hidden sm:block">
-        LOC.FR // (c) NOTHING.STYLE
-      </div>
-
-      {/* ── Signature Nothing Red Accent Dot (Top-Right) ── */}
-      <div className="absolute top-20 right-20 sm:top-28 sm:right-28 flex items-center gap-2">
-        <div
-          className={`w-2.5 h-2.5 rounded-full bg-[#d71921] ${
-            isPlaying ? "animate-ping" : "opacity-80"
-          }`}
-          style={{ boxShadow: "0 0 12px #d71921" }}
-        />
-        <span className="font-mono text-[9px] tracking-widest text-[#d71921] opacity-75 font-semibold">
-          {isPlaying ? "REC // LIVE" : "STBY"}
-        </span>
-      </div>
-
-      {/* ── Transparent Glyph Interface SVG Arcs (Inspired by Phone 1 & 2 Glyph Matrix) ── */}
+      {/* ── Razor-sharp Glyph Architecture (Exact 1px/1.5px lines, no thick blobs) ── */}
       <svg
-        className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/3 opacity-[0.08] sm:opacity-[0.12]"
-        width="680"
-        height="680"
-        viewBox="0 0 680 680"
+        className="absolute right-[-40px] top-1/2 -translate-y-1/2 opacity-[0.18] dark:opacity-[0.24]"
+        width="540"
+        height="540"
+        viewBox="0 0 540 540"
         fill="none"
       >
-        {/* Outer C-strip glyph */}
+        {/* Outer segmented circular ring */}
+        <circle
+          cx="270"
+          cy="270"
+          r="220"
+          stroke={isLight ? "#000000" : "#ffffff"}
+          strokeWidth="1"
+          strokeDasharray="4 8"
+        />
+        {/* Inner precise C-glyph */}
         <path
-          d="M 540 140 A 280 280 0 0 0 200 480"
+          d="M 430 150 A 180 180 0 0 0 160 380"
           stroke={isLight ? "#000000" : "#ffffff"}
-          strokeWidth="14"
+          strokeWidth="1.5"
           strokeLinecap="round"
-          strokeDasharray={isPlaying ? "none" : "20 14"}
         />
-        {/* Center camera/charging ring glyph */}
+        {/* Central charging ring (Phone 2 iconology) */}
         <circle
-          cx="340"
-          cy="340"
-          r="140"
+          cx="270"
+          cy="270"
+          r="90"
           stroke={isLight ? "#000000" : "#ffffff"}
-          strokeWidth="10"
-          strokeDasharray="14 10"
+          strokeWidth="1"
+          strokeDasharray="2 4"
         />
-        {/* Diagonal slash glyph */}
+        <circle
+          cx="270"
+          cy="270"
+          r="80"
+          stroke={isLight ? "#000000" : "#ffffff"}
+          strokeWidth="0.75"
+        />
+        {/* Red precision indicator line */}
         <line
-          x1="300"
-          y1="180"
-          x2="480"
-          y2="240"
+          x1="270"
+          y1="270"
+          x2="350"
+          y2="210"
           stroke="#d71921"
-          strokeWidth="8"
+          strokeWidth="1.5"
           strokeLinecap="round"
-          opacity="0.8"
         />
-        {/* Bottom straight line indicator */}
+        <circle cx="350" cy="210" r="2.5" fill="#d71921" />
+        {/* Vertical alignment line */}
         <line
-          x1="340"
-          y1="510"
-          x2="340"
-          y2="600"
+          x1="270"
+          y1="400"
+          x2="270"
+          y2="460"
           stroke={isLight ? "#000000" : "#ffffff"}
-          strokeWidth="12"
-          strokeLinecap="round"
+          strokeWidth="1"
         />
-        <circle
-          cx="340"
-          cy="620"
-          r="6"
-          fill="#d71921"
-        />
+        <circle cx="270" cy="470" r="2" fill="#d71921" />
       </svg>
 
-      {/* ── Left Subtle Geometric Accent ── */}
+      {/* ── Left Precision Mechanical Guide ── */}
       <svg
-        className="absolute -left-20 bottom-16 opacity-[0.07] sm:opacity-[0.10]"
-        width="400"
-        height="400"
-        viewBox="0 0 400 400"
+        className="absolute left-[-20px] bottom-12 opacity-[0.14] dark:opacity-[0.18]"
+        width="300"
+        height="300"
+        viewBox="0 0 300 300"
         fill="none"
       >
         <rect
-          x="60"
-          y="60"
-          width="280"
-          height="280"
-          rx="56"
+          x="40"
+          y="40"
+          width="220"
+          height="220"
+          rx="40"
           stroke={isLight ? "#000000" : "#ffffff"}
-          strokeWidth="10"
+          strokeWidth="1"
+          strokeDasharray="8 8"
         />
         <circle
-          cx="200"
-          cy="200"
-          r="60"
+          cx="150"
+          cy="150"
+          r="50"
           stroke={isLight ? "#000000" : "#ffffff"}
-          strokeWidth="6"
-          strokeDasharray="6 6"
+          strokeWidth="0.75"
         />
-        <circle cx="200" cy="200" r="10" fill="#d71921" opacity="0.6" />
+        <circle cx="150" cy="150" r="3" fill="#d71921" />
+        <line x1="150" y1="90" x2="150" y2="100" stroke={isLight ? "#000000" : "#ffffff"} strokeWidth="1" />
+        <line x1="150" y1="200" x2="150" y2="210" stroke={isLight ? "#000000" : "#ffffff"} strokeWidth="1" />
+        <line x1="90" y1="150" x2="100" y2="150" stroke={isLight ? "#000000" : "#ffffff"} strokeWidth="1" />
+        <line x1="200" y1="150" x2="210" y2="150" stroke={isLight ? "#000000" : "#ffffff"} strokeWidth="1" />
       </svg>
     </div>
   );

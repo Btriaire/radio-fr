@@ -143,12 +143,11 @@ export default function NowPlayingSheet({
         {/* Title block */}
         <div className="text-center space-y-1.5 min-w-0">
           <div className="flex items-center justify-center gap-2">
-            <h2 className="text-2xl font-bold text-white leading-tight line-clamp-2"
-              style={{ fontFamily: isNothing ? "var(--font-dot), monospace" : "inherit" }}>
+            <h2 className="text-2xl font-semibold text-white leading-tight line-clamp-2 tracking-tight">
               {title}
             </h2>
           </div>
-          <p className="text-base text-white/70 leading-snug line-clamp-2 font-mono text-sm">{subtitle}</p>
+          <p className="text-base text-white/70 leading-snug line-clamp-2 text-sm">{subtitle}</p>
           {!isPodcast && (
             <span className="inline-flex items-center gap-1.5 mt-1 px-2.5 py-1 rounded-full text-[11px] font-bold tracking-widest font-mono"
               style={{

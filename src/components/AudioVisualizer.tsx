@@ -166,28 +166,29 @@ export default function AudioVisualizer({ analyserRef, isPlaying, color: rawColo
         }
         ctx.shadowBlur = 0;
       } else if (visualizerStyle === "glyph") {
-        // Nothing Glyph Matrix: discrete square pixel LEDs with red peak dots
-        const cols = small ? 16 : 32;
-        const rows = small ? 5 : 9;
+        // Nothing Glyph Matrix: precision round dot matrix LEDs with crisp active contrast
+        const cols = small ? 18 : 36;
+        const rows = small ? 5 : 8;
         const colW = W / cols;
-        const dotSize = Math.max(2, Math.floor(colW * 0.65));
+        const dotSize = Math.max(2, Math.floor(colW * 0.55));
+        const radius = dotSize / 2;
         const rowH = H / rows;
 
         for (let c = 0; c < cols; c++) {
-          let factor = 0.3;
+          let factor = 0.25;
           if (useReal && data) {
             const idx = Math.floor((c / cols) * (data.length * 0.7));
             factor = (data[idx] || 0) / 255;
           } else {
             const t = phase * simSpeed[c % simSpeed.length];
-            factor = simAmps[c % simAmps.length] * (0.3 + 0.7 * Math.sin(t + c * 0.4));
+            factor = simAmps[c % simAmps.length] * (0.2 + 0.8 * Math.sin(t + c * 0.4));
           }
 
           const activeCount = Math.min(rows, Math.max(1, Math.round(factor * rows)));
-          const cx = Math.floor(c * colW + (colW - dotSize) / 2);
+          const cx = Math.floor(c * colW + colW / 2);
 
           for (let r = 0; r < rows; r++) {
-            const cy = Math.floor(H - (r + 1) * rowH + (rowH - dotSize) / 2);
+            const cy = Math.floor(H - (r + 1) * rowH + rowH / 2);
             const isActive = r < activeCount;
             const isPeak = r === activeCount - 1 && activeCount > 2;
 
@@ -195,10 +196,11 @@ export default function AudioVisualizer({ analyserRef, isPlaying, color: rawColo
               ? "#d71921"
               : isActive
               ? (color || "#ffffff")
-              : "rgba(128, 128, 128, 0.15)";
+              : "rgba(128, 128, 128, 0.12)";
 
-            // Draw square pixel LED characteristic of Nothing OS
-            ctx.fillRect(cx, cy, dotSize, dotSize);
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+            ctx.fill();
           }
         }
       } else {
