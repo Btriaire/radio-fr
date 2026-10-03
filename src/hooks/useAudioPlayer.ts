@@ -563,10 +563,10 @@ export function useAudioPlayer() {
     stopWatchdog();
     clearConnectTimer();
 
-    // 3. Stop and mute any rogue audio/video elements across the document
+    // 3. Stop and mute any rogue audio/video elements across the document (preserving preview players)
     if (typeof document !== "undefined") {
       document.querySelectorAll("audio, video").forEach((el) => {
-        if (el !== audioRef.current) {
+        if (el !== audioRef.current && !el.hasAttribute("data-dvr-preview")) {
           try {
             (el as HTMLMediaElement).pause();
             (el as HTMLMediaElement).removeAttribute("src");
@@ -636,6 +636,14 @@ export function useAudioPlayer() {
       if (liveRef.current) { scheduleReconnect("ended"); return; }
       setIsPlaying(false); setCurrentTime(0); onEndedRef.current?.();
     };
+    audio.onstalled = () => {
+      if (sessionIdRef.current !== currentSession) return;
+      // Stalled event: network buffered no new packets for a while
+      if (liveRef.current && wantPlayingRef.current) {
+        setIsLoading(true);
+        scheduleReconnect("network-stalled");
+      }
+    };
     audio.onerror = () => {
       if (sessionIdRef.current !== currentSession) return;
       clearConnectTimer();
@@ -654,6 +662,9 @@ export function useAudioPlayer() {
         if (stationRef.current) {
           const fallback = getNextStreamFallback(stationRef.current, url);
           if (fallback && fallback !== url) {
+            if (lastInitRef.current) {
+              lastInitRef.current.url = fallback;
+            }
             audio.src = fallback;
             setCurrentUrl(fallback);
             audio.play().catch(() => {
@@ -1256,11 +1267,13 @@ export function useAudioPlayer() {
     }
     if (typeof document !== "undefined") {
       document.querySelectorAll("audio, video").forEach((el) => {
-        try {
-          (el as HTMLMediaElement).pause();
-          (el as HTMLMediaElement).removeAttribute("src");
-          (el as HTMLMediaElement).load();
-        } catch {}
+        if (!el.hasAttribute("data-dvr-preview")) {
+          try {
+            (el as HTMLMediaElement).pause();
+            (el as HTMLMediaElement).removeAttribute("src");
+            (el as HTMLMediaElement).load();
+          } catch {}
+        }
       });
     }
     setIsPlaying(false);
@@ -1314,8 +1327,18 @@ export function useAudioPlayer() {
       if (document.visibilityState !== "visible" || !wantPlayingRef.current) return;
       if (isSleepingNow()) return; // e.g. a call ends mid-bedtime → stay paused
       if (ctxRef.current?.state === "suspended") ctxRef.current.resume().catch(() => {});
-      if (modeRef.current === "element" && audioRef.current?.paused) {
-        audioRef.current.play().catch(() => {});
+      if (modeRef.current === "element") {
+        const audio = audioRef.current;
+        if (audio?.paused) {
+          // If live radio stream socket was killed in background, reconnect fresh to live edge
+          if (liveRef.current) {
+            reconnectNow();
+          } else {
+            audio.play().catch(() => {});
+          }
+        }
+      } else if (modeRef.current === "decoder" && !decoderRef.current) {
+        reconnectNow();
       }
     };
     document.addEventListener("visibilitychange", onVisible);
@@ -1326,7 +1349,7 @@ export function useAudioPlayer() {
       window.removeEventListener("pageshow", onVisible);
       window.removeEventListener("focus", onVisible);
     };
-  }, []);
+  }, [reconnectNow]);
 
   // ── Sleep schedule ("Mode Sommeil") ─────────────────────────────────────────
   // Polls rather than scheduling a single timeout at the boundary because the

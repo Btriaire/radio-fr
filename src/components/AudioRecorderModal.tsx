@@ -380,6 +380,7 @@ export default function AudioRecorderModal({
                           {/* Invisible HTML5 player for preview */}
                           {isThisPlaying && (
                             <audio
+                              data-dvr-preview="true"
                               src={rec.blobUrl}
                               autoPlay
                               onEnded={() => setPlayingId(null)}
