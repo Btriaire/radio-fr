@@ -12,6 +12,7 @@ import StudioVuMeter from "@/components/studio/StudioVuMeter";
 import StudioFrequencyDial from "@/components/studio/StudioFrequencyDial";
 import AudioRecorderModal from "@/components/AudioRecorderModal";
 import StationLogo from "@/components/StationLogo";
+import StudioPodcastConsole from "@/components/studio/StudioPodcastConsole";
 
 /**
  * Studio Hi-Fi Analogique (v2 parallel experience)
@@ -205,6 +206,19 @@ export default function StudioPage() {
               onChange={setTrebleLevel}
             />
           </div>
+
+          {/* Podcasts & Offline Console (Conceived by Falken & Pol) */}
+          {currentStation && (
+            <StudioPodcastConsole
+              stationId={currentStation.id}
+              stationName={currentStation.name}
+              currentPlayingUrl={currentUrl}
+              isPlaying={isPlaying}
+              onPlayEpisode={(url) => {
+                initAudio(url, { live: false });
+              }}
+            />
+          )}
         </div>
       </main>
 
