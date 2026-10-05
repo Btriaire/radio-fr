@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from "react";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAudioPlayer } from "@/hooks/useAudioPlayer";
 import { useFavorites } from "@/hooks/useFavorites";
@@ -586,6 +587,8 @@ export default function Home() {
               <div className="hidden sm:flex items-center gap-1 glass rounded-2xl p-1"
                 style={{ border: "1px solid var(--glass-border)" }}>
                 {[
+                  { label: "Studio Hi-Fi", aria: "Ouvrir la version Studio Hi-Fi Analogique", href: "/studio",
+                    icon: <><circle cx="12" cy="12" r="9" /><line x1="12" y1="12" x2="16" y2="8" /><circle cx="12" cy="12" r="2" /></> },
                   { label: "Accueil", aria: "Revenir à l'accueil", run: () => setHubOpen(true),
                     icon: <><path d="M3 10.5 12 3l9 7.5" /><path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5" /><path d="M9.5 21v-6h5v6" /></> },
                   { label: "Mode iPod", aria: "Ouvrir le mode iPod", run: () => setIpodOpen(true),
@@ -595,13 +598,23 @@ export default function Home() {
                   { label: "Titres récents", aria: "Ouvrir l'historique des titres récents", run: () => setHistoryOpen(true),
                     icon: <><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></> },
                 ].map((b) => (
-                  <button key={b.label} onClick={b.run} title={b.label} aria-label={b.aria}
-                    className="w-10 h-10 rounded-xl glass-hover btn-spring flex items-center justify-center">
-                    <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                      strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--accent)" }}>
-                      {b.icon}
-                    </svg>
-                  </button>
+                  b.href ? (
+                    <Link key={b.label} href={b.href} title={b.label} aria-label={b.aria}
+                      className="w-10 h-10 rounded-xl glass-hover btn-spring flex items-center justify-center border border-amber-400/40 bg-amber-400/10">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d4a843"
+                        strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        {b.icon}
+                      </svg>
+                    </Link>
+                  ) : (
+                    <button key={b.label} onClick={b.run} title={b.label} aria-label={b.aria}
+                      className="w-10 h-10 rounded-xl glass-hover btn-spring flex items-center justify-center">
+                      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--accent)" }}>
+                        {b.icon}
+                      </svg>
+                    </button>
+                  )
                 ))}
               </div>
 
