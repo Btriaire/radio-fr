@@ -553,18 +553,19 @@ export default function Home() {
               <div className="relative flex-shrink-0">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg bg-[#C84B08] p-1.5 overflow-hidden">
                   <svg width="24" height="24" viewBox="0 0 512 512" fill="none" aria-hidden>
-                    <circle cx="256" cy="256" r="133" stroke="#FFFFFF" strokeWidth="26" />
+                    {/* Cadran central */}
+                    <circle cx="256" cy="256" r="135" stroke="#FFFFFF" strokeWidth="26" />
                     <circle cx="256" cy="256" r="52" fill="#FFFFFF" />
-                    <g fill="#FFFFFF">
-                      <path d="M74 150 h8 v42 h-8 z" />
-                      <path d="M89 150 h8 v42 h-8 z" />
-                      <path d="M104 150 h8 v42 h-8 z" />
-                      <path d="M74 186 h38 v14 c0 12 -8 22 -19 22 s-19 -10 -19 -22 z" />
-                      <rect x="89" y="220" width="8" height="136" rx="4" />
+                    {/* Ondes radio à gauche */}
+                    <g fill="none" stroke="#FFFFFF" strokeLinecap="round">
+                      <path d="M 118 190 A 185 185 0 0 0 118 322" strokeWidth="16" />
+                      <path d="M 88 165 A 215 215 0 0 0 88 347" strokeWidth="14" />
+                      <path d="M 58 140 A 245 245 0 0 0 58 372" strokeWidth="12" />
                     </g>
+                    {/* Antenne radio à droite */}
                     <g fill="#FFFFFF">
-                      <path d="M422 150 c6 0 16 5 16 14 v66 c0 6 -4 10 -10 10 h-6 z" />
-                      <rect x="423" y="240" width="8" height="116" rx="4" />
+                      <circle cx="446" cy="110" r="17" />
+                      <rect x="438" y="110" width="16" height="290" rx="8" />
                     </g>
                   </svg>
                 </div>

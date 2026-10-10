@@ -1,29 +1,24 @@
 <svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-  <!-- Rounded squircle container in monochrome deep carrot orange -->
-  <rect width="512" height="512" rx="120" fill="#C84B08"/>
-  
-  <!-- Outer plate rim -->
-  <circle cx="256" cy="256" r="133" fill="none" stroke="#FFFFFF" stroke-width="26"/>
-  <!-- Inner plate circle -->
+  <!-- Fond squircle monochrome orange carotte fonce -->
+  <rect width="512" height="512" rx="115" fill="#C84B08"/>
+
+  <!-- Cadran / Enceinte radio centrale (inspiration cercle assiette) -->
+  <circle cx="256" cy="256" r="135" fill="none" stroke="#FFFFFF" stroke-width="26"/>
+  <!-- Bouton rotatif analogique / Coeur du tuner -->
   <circle cx="256" cy="256" r="52" fill="#FFFFFF"/>
-  
-  <!-- Left Fork -->
-  <g fill="#FFFFFF">
-    <!-- Prongs -->
-    <path d="M74 150 h8 v42 h-8 z"/>
-    <path d="M89 150 h8 v42 h-8 z"/>
-    <path d="M104 150 h8 v42 h-8 z"/>
-    <!-- Fork base / bridge -->
-    <path d="M74 186 h38 v14 c0 12 -8 22 -19 22 s-19 -10 -19 -22 z"/>
-    <!-- Stem / Handle with rounded end -->
-    <rect x="89" y="220" width="8" height="136" rx="4"/>
+
+  <!-- Ondes hertziennes gauche (remplace la fourchette avec la meme harmonie de colonnes) -->
+  <g fill="none" stroke="#FFFFFF" stroke-linecap="round">
+    <path d="M 118 190 A 185 185 0 0 0 118 322" stroke-width="16"/>
+    <path d="M 88 165 A 215 215 0 0 0 88 347" stroke-width="14"/>
+    <path d="M 58 140 A 245 245 0 0 0 58 372" stroke-width="12"/>
   </g>
-  
-  <!-- Right Knife -->
+
+  <!-- Antenne droite (remplace le couteau avec la meme silhouette elancee) -->
   <g fill="#FFFFFF">
-    <!-- Blade with rounded top corner -->
-    <path d="M422 150 c6 0 16 5 16 14 v66 c0 6 -4 10 -10 10 h-6 z"/>
-    <!-- Handle with rounded bottom -->
-    <rect x="423" y="240" width="8" height="116" rx="4"/>
+    <!-- Bille de reception -->
+    <circle cx="446" cy="110" r="17"/>
+    <!-- Brin metallique avec bout arrondi -->
+    <rect x="438" y="110" width="16" height="290" rx="8"/>
   </g>
 </svg>
