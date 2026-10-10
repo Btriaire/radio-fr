@@ -1,8 +1,29 @@
-<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
-  <rect width="1024" height="1024" rx="230" fill="#E8650F"/>
-  <g fill="none" stroke="#fff" stroke-width="76" stroke-linecap="round">
-    <path d="M512 760 V430"/>
-    <path d="M330 330 A260 260 0 0 1 694 330"/>
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!-- Rounded squircle container in monochrome deep carrot orange -->
+  <rect width="512" height="512" rx="120" fill="#C84B08"/>
+  
+  <!-- Outer plate rim -->
+  <circle cx="256" cy="256" r="133" fill="none" stroke="#FFFFFF" stroke-width="26"/>
+  <!-- Inner plate circle -->
+  <circle cx="256" cy="256" r="52" fill="#FFFFFF"/>
+  
+  <!-- Left Fork -->
+  <g fill="#FFFFFF">
+    <!-- Prongs -->
+    <path d="M74 150 h8 v42 h-8 z"/>
+    <path d="M89 150 h8 v42 h-8 z"/>
+    <path d="M104 150 h8 v42 h-8 z"/>
+    <!-- Fork base / bridge -->
+    <path d="M74 186 h38 v14 c0 12 -8 22 -19 22 s-19 -10 -19 -22 z"/>
+    <!-- Stem / Handle with rounded end -->
+    <rect x="89" y="220" width="8" height="136" rx="4"/>
   </g>
-  <circle cx="512" cy="370" r="80" fill="#fff"/>
+  
+  <!-- Right Knife -->
+  <g fill="#FFFFFF">
+    <!-- Blade with rounded top corner -->
+    <path d="M422 150 c6 0 16 5 16 14 v66 c0 6 -4 10 -10 10 h-6 z"/>
+    <!-- Handle with rounded bottom -->
+    <rect x="423" y="240" width="8" height="116" rx="4"/>
+  </g>
 </svg>

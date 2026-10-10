@@ -551,10 +551,21 @@ export default function Home() {
             {/* Brand */}
             <div className="flex items-center gap-2.5 min-w-0">
               <div className="relative flex-shrink-0">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg"
-                  style={{ background: "linear-gradient(135deg, var(--accent), var(--accent-2))" }}>
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="white" aria-hidden>
-                    <path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg bg-[#C84B08] p-1.5 overflow-hidden">
+                  <svg width="24" height="24" viewBox="0 0 512 512" fill="none" aria-hidden>
+                    <circle cx="256" cy="256" r="133" stroke="#FFFFFF" strokeWidth="26" />
+                    <circle cx="256" cy="256" r="52" fill="#FFFFFF" />
+                    <g fill="#FFFFFF">
+                      <path d="M74 150 h8 v42 h-8 z" />
+                      <path d="M89 150 h8 v42 h-8 z" />
+                      <path d="M104 150 h8 v42 h-8 z" />
+                      <path d="M74 186 h38 v14 c0 12 -8 22 -19 22 s-19 -10 -19 -22 z" />
+                      <rect x="89" y="220" width="8" height="136" rx="4" />
+                    </g>
+                    <g fill="#FFFFFF">
+                      <path d="M422 150 c6 0 16 5 16 14 v66 c0 6 -4 10 -10 10 h-6 z" />
+                      <rect x="423" y="240" width="8" height="116" rx="4" />
+                    </g>
                   </svg>
                 </div>
                 <span className="absolute -right-0.5 -top-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 ring-2 ring-[#050b18]" aria-hidden />
