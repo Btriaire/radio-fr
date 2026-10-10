@@ -553,20 +553,17 @@ export default function Home() {
               <div className="relative flex-shrink-0">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg bg-[#C84B08] p-1.5 overflow-hidden">
                   <svg width="24" height="24" viewBox="0 0 512 512" fill="none" aria-hidden>
-                    {/* Cadran central */}
-                    <circle cx="256" cy="256" r="135" stroke="#FFFFFF" strokeWidth="26" />
-                    <circle cx="256" cy="256" r="52" fill="#FFFFFF" />
-                    {/* Ondes radio à gauche */}
-                    <g fill="none" stroke="#FFFFFF" strokeLinecap="round">
-                      <path d="M 118 190 A 185 185 0 0 0 118 322" strokeWidth="16" />
-                      <path d="M 88 165 A 215 215 0 0 0 88 347" strokeWidth="14" />
-                      <path d="M 58 140 A 245 245 0 0 0 58 372" strokeWidth="12" />
-                    </g>
-                    {/* Antenne radio à droite */}
-                    <g fill="#FFFFFF">
-                      <circle cx="446" cy="110" r="17" />
-                      <rect x="438" y="110" width="16" height="290" rx="8" />
-                    </g>
+                    {/* Antenne */}
+                    <line x1="146" y1="185" x2="286" y2="85" stroke="#FFFFFF" strokeWidth="20" strokeLinecap="round" />
+                    <circle cx="286" cy="85" r="16" fill="#FFFFFF" />
+                    {/* Boitier Radio */}
+                    <rect x="96" y="185" width="320" height="195" rx="32" stroke="#FFFFFF" strokeWidth="22" fill="none" />
+                    {/* Haut-parleur */}
+                    <circle cx="206" cy="282" r="60" stroke="#FFFFFF" strokeWidth="18" fill="none" />
+                    <circle cx="206" cy="282" r="18" fill="#FFFFFF" />
+                    {/* Boutons */}
+                    <circle cx="346" cy="247" r="22" fill="#FFFFFF" />
+                    <circle cx="346" cy="317" r="22" fill="#FFFFFF" />
                   </svg>
                 </div>
                 <span className="absolute -right-0.5 -top-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 ring-2 ring-[#050b18]" aria-hidden />
