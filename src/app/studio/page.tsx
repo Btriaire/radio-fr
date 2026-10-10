@@ -122,9 +122,9 @@ export default function StudioPage() {
       {/* ── MAIN ANALOG CONSOLE ── */}
       <main className="flex-1 max-w-xl w-full mx-auto p-4 flex flex-col gap-4 justify-center">
         {/* Physical Station Chassis Card */}
-        <div className="bg-[#141414] border border-neutral-800 rounded-3xl p-5 shadow-2xl relative overflow-hidden flex flex-col gap-4">
+        <div className="studio-chassis border border-neutral-800/90 rounded-3xl p-5 shadow-2xl relative overflow-hidden flex flex-col gap-4">
           {/* Subtle brushed metal hairline highlight */}
-          <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-neutral-600 to-transparent opacity-30" />
+          <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#d4a843]/30 to-transparent" />
 
           {/* Station identification display */}
           <div className="flex items-center justify-between gap-3 border-b border-neutral-800/80 pb-4">

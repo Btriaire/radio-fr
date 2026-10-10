@@ -108,7 +108,10 @@ export default function StudioVuMeter({
       ctx.fillStyle = "#d71921";
       ctx.fillText("+3", width - 26, 14);
 
-      rafRef.current = requestAnimationFrame(render);
+      // Only loop if playing or levels haven't rested to zero
+      if (isPlaying || currentLevelRef.current > 0.001 || peakRef.current > 0.001) {
+        rafRef.current = requestAnimationFrame(render);
+      }
     };
 
     render();

@@ -29,6 +29,17 @@ export default function StudioFrequencyDial({
     }).sort((a, b) => parseFloat(a.freq) - parseFloat(b.freq));
   }, []);
 
+  // Center selected station under the needle
+  useEffect(() => {
+    if (!currentStation || !containerRef.current || isDragging) return;
+    const idx = stationsWithFreq.findIndex((s) => s.id === currentStation.id);
+    if (idx !== -1) {
+      // Each marker item is ~80px wide (gap 24px + item 56px)
+      const targetScroll = idx * 80;
+      containerRef.current.scrollTo({ left: targetScroll, behavior: "smooth" });
+    }
+  }, [currentStation, stationsWithFreq, isDragging]);
+
   const handlePointerDown = (e: React.PointerEvent) => {
     if (!containerRef.current) return;
     setIsDragging(true);
