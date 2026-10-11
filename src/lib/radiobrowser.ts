@@ -30,6 +30,7 @@ export async function searchFrenchRadios(query: string): Promise<RBStation[]> {
   });
   const res = await fetch(`${BASE}/stations/search?${params}`, {
     headers: { "User-Agent": "RadioFR/1.0" },
+    signal: AbortSignal.timeout(10000),
   });
   if (!res.ok) throw new Error("Radio Browser API error");
   return res.json();
@@ -45,6 +46,7 @@ export async function getTopFrenchRadios(): Promise<RBStation[]> {
   });
   const res = await fetch(`${BASE}/stations/search?${params}`, {
     headers: { "User-Agent": "RadioFR/1.0" },
+    signal: AbortSignal.timeout(10000),
   });
   if (!res.ok) throw new Error("Radio Browser API error");
   return res.json();
@@ -59,6 +61,7 @@ export async function getStationLogo(stationName: string): Promise<string | null
   });
   const res = await fetch(`${BASE}/stations/search?${params}`, {
     headers: { "User-Agent": "RadioFR/1.0" },
+    signal: AbortSignal.timeout(10000),
   });
   if (!res.ok) return null;
   const data: RBStation[] = await res.json();

@@ -15,7 +15,7 @@ export function usePodcastFavorites() {
   useEffect(() => {
     try {
       const raw = localStorage.getItem(KEY);
-      if (raw) setFavorites(JSON.parse(raw));
+      if (raw) { const v = JSON.parse(raw); if (Array.isArray(v)) setFavorites(v); }
     } catch {}
   }, []);
 
