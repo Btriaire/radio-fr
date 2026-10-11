@@ -72,7 +72,7 @@ export function itunesProxy(itunesUrl: string): string {
 
 // ── iTunes lookup (resolves feedUrl for chart-feed podcasts) ─────────────
 export async function lookupPodcast(collectionId: number): Promise<iTunesPodcast | null> {
-  const res = await fetch(itunesProxy(`https://itunes.apple.com/lookup?id=${collectionId}&entity=podcast`));
+  const res = await fetch(itunesProxy(`https://itunes.apple.com/lookup?id=${collectionId}&entity=podcast`), { signal: AbortSignal.timeout(10000) });
   if (!res.ok) return null;
   const data = await res.json();
   return data.results?.[0] ?? null;
@@ -88,7 +88,7 @@ export async function resolveFeedByName(name: string): Promise<string> {
     const params = new URLSearchParams({
       term: name, media: "podcast", entity: "podcast", country: "FR", limit: "5",
     });
-    const res = await fetch(itunesProxy(`https://itunes.apple.com/search?${params}`));
+    const res = await fetch(itunesProxy(`https://itunes.apple.com/search?${params}`), { signal: AbortSignal.timeout(10000) });
     if (!res.ok) return "";
     const data = await res.json();
     const items: iTunesPodcast[] = data.results ?? [];

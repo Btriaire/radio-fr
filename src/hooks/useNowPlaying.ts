@@ -47,7 +47,7 @@ export function useNowPlaying(station: Station | null, isPlaying: boolean): NowP
       }
 
       try {
-        const res = await fetch(`/api/now-playing?url=${encodeURIComponent(streamUrl)}`);
+        const res = await fetch(`/api/now-playing?url=${encodeURIComponent(streamUrl)}`, { signal: AbortSignal.timeout(10000) });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
 

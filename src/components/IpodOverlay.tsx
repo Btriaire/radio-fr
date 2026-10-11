@@ -64,7 +64,7 @@ const GAME_ITEMS: { id: GameType; label: string; icon: string }[] = [
 
 async function fetchTopPodcasts(genreId?: number): Promise<iTunesPodcast[]> {
   const genrePart = genreId ? `/genre=${genreId}` : "";
-  const res = await fetch(`https://itunes.apple.com/fr/rss/toppodcasts/limit=20${genrePart}/explicit=true/json`);
+  const res = await fetch(`https://itunes.apple.com/fr/rss/toppodcasts/limit=20${genrePart}/explicit=true/json`, { signal: AbortSignal.timeout(10000) });
   if (!res.ok) return [];
   const data = await res.json();
   return (data.feed?.entry ?? []).map((e: any) => ({

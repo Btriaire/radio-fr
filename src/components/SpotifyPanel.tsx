@@ -35,7 +35,7 @@ export interface SpotifyTrack {
   image: string; previewUrl: string | null; url: string; durationMs: number;
 }
 async function searchSpotifyTracks(query: string): Promise<SpotifyTrack[]> {
-  const res = await fetch(`/api/spotify/search?type=track&q=${encodeURIComponent(query)}`);
+  const res = await fetch(`/api/spotify/search?type=track&q=${encodeURIComponent(query)}`, { signal: AbortSignal.timeout(10000) });
   if (res.status === 503) throw new Error("Spotify n'est pas configuré.");
   if (!res.ok) throw new Error(`Spotify ${res.status}`);
   const data = await res.json();
@@ -46,7 +46,7 @@ async function searchSpotifyTracks(query: string): Promise<SpotifyTrack[]> {
 // Richer catalog than iTunes; audio is resolved later via the RSS bridge
 // (resolveFeedByName in podcastUtils) when the user opens a show.
 async function searchSpotifyShows(query: string): Promise<iTunesPodcast[]> {
-  const res = await fetch(`/api/spotify/search?type=show&q=${encodeURIComponent(query)}`);
+  const res = await fetch(`/api/spotify/search?type=show&q=${encodeURIComponent(query)}`, { signal: AbortSignal.timeout(10000) });
   if (!res.ok) throw new Error(`Spotify ${res.status}`);
   const data = await res.json();
   return (data.shows ?? []).map((s: any, i: number): iTunesPodcast => ({
@@ -69,7 +69,7 @@ async function searchPodcasts(query: string): Promise<iTunesPodcast[]> {
     term: query, media: "podcast", entity: "podcast",
     country: "FR", lang: "fr_fr", limit: "20",
   });
-  const res = await fetch(itunesProxy(`https://itunes.apple.com/search?${params}`));
+  const res = await fetch(itunesProxy(`https://itunes.apple.com/search?${params}`), { signal: AbortSignal.timeout(10000) });
   if (!res.ok) throw new Error(`iTunes ${res.status}`);
   const data = await res.json();
   return data.results ?? [];
@@ -93,7 +93,7 @@ const GENRES: { label: string; id: number | null }[] = [
 
 async function getTopFrenchPodcasts(genreId?: number | null): Promise<iTunesPodcast[]> {
   const genrePart = genreId ? `/genre=${genreId}` : "";
-  const res = await fetch(itunesProxy(`https://itunes.apple.com/fr/rss/toppodcasts/limit=25${genrePart}/explicit=true/json`));
+  const res = await fetch(itunesProxy(`https://itunes.apple.com/fr/rss/toppodcasts/limit=25${genrePart}/explicit=true/json`), { signal: AbortSignal.timeout(10000) });
   if (!res.ok) throw new Error("chart error");
   const data = await res.json();
   return (data.feed?.entry ?? []).map((e: any) => ({

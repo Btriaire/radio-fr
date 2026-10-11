@@ -19,7 +19,7 @@ export interface MusicTrack {
 }
 
 export async function searchAudius(query: string): Promise<MusicTrack[]> {
-  const res = await fetch(`/api/audius/search?q=${encodeURIComponent(query)}`);
+  const res = await fetch(`/api/audius/search?q=${encodeURIComponent(query)}`, { signal: AbortSignal.timeout(10000) });
   if (res.status === 503) throw new Error("SongPOD momentanément indisponible.");
   if (!res.ok) throw new Error(`SongPOD ${res.status}`);
   const data = await res.json();
@@ -28,7 +28,7 @@ export async function searchAudius(query: string): Promise<MusicTrack[]> {
 
 export async function searchArchive(query: string): Promise<MusicTrack[]> {
   try {
-    const res = await fetch(`/api/archive/search?q=${encodeURIComponent(query)}`);
+    const res = await fetch(`/api/archive/search?q=${encodeURIComponent(query)}`, { signal: AbortSignal.timeout(10000) });
     if (!res.ok) return [];
     const data = await res.json();
     return (data.tracks ?? []).map((t: MusicTrack) => ({ ...t, source: "archive" as const }));
@@ -39,7 +39,7 @@ export async function searchArchive(query: string): Promise<MusicTrack[]> {
 
 export async function searchJamendo(query: string): Promise<MusicTrack[]> {
   try {
-    const res = await fetch(`/api/jamendo/search?q=${encodeURIComponent(query)}`);
+    const res = await fetch(`/api/jamendo/search?q=${encodeURIComponent(query)}`, { signal: AbortSignal.timeout(10000) });
     if (!res.ok) return [];
     const data = await res.json();
     return (data.tracks ?? []).map((t: MusicTrack) => ({ ...t, source: "jamendo" as const }));
@@ -50,7 +50,7 @@ export async function searchJamendo(query: string): Promise<MusicTrack[]> {
 
 export async function searchYouTube(query: string): Promise<MusicTrack[]> {
   try {
-    const res = await fetch(`/api/youtube/search?q=${encodeURIComponent(query)}`);
+    const res = await fetch(`/api/youtube/search?q=${encodeURIComponent(query)}`, { signal: AbortSignal.timeout(10000) });
     if (!res.ok) return [];
     const data = await res.json();
     return (data.tracks ?? []).map((t: MusicTrack) => ({ ...t, source: "youtube" as const }));
