@@ -36,6 +36,7 @@ async function fetchWebRadios(tag: string, offset = 0): Promise<RBStation[]> {
   if (tag) params.set("tag", tag);
   const res = await fetch(`${BASE}/stations/search?${params}`, {
     headers: { "User-Agent": "RadioFR/1.0" },
+    signal: AbortSignal.timeout(10000),
   });
   if (!res.ok) throw new Error("API error");
   return res.json();

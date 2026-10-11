@@ -34,6 +34,7 @@ export function getSpotifyAuthUrl(): string {
 async function spotifyFetch(endpoint: string, token: string) {
   const res = await fetch(`https://api.spotify.com/v1${endpoint}`, {
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    signal: AbortSignal.timeout(10000),
   });
   if (res.status === 401) throw new Error("TOKEN_EXPIRED");
   if (res.status === 204) return null;
