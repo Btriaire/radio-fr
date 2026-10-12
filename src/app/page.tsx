@@ -732,7 +732,7 @@ export default function Home() {
                       className="absolute inset-0 rounded-xl"
                       style={{
                         background: "var(--accent)",
-                        boxShadow: "0 0 16px rgba(59,130,246,0.45), inset 0 1px 0 rgba(255,255,255,0.25)",
+                        boxShadow: "0 1px 2px rgba(0,0,0,0.5)",
                       }}
                       transition={{ type: "spring", stiffness: 450, damping: 35 }}
                     />
@@ -863,7 +863,7 @@ export default function Home() {
                             <button key={st.id} onClick={() => handlePlay(st)}
                               aria-label={`${on && playerApi.isPlaying ? "Mettre en pause" : "Écouter"} ${st.name}`}
                               className={`${i >= 4 ? "hidden sm:flex" : "flex"} flex-col items-center gap-1.5 rounded-2xl p-2 min-h-[88px] glass glass-hover transition-all active:scale-95`}
-                              style={on ? { border: `1px solid ${st.color}99`, boxShadow: `0 0 18px ${st.color}33` } : { border: "1px solid var(--glass-border)" }}>
+                              style={on ? { border: `1px solid ${st.color}99`, boxShadow: `0 1px 2px rgba(0,0,0,0.5)` } : { border: "1px solid var(--glass-border)" }}>
                               <StationLogo logo={withLogo(st).logo} name={st.name} color={st.color} size="md" />
                               <span className="w-full truncate text-center text-xs font-medium text-white/80">{st.name}</span>
                             </button>
@@ -953,10 +953,10 @@ export default function Home() {
                         }`}
                         style={on ? (isZen ? {
                           background: "linear-gradient(135deg,#10b981,#5eead4)",
-                          boxShadow: "0 0 12px rgba(94,234,212,0.5)",
+                          boxShadow: "0 1px 2px rgba(0,0,0,0.5)",
                         } : {
                           background: "var(--accent)",
-                          boxShadow: "0 0 10px rgba(59,130,246,0.4)",
+                          boxShadow: "0 1px 2px rgba(0,0,0,0.5)",
                         }) : {}}>
                         {isZen ? "Zen" : g}
                       </button>
@@ -1041,7 +1041,7 @@ export default function Home() {
                       return (
                         <button key={station.id} onClick={() => handlePlay(station)} title={station.name}
                           className="relative aspect-square rounded-2xl glass glass-hover flex items-center justify-center transition-all active:scale-95"
-                          style={active ? { boxShadow: `0 0 0 2px ${station.color}, 0 0 18px ${station.color}66` } : {}}>
+                          style={active ? { border: `1px solid ${station.color}` } : {}}>
                           <StationLogo logo={station.logo} name={station.name} color={station.color} size="lg" />
                           {isEqCompatible(station.streamUrl) && (
                             <span title="Égaliseur disponible"
