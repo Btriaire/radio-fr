@@ -125,7 +125,7 @@ export default function NowPlayingSheet({
         {/* Artwork — breathes while playing, shrinks when paused */}
         <div className="flex justify-center">
           <motion.div animate={{ scale: isPlaying ? 1 : 0.9 }} transition={{ type: "spring", damping: 20, stiffness: 180 }}
-            className="relative" style={{ filter: `drop-shadow(0 24px 40px ${accent}66)` }}>
+            className="relative">
             {isPodcast ? (
               podcast!.artwork ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -203,8 +203,8 @@ export default function NowPlayingSheet({
 
           <button onClick={togglePlay} disabled={isLoading && !isPlaying}
             aria-label={isPlaying ? "Pause" : "Lecture"}
-            className="flex items-center justify-center w-20 h-20 rounded-full text-white shadow-2xl active:scale-95 transition-transform"
-            style={{ background: `linear-gradient(135deg, ${accent}, var(--accent-2, #22d3ee))`, boxShadow: `0 12px 36px ${accent}77` }}>
+            className="flex items-center justify-center w-20 h-20 rounded-full text-white active:scale-95 transition-transform"
+            style={{ background: `linear-gradient(135deg, ${accent}, var(--accent-2, #22d3ee))`, boxShadow: "0 1px 2px rgba(0,0,0,0.5)" }}>
             {isLoading || reconnecting ? (
               <span className="w-7 h-7 border-[3px] border-white border-t-transparent rounded-full animate-spin" />
             ) : isPlaying ? (

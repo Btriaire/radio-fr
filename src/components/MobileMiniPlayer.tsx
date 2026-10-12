@@ -80,11 +80,11 @@ export default function MobileMiniPlayer({
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
         {...swipeHandlers}
         onClick={onExpand}
-        className="w-full rounded-2xl p-2.5 flex items-center gap-3 cursor-pointer select-none relative overflow-hidden backdrop-blur-2xl shadow-2xl border"
+        className="w-full rounded-2xl p-2.5 flex items-center gap-3 cursor-pointer select-none relative overflow-hidden backdrop-blur-2xl border"
         style={{
           background: "linear-gradient(135deg, rgba(16, 24, 40, 0.88), rgba(8, 12, 22, 0.94))",
           borderColor: "rgba(255, 255, 255, 0.12)",
-          boxShadow: `0 12px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.08), 0 4px 20px ${accentColor}22`,
+          boxShadow: "0 1px 2px rgba(0,0,0,0.5)",
         }}
       >
         {/* Subtle accent bar at top */}
@@ -108,7 +108,8 @@ export default function MobileMiniPlayer({
               <img
                 src={podcast!.artwork}
                 alt={podcast!.podcastName}
-                className="w-11 h-11 rounded-xl object-cover relative z-10 shadow-md"
+                className="w-11 h-11 rounded-xl object-cover relative z-10"
+                style={{ boxShadow: "0 1px 2px rgba(0,0,0,0.5)" }}
               />
             ) : (
               <div className="w-11 h-11 rounded-xl flex items-center justify-center border border-white/10 relative z-10" style={{ background: "linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.03))" }}>
@@ -196,10 +197,10 @@ export default function MobileMiniPlayer({
               transition={{ type: "spring", stiffness: 450, damping: 25 }}
               onClick={onTogglePlay}
               disabled={isLoading}
-              className="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg relative z-10"
+              className="w-10 h-10 rounded-xl flex items-center justify-center text-white relative z-10"
               style={{
                 background: `linear-gradient(135deg, ${accentColor}, var(--accent-2, #22d3ee))`,
-                boxShadow: isPlaying ? `0 0 16px ${accentColor}60` : undefined,
+                boxShadow: undefined,
               }}
               aria-label={isPlaying ? "Pause" : "Lecture"}
             >

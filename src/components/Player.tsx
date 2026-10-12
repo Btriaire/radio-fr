@@ -208,8 +208,8 @@ export default function Player({
   return (
     <div className={`rounded-3xl overflow-hidden relative ${
       isNothing
-        ? "bg-[#111111] dark:bg-[#111111] border border-black/15 dark:border-white/12 shadow-none"
-        : "glass-dark shadow-glass-lg"
+        ? "bg-[#111111] dark:bg-[#111111] border border-black/15 dark:border-white/12"
+        : "glass-dark"
     }`}>
       {/* ── Decorative SVG background ── */}
       <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-[0.06]"
@@ -271,7 +271,7 @@ export default function Player({
               podcast!.artwork
                 ? <img src={podcast!.artwork} alt={podcast!.podcastName}
                     className="w-14 h-14 rounded-2xl object-cover"
-                    style={{ boxShadow: "0 4px 16px rgba(0,0,0,0.4)" }} />
+                    style={{ boxShadow: "0 1px 2px rgba(0,0,0,0.5)" }} />
                 : <div className="w-14 h-14 rounded-2xl flex items-center justify-center border border-white/10"
                     style={{ background: "linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.03))" }}>
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-white/70">
@@ -429,7 +429,7 @@ export default function Player({
                     onClick={() => setPlaybackRate(rate)}
                     className={`px-1.5 py-0.5 rounded text-[9px] font-bold transition-all ${
                       playbackRate === rate
-                        ? "bg-white/20 text-white border border-white/20 shadow-sm"
+                        ? "bg-white/20 text-white border border-white/20"
                         : "text-white/35 hover:text-white hover:bg-white/10"
                     }`}
                   >
@@ -525,12 +525,12 @@ export default function Player({
               }}
               disabled={isLoading}
               aria-label={isPlaying ? "Pause" : "Lecture"}
-              className="w-12 h-12 rounded-full flex items-center justify-center relative z-10 cursor-pointer shadow-lg transition-shadow"
+              className="w-12 h-12 rounded-full flex items-center justify-center relative z-10 cursor-pointer"
               style={{
                 background: `linear-gradient(135deg, ${accentColor}, ${accentColor}cc)`,
                 boxShadow: isPlaying
-                  ? `0 0 24px ${accentColor}65, 0 4px 16px rgba(0,0,0,0.4)`
-                  : `0 0 14px ${accentColor}35`,
+                  ? `0 1px 2px rgba(0,0,0,0.5)`
+                  : undefined,
               }}
             >
               {(isLoading || reconnecting) ? (
@@ -749,7 +749,7 @@ export default function Player({
             aria-expanded={showOptions}
             className={`w-full px-3.5 py-2 rounded-2xl text-xs font-bold transition-all flex items-center justify-between border ${
               showOptions
-                ? "bg-white/[0.09] border-white/20 text-white shadow-sm"
+                ? "bg-white/[0.09] border-white/20 text-white"
                 : (nightMode || spatialAudio || isLooping || stereoPan !== 0)
                   ? "bg-white/[0.06] border-[var(--accent)] text-white"
                   : "bg-white/[0.04] border-white/10 text-white/70 hover:text-white hover:bg-white/[0.07] hover:border-white/20"
