@@ -31,14 +31,14 @@ export default function StationCard({
         isNothing
           ? isActive
             ? "border-[#d71921] shadow-none bg-[#111111] dark:bg-[#111111]"
-            : "border-black/15 dark:border-white/10 hover:border-black/30 dark:hover:border-white/30 bg-transparent shadow-none"
+            : "border-black/15 dark:border-white/10 hover:border-[var(--accent)] bg-transparent shadow-none"
           : isActive
           ? "glass-dark ring-1 border-white/10"
-          : "glass-dark border-white/10 hover:border-[var(--accent)] hover:shadow-[0_8px_24px_color-mix(in_srgb,var(--accent)_18%,transparent)]"
+          : "glass-dark border-white/10 hover:border-[var(--accent)] hover:shadow-[0_1px_2px_rgba(0,0,0,0.5),_0_8px_24px_-12px_rgba(0,0,0,0.6)]"
       }`}
       style={!isNothing && isActive ? {
         borderColor: `${station.color}c0`,
-        boxShadow: `0 12px 40px -6px ${station.color}50, 0 0 15px ${station.color}25, inset 0 1px 0 rgba(255,255,255,0.35)`,
+        boxShadow: `0 1px 2px rgba(0,0,0,0.5), 0 8px 24px -12px rgba(0,0,0,0.6)`,
         // @ts-ignore
         "--tw-ring-color": `${station.color}4d`,
       } : {}}
