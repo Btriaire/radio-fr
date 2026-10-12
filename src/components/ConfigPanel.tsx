@@ -159,7 +159,7 @@ export default function ConfigPanel({ open, onClose }: Props) {
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ type: "spring", damping: 30, stiffness: 300 }}
-            className="fixed top-0 right-0 bottom-0 z-50 w-full sm:w-[420px] glass-dark border-l border-white/10 flex flex-col overflow-hidden shadow-2xl"
+            className="fixed top-0 right-0 bottom-0 z-50 w-full sm:w-[420px] glass-dark border-l border-white/10 flex flex-col overflow-hidden"
           >
             {/* Header */}
             <div
@@ -181,7 +181,7 @@ export default function ConfigPanel({ open, onClose }: Props) {
 
               <button
                 onClick={onClose}
-                className="min-h-[44px] min-w-[44px] px-3.5 py-2 rounded-full bg-white/10 hover:bg-white/20 active:bg-white/25 border border-white/15 flex items-center justify-center gap-1.5 text-white/90 hover:text-white transition-all active:scale-95 text-xs font-semibold shadow-sm cursor-pointer"
+                className="min-h-[44px] min-w-[44px] px-3.5 py-2 rounded-full bg-white/10 hover:bg-white/20 active:bg-white/25 border border-white/15 flex items-center justify-center gap-1.5 text-white/90 hover:text-white transition-all active:scale-95 text-xs font-semibold cursor-pointer"
                 aria-label="Fermer la configuration"
                 title="Fermer (Échap)"
               >
@@ -229,7 +229,7 @@ export default function ConfigPanel({ open, onClose }: Props) {
                       {active && (
                         <motion.div
                           layoutId="configTabIndicator"
-                          className="absolute inset-0 rounded-lg bg-[var(--accent)] shadow-md"
+                          className="absolute inset-0 rounded-lg bg-[var(--accent)]"
                           transition={{ type: "spring", stiffness: 450, damping: 35 }}
                         />
                       )}
@@ -263,17 +263,16 @@ export default function ConfigPanel({ open, onClose }: Props) {
                           key={t.id}
                           onClick={() => setTheme(t.id)}
                           className={`w-full flex items-center gap-3.5 p-3 rounded-2xl transition-all glass glass-hover relative overflow-hidden text-left ${
-                            theme === t.id ? "ring-2 ring-[var(--accent)] shadow-lg" : "border border-white/10"
+                            theme === t.id ? "ring-2 ring-[var(--accent)]" : "border border-white/10"
                           }`}
                         >
-                          <div className="w-12 h-12 rounded-xl flex-shrink-0 overflow-hidden relative border border-white/20 shadow-md">
+                          <div className="w-12 h-12 rounded-xl flex-shrink-0 overflow-hidden relative border border-white/20">
                             <div className="absolute inset-0" style={{ background: t.swatch[0] }} />
                             <div className="absolute inset-0 opacity-80" style={{
                               background: `radial-gradient(circle at 70% 30%, ${t.swatch[1]}, transparent 65%)`
                             }} />
                             <div className="absolute bottom-1 right-1 w-2.5 h-2.5 rounded-full" style={{
                               background: t.swatch[2],
-                              boxShadow: `0 0 8px ${t.swatch[1]}`
                             }} />
                           </div>
 
@@ -283,7 +282,7 @@ export default function ConfigPanel({ open, onClose }: Props) {
                           </div>
 
                           {theme === t.id && (
-                            <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 bg-[var(--accent)] text-white shadow-md">
+                            <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 bg-[var(--accent)] text-white">
                               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                                 <polyline points="20 6 9 17 4 12" />
                               </svg>
@@ -330,7 +329,7 @@ export default function ConfigPanel({ open, onClose }: Props) {
                             ipodSkin === sk.id ? "ring-2 ring-[var(--accent)]" : "border border-white/10"
                           }`}
                         >
-                          <div className="w-10 h-14 rounded-lg flex flex-col items-center justify-end pb-1.5 shadow-md"
+                          <div className="w-10 h-14 rounded-lg flex flex-col items-center justify-end pb-1.5"
                             style={{ background: `linear-gradient(160deg, ${sk.preview[0]}, ${sk.preview[1]})`, border: "1px solid rgba(255,255,255,0.2)" }}>
                             <div className="w-7 h-4 rounded-[2px] mb-1.5 bg-blue-100/90" />
                             <div className="w-5 h-5 rounded-full" style={{ background: sk.wheelRing }} />
@@ -361,7 +360,7 @@ export default function ConfigPanel({ open, onClose }: Props) {
                           lowBandwidth ? "bg-[var(--accent)]" : "bg-white/15"
                         }`}
                       >
-                        <span className={`absolute top-1 w-5 h-5 rounded-full bg-white transition-all shadow-md ${
+                        <span className={`absolute top-1 w-5 h-5 rounded-full bg-white transition-all ${
                           lowBandwidth ? "left-6" : "left-1"
                         }`} />
                       </button>
@@ -379,7 +378,7 @@ export default function ConfigPanel({ open, onClose }: Props) {
                           autoReconnect ? "bg-[var(--accent)]" : "bg-white/15"
                         }`}
                       >
-                        <span className={`absolute top-1 w-5 h-5 rounded-full bg-white transition-all shadow-md ${
+                        <span className={`absolute top-1 w-5 h-5 rounded-full bg-white transition-all ${
                           autoReconnect ? "left-6" : "left-1"
                         }`} />
                       </button>
@@ -397,7 +396,7 @@ export default function ConfigPanel({ open, onClose }: Props) {
                           volumeNormalization ? "bg-[var(--accent)]" : "bg-white/15"
                         }`}
                       >
-                        <span className={`absolute top-1 w-5 h-5 rounded-full bg-white transition-all shadow-md ${
+                        <span className={`absolute top-1 w-5 h-5 rounded-full bg-white transition-all ${
                           volumeNormalization ? "left-6" : "left-1"
                         }`} />
                       </button>
@@ -417,7 +416,7 @@ export default function ConfigPanel({ open, onClose }: Props) {
                           iosEq ? "bg-[var(--accent)]" : "bg-white/15"
                         }`}
                       >
-                        <span className={`absolute top-1 w-5 h-5 rounded-full bg-white transition-all shadow-md ${
+                        <span className={`absolute top-1 w-5 h-5 rounded-full bg-white transition-all ${
                           iosEq ? "left-6" : "left-1"
                         }`} />
                       </button>
@@ -441,7 +440,7 @@ export default function ConfigPanel({ open, onClose }: Props) {
                         lowBattery ? "bg-[var(--accent)]" : "bg-white/15"
                       }`}
                     >
-                      <span className={`absolute top-1 w-5 h-5 rounded-full bg-white transition-all shadow-md ${
+                      <span className={`absolute top-1 w-5 h-5 rounded-full bg-white transition-all ${
                         lowBattery ? "left-6" : "left-1"
                       }`} />
                     </button>
@@ -460,7 +459,7 @@ export default function ConfigPanel({ open, onClose }: Props) {
                           sleepEnabled ? "bg-[var(--accent)]" : "bg-white/15"
                         }`}
                       >
-                        <span className={`absolute top-1 w-5 h-5 rounded-full bg-white transition-all shadow-md ${
+                        <span className={`absolute top-1 w-5 h-5 rounded-full bg-white transition-all ${
                           sleepEnabled ? "left-6" : "left-1"
                         }`} />
                       </button>
@@ -512,7 +511,7 @@ export default function ConfigPanel({ open, onClose }: Props) {
                           }}
                           className={`py-2 rounded-xl text-xs font-bold transition-all ${
                             defaultTimerMin === m
-                              ? "bg-[var(--accent)] text-white shadow-md"
+                              ? "bg-[var(--accent)] text-white"
                               : "bg-white/5 text-white/60 hover:bg-white/10"
                           }`}
                         >
@@ -539,7 +538,7 @@ export default function ConfigPanel({ open, onClose }: Props) {
                         podcastAutoplay ? "bg-[var(--accent)]" : "bg-white/15"
                       }`}
                     >
-                      <span className={`absolute top-1 w-5 h-5 rounded-full bg-white transition-all shadow-md ${
+                      <span className={`absolute top-1 w-5 h-5 rounded-full bg-white transition-all ${
                         podcastAutoplay ? "left-6" : "left-1"
                       }`} />
                     </button>
@@ -576,7 +575,7 @@ export default function ConfigPanel({ open, onClose }: Props) {
                             onClick={() => setDefaultStationId(isSelected ? null : s.id)}
                             className={`w-full flex items-center gap-3 p-2.5 rounded-xl text-xs transition-all text-left ${
                               isSelected
-                                ? "bg-[var(--accent)] text-white shadow-md"
+                                ? "bg-[var(--accent)] text-white"
                                 : "glass glass-hover text-white/70"
                             }`}
                           >

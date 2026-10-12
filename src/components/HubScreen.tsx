@@ -232,7 +232,7 @@ export default function HubScreen({ onChoose }: HubScreenProps) {
               border: isNothing
                 ? (isNothingLight ? "1px solid rgba(0,0,0,0.14)" : "1px solid rgba(255,255,255,0.12)")
                 : "1px solid var(--glass-border)",
-              boxShadow: "none",
+              boxShadow: "0 1px 2px rgba(0,0,0,0.5)",
               minHeight: 180,
             }}
           >

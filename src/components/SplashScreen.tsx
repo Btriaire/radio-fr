@@ -55,7 +55,7 @@ export default function SplashScreen() {
       `}</style>
 
       {/* ── Logo mark ── */}
-      <div style={{ animation: "spPulse 2.4s ease-in-out infinite", filter: `drop-shadow(0 0 22px ${A}66)` }}>
+      <div style={{ animation: "spPulse 2.4s ease-in-out infinite" }}>
         <svg width="190" height="190" viewBox="0 0 200 200" fill="none">
           <defs>
             <linearGradient id="spGrad" x1="0" y1="0" x2="1" y2="1">

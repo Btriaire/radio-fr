@@ -122,7 +122,7 @@ export default function StudioPage() {
       {/* ── MAIN ANALOG CONSOLE ── */}
       <main className="flex-1 max-w-xl w-full mx-auto p-4 flex flex-col gap-4 justify-center">
         {/* Physical Station Chassis Card */}
-        <div className="studio-chassis border border-neutral-800/90 rounded-3xl p-5 shadow-2xl relative overflow-hidden flex flex-col gap-4">
+        <div className="studio-chassis border border-neutral-800/90 rounded-3xl p-5 relative overflow-hidden flex flex-col gap-4">
           {/* Subtle brushed metal hairline highlight */}
           <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#d4a843]/30 to-transparent" />
 
@@ -223,7 +223,7 @@ export default function StudioPage() {
       </main>
 
       {/* ── THUMB-ZONE BOTTOM CONTROL PLATFORM (Ergonomie à une main) ── */}
-      <footer className="w-full max-w-xl mx-auto p-4 pb-6 bg-[#121212]/95 border-t border-neutral-800 backdrop-blur-md rounded-t-3xl shadow-2xl">
+      <footer className="w-full max-w-xl mx-auto p-4 pb-6 bg-[#121212]/95 border-t border-neutral-800 backdrop-blur-md rounded-t-3xl">
         <div className="flex items-center justify-between gap-3">
           {/* Previous Station */}
           <button
@@ -252,7 +252,7 @@ export default function StudioPage() {
             }}
             className={`flex-1 h-14 rounded-2xl font-bold tracking-widest uppercase transition-all flex items-center justify-center gap-2.5 border active:scale-[0.98] ${
               isPlaying
-                ? "bg-[#d4a843] border-[#d4a843] text-black shadow-[0_0_20px_rgba(212,168,67,0.35)]"
+                ? "bg-[#d4a843] border-[#d4a843] text-black"
                 : "bg-neutral-900 border-neutral-700 text-white hover:border-[#d4a843]"
             }`}
           >

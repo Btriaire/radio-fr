@@ -407,7 +407,7 @@ export default function IpodOverlay({
               background: skin.shell,
               borderRadius: Math.round(32 * scale),
               padding: `${pad}px ${pad}px ${padB}px`,
-              boxShadow: `0 ${Math.round(40*scale)}px ${Math.round(80*scale)}px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.35), inset 0 1px 0 rgba(255,255,255,0.85), inset 0 -2px 4px rgba(0,0,0,0.12)`,
+              boxShadow: `0 1px 2px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.35), inset 0 1px 0 rgba(255,255,255,0.85), inset 0 -2px 4px rgba(0,0,0,0.12)`,
               position: "relative", flexShrink: 0,
             }}>
 
@@ -473,7 +473,7 @@ export default function IpodOverlay({
                           margin: `0 auto ${fs(4)}px`,
                           background: station?.color ? `linear-gradient(135deg, ${station.color}44, ${station.color}88)` : "linear-gradient(135deg, #3870aa, #5890c8)",
                           borderRadius: Math.round(4*scale), display: "flex", alignItems: "center", justifyContent: "center",
-                          boxShadow: `0 ${Math.round(2*scale)}px ${Math.round(8*scale)}px rgba(0,0,0,0.3)`,
+                          boxShadow: `0 1px 2px rgba(0,0,0,0.5)`,
                           overflow: "hidden", position: "relative",
                         }}>
                           {isVideoPodcast
@@ -646,7 +646,7 @@ export default function IpodOverlay({
                 style={{
                   width: wheelD, height: wheelD, borderRadius: "50%", margin: "0 auto", position: "relative",
                   background: skin.wheel,
-                  boxShadow: `0 ${Math.round(4*scale)}px ${Math.round(12*scale)}px rgba(0,0,0,0.22), inset 0 ${Math.round(2*scale)}px ${Math.round(4*scale)}px rgba(255,255,255,0.65), inset 0 -${Math.round(2*scale)}px ${Math.round(4*scale)}px rgba(0,0,0,0.12)`,
+                  boxShadow: `0 1px 2px rgba(0,0,0,0.5), inset 0 ${Math.round(2*scale)}px ${Math.round(4*scale)}px rgba(255,255,255,0.65), inset 0 -${Math.round(2*scale)}px ${Math.round(4*scale)}px rgba(0,0,0,0.12)`,
                   cursor: "grab", userSelect: "none", touchAction: "none",
                 }}>
                 <div style={{ position: "absolute", inset: Math.round(8*scale), borderRadius: "50%", border: "1px solid rgba(0,0,0,0.07)", background: skin.wheelRing }} />
@@ -667,7 +667,7 @@ export default function IpodOverlay({
                     position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)",
                     width: Math.round(58*scale), height: Math.round(58*scale), borderRadius: "50%",
                     background: skin.centerOuter, border: "none", cursor: "pointer",
-                    boxShadow: `0 ${Math.round(2*scale)}px ${Math.round(8*scale)}px rgba(0,0,0,0.18), inset 0 1px ${Math.round(2*scale)}px rgba(255,255,255,0.85), inset 0 -1px ${Math.round(2*scale)}px rgba(0,0,0,0.1)`,
+                    boxShadow: `0 1px 2px rgba(0,0,0,0.5), inset 0 1px ${Math.round(2*scale)}px rgba(255,255,255,0.85), inset 0 -1px ${Math.round(2*scale)}px rgba(0,0,0,0.1)`,
                     display: "flex", alignItems: "center", justifyContent: "center", WebkitTapHighlightColor: "transparent",
                   }}>
                   <div style={{ width: Math.round(38*scale), height: Math.round(38*scale), borderRadius: "50%", background: skin.centerInner, boxShadow: `inset 0 1px ${Math.round(3*scale)}px rgba(0,0,0,0.1)` }} />

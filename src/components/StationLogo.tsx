@@ -35,15 +35,14 @@ export default function StationLogo({ logo, name, color, size = "md" }: Props) {
         width: px,
         height: px,
         borderRadius: radius,
-        background: showImage 
-          ? `linear-gradient(145deg, ${color}28 0%, ${color}0e 100%)` 
+        background: showImage
+          ? `linear-gradient(145deg, ${color}28 0%, ${color}0e 100%)`
           : `linear-gradient(145deg, ${color}55 0%, ${color}22 100%)`,
         border: `1px solid ${color}${showImage ? "40" : "60"}`,
-        boxShadow: `0 4px 12px -2px ${color}30, inset 0 1px 0 rgba(255,255,255,0.25)`,
       }}
     >
       {/* iOS app icon highlight reflection */}
-      <div 
+      <div
         className="absolute inset-x-0 top-0 h-1/2 pointer-events-none opacity-25"
         style={{
           background: "linear-gradient(180deg, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 100%)",
@@ -67,7 +66,7 @@ export default function StationLogo({ logo, name, color, size = "md" }: Props) {
         />
       ) : (
         <span
-          className="relative z-10 font-black tracking-wider select-none text-white drop-shadow-sm"
+          className="relative z-10 font-black tracking-wider select-none text-white"
           style={{
             fontSize: size === "xl" ? 64 : size === "lg" ? 19 : size === "md" ? 14 : 11,
             letterSpacing: "0.08em",
