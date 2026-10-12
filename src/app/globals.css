@@ -218,7 +218,7 @@
   transform: translateX(-50%);
   border-radius: 50%;
   background: linear-gradient(to top, #ff2ec4 0%, #ff7ad9 40%, #05d9e8 100%);
-  box-shadow: 0 0 120px rgba(255,46,196,0.45), 0 0 220px rgba(5,217,232,0.2);
+  box-shadow: none;
   opacity: 0.3;
   filter: blur(1px);
 }
@@ -321,19 +321,19 @@
 [data-theme="nothing"] .glass {
   background: #ffffff;
   border: 1px solid rgba(0, 0, 0, 0.12);
-  box-shadow: none;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.5);
 }
 
 [data-theme="nothing"] .glass-dark {
   background: #f7f7f7;
   border: 1px solid rgba(0, 0, 0, 0.14);
-  box-shadow: none;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.5);
 }
 
 [data-theme="nothing"] .glass-hover:hover {
   background: #f0f0f0;
   border-color: rgba(0, 0, 0, 0.25);
-  box-shadow: none;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.5);
 }
 
 [data-theme="nothing"] h1,
@@ -371,19 +371,19 @@
 [data-theme="nothing-dark"] .glass {
   background: #0d0d0d;
   border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: none;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.5);
 }
 
 [data-theme="nothing-dark"] .glass-dark {
   background: #111111;
   border: 1px solid rgba(255, 255, 255, 0.14);
-  box-shadow: none;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.5);
 }
 
 [data-theme="nothing-dark"] .glass-hover:hover {
   background: #171717;
   border-color: rgba(255, 255, 255, 0.25);
-  box-shadow: none;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.5);
 }
 
 /* Nothing Dot Matrix font accents: only for strict digital clock / tech metrics */
@@ -436,9 +436,7 @@ body {
     backdrop-filter: blur(24px) saturate(160%);
     -webkit-backdrop-filter: blur(24px) saturate(160%);
     border: 1px solid rgba(255,255,255,0.11);
-    box-shadow:
-      0 8px 32px -4px rgba(0,0,0,0.35),
-      inset 0 1px 0.5px rgba(255,255,255,0.22);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.5);
   }
 
   .glass-dark {
@@ -448,9 +446,7 @@ body {
     backdrop-filter: blur(32px) saturate(180%);
     -webkit-backdrop-filter: blur(32px) saturate(180%);
     border: 1px solid rgba(255,255,255,0.12);
-    box-shadow:
-      0 20px 60px var(--metal-lo),
-      inset 0 1px 0.5px rgba(255,255,255,0.25);
+    box-shadow: 0 8px 24px -12px rgba(0,0,0,0.6);
   }
 
   /* Horizontal brush-metal texture stripe (subtle) */
@@ -473,12 +469,10 @@ body {
       linear-gradient(180deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.04) 100%),
       rgba(255,255,255,0.08);
     border-color: rgba(255,255,255,0.22);
-    box-shadow:
-      0 12px 36px -6px rgba(0,0,0,0.45),
-      inset 0 1px 0.5px rgba(255,255,255,0.3);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.5);
   }
 
-  .glow-accent { box-shadow: 0 0 20px color-mix(in srgb, var(--accent) 50%, transparent); }
+  .glow-accent { box-shadow: none; }
 
   .text-gradient {
     background: linear-gradient(135deg, var(--accent), var(--accent-2));
@@ -513,7 +507,7 @@ input[type=range]::-webkit-slider-thumb {
   width: 14px;
   height: 14px;
   margin-top: -5px;
-  box-shadow: 0 0 8px rgba(59,130,246,0.7);
+  box-shadow: none;
   transition: transform 0.15s;
 }
 input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.25); }
@@ -539,13 +533,13 @@ input[type=range].eq-slider::-webkit-slider-thumb {
   width: 22px;
   height: 22px;
   margin-left: -9px;
-  box-shadow: 0 0 10px rgba(59,130,246,0.6), 0 2px 6px rgba(0,0,0,0.4);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.5);
   border: 2px solid rgba(255,255,255,0.2);
   transition: transform 0.12s, box-shadow 0.12s;
 }
 input[type=range].eq-slider::-webkit-slider-thumb:hover {
   transform: scale(1.25);
-  box-shadow: 0 0 16px rgba(59,130,246,0.8), 0 2px 8px rgba(0,0,0,0.5);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.5);
 }
 input[type=range].eq-slider::-webkit-slider-thumb:active {
   transform: scale(1.15);
@@ -616,7 +610,7 @@ input[type=range] { accent-color: var(--accent, #3b82f6); }
   }
 }
 .animate-glow-breathing {
-  animation: glowBreathing 3s ease-in-out infinite;
+  animation: none;
 }
 
 .btn-spring {
@@ -629,14 +623,14 @@ input[type=range] { accent-color: var(--accent, #3b82f6); }
 /* ─── Studio Hi-Fi Analogique Precision Textures ───────────────── */
 .studio-chassis {
   background: radial-gradient(120% 120% at 50% 0%, #1c1c1f 0%, #111113 70%, #0a0a0c 100%);
-  box-shadow: 0 20px 40px -15px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.08);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.5);
 }
 .studio-milled-panel {
   background: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(0,0,0,0.4) 100%), #141416;
-  box-shadow: inset 0 1px 1px rgba(255,255,255,0.06), 0 4px 12px rgba(0,0,0,0.5);
+  box-shadow: inset 0 1px 1px rgba(255,255,255,0.06), 0 1px 2px rgba(0,0,0,0.5);
 }
 .studio-amber-glow {
-  box-shadow: 0 0 18px rgba(212, 168, 67, 0.28);
+  box-shadow: none;
 }
 
 
