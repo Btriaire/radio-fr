@@ -585,7 +585,7 @@ export default function Home() {
                   )}
                 </div>
                 <p className="hidden sm:block text-white/50 text-xs leading-none mt-1.5 font-normal text-[11px]">
-                  {(theme === "nothing" || theme === "nothing-dark") ? "Radios, podcasts & musique" : "Radios, podcasts &amp; musique en direct"}
+                  {(theme === "nothing" || theme === "nothing-dark") ? "Radios, podcasts & musique" : "Radios, podcasts & musique en direct"}
                 </p>
               </div>
             </div>
