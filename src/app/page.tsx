@@ -33,6 +33,8 @@ import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { useNowPlaying } from "@/hooks/useNowPlaying";
 import { saveTrackHistory } from "@/lib/trackHistory";
 import TrackHistoryDrawer from "@/components/TrackHistoryDrawer";
+import CommandPalette from "@/components/CommandPalette";
+import LyricsModal from "@/components/LyricsModal";
 
 type Tab = "radio" | "webradio" | "search" | "favoris" | "podcasts" | "audius";
 
@@ -94,6 +96,8 @@ export default function Home() {
   const [ipodOpen, setIpodOpen]                 = useState(false);
   const [djOpen, setDjOpen]                      = useState(false);
   const [historyOpen, setHistoryOpen]           = useState(false);
+  const [commandOpen, setCommandOpen]           = useState(false);
+  const [lyricsOpen, setLyricsOpen]             = useState(false);
   const [hubOpen, setHubOpen]                   = useState(true);
   const [mobilePlayerExpanded, setMobilePlayerExpanded] = useState(false);
   const [menuOpen, setMenuOpen]                 = useState(false);
@@ -135,6 +139,18 @@ export default function Home() {
       // Show the hub only once per browser session.
       if (sessionStorage.getItem("radiofr_hub_seen")) setHubOpen(false);
     } catch {}
+  }, []);
+
+  // Global keyboard shortcut: Cmd+K / Ctrl+K opens Command Palette
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setCommandOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
   // Jump from the hub landing into the chosen view.
@@ -604,6 +620,8 @@ export default function Home() {
               <div className="hidden sm:flex items-center gap-1 glass rounded-2xl p-1"
                 style={{ border: "1px solid var(--glass-border)" }}>
                 {[
+                  { label: "Palette (⌘K)", aria: "Ouvrir la palette de commandes (Cmd + K)", run: () => setCommandOpen(true),
+                    icon: <><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></> },
                   { label: "Studio Hi-Fi", aria: "Ouvrir la version Studio Hi-Fi Analogique", href: "/studio",
                     icon: <><circle cx="12" cy="12" r="9" /><line x1="12" y1="12" x2="16" y2="8" /><circle cx="12" cy="12" r="2" /></> },
                   { label: "Accueil", aria: "Revenir à l'accueil", run: () => setHubOpen(true),
@@ -707,6 +725,7 @@ export default function Home() {
                     className="absolute right-0 top-[calc(100%+8px)] w-56 z-50 rounded-2xl glass-dark p-1.5 shadow-2xl"
                     style={{ border: "1px solid var(--glass-border)" }} role="menu">
                     {[
+                      { label: "Palette de commandes (⌘K)", run: () => setCommandOpen(true) },
                       { label: "Studio Hi-Fi", href: "/studio", badge: "MK-II" },
                       { label: "Accueil", run: () => setHubOpen(true) },
                       { label: "Mode iPod", run: () => setIpodOpen(true) },
@@ -846,6 +865,7 @@ export default function Home() {
               isFavorite={selectedStation ? isFavorite(selectedStation.id) : false}
               onToggleFavorite={selectedStation ? () => toggleFavorite(selectedStation) : undefined}
               nowPlaying={nowPlaying}
+              onOpenLyrics={() => setLyricsOpen(true)}
             />
           )}
           {(currentStation || currentPodcast) && (
@@ -1280,6 +1300,7 @@ export default function Home() {
             onNext={() => playAdjacentStation(1)}
             onPrev={() => playAdjacentStation(-1)}
             onClose={() => setMobilePlayerExpanded(false)}
+            onOpenLyrics={() => setLyricsOpen(true)}
             advanced={
               <div className="space-y-4">
                 <Player
@@ -1291,6 +1312,7 @@ export default function Home() {
                   onToggleFavorite={selectedStation ? () => toggleFavorite(selectedStation) : undefined}
                   nowPlaying={nowPlaying}
                   onClose={() => setMobilePlayerExpanded(false)}
+                  onOpenLyrics={() => setLyricsOpen(true)}
                 />
                 <ClipVisualizer
                   analyserRef={playerApi.analyserRef}
@@ -1340,6 +1362,36 @@ export default function Home() {
 
       {/* DJ mode */}
       <DjMode open={djOpen} onClose={() => setDjOpen(false)} />
+
+      {/* Command Palette (Cmd + K) */}
+      <CommandPalette
+        isOpen={commandOpen}
+        onClose={() => setCommandOpen(false)}
+        onSelectStation={(s) => {
+          userInteractedRef.current = true;
+          setCurrentPodcast(null);
+          setYoutubeTrack(null);
+          setSelectedStation(s);
+          playerApi.initAudio(preferredStreamUrl(s), { station: s });
+        }}
+        onTogglePlay={playerApi.togglePlay}
+        isPlaying={playerApi.isPlaying}
+        onRandomZapping={handleRandomZapping}
+        onOpenLyrics={() => setLyricsOpen(true)}
+        onOpenIpod={() => setIpodOpen(true)}
+        onOpenDj={() => { playerApi.pause(); setDjOpen(true); }}
+        onOpenConfig={() => setConfigOpen(true)}
+        nowPlayingSong={nowPlaying.songTitle}
+      />
+
+      {/* Synchronized & Plain Lyrics modal */}
+      <LyricsModal
+        isOpen={lyricsOpen}
+        onClose={() => setLyricsOpen(false)}
+        artist={nowPlaying.songArtist || selectedStation?.name}
+        title={nowPlaying.songTitle || (playerApi.isPlaying ? selectedStation?.tagline : undefined)}
+        stationName={selectedStation?.name}
+      />
     </div>
   );
 }

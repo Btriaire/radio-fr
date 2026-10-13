@@ -27,6 +27,7 @@ interface Props {
   onNext?: () => void;
   onPrev?: () => void;
   onClose: () => void;
+  onOpenLyrics?: () => void;
   /** The full desktop Player (EQ, quality, presets…) — tucked behind a disclosure. */
   advanced: ReactNode;
 }
@@ -49,7 +50,7 @@ const Icon = {
 };
 
 export default function NowPlayingSheet({
-  station, podcast, playerApi, nowPlaying, isFavorite, onToggleFavorite, onNext, onPrev, onClose, advanced,
+  station, podcast, playerApi, nowPlaying, isFavorite, onToggleFavorite, onNext, onPrev, onClose, onOpenLyrics, advanced,
 }: Props) {
   const { theme } = useTheme();
   const isNothing = theme === "nothing" || theme === "nothing-dark";
@@ -227,8 +228,8 @@ export default function NowPlayingSheet({
           )}
         </div>
 
-        {/* Live Audio Recorder (REC DVR) button */}
-        <div className="flex justify-center">
+        {/* Live Audio Recorder (REC DVR) & Paroles (Lyrics) buttons */}
+        <div className="flex items-center justify-center gap-2">
           <AudioRecorderModal
             mediaElRef={playerApi.mediaElRef}
             ctxRef={playerApi.ctxRef}
@@ -238,6 +239,22 @@ export default function NowPlayingSheet({
             currentStreamUrl={station?.streamUrl || podcast?.audioUrl}
             isPlaying={isPlaying}
           />
+
+          {onOpenLyrics && (
+            <button
+              onClick={onOpenLyrics}
+              aria-label="Afficher les paroles"
+              className="px-3.5 py-2 rounded-xl text-xs font-mono font-semibold transition-all glass glass-hover flex items-center gap-1.5 cursor-pointer text-white/80 active:scale-95"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
+              </svg>
+              <span>Paroles</span>
+              {nowPlaying?.songTitle && (
+                <span className="w-1.5 h-1.5 rounded-full bg-[#d4a843] animate-pulse" />
+              )}
+            </button>
+          )}
         </div>
 
         {/* Volume */}

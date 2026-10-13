@@ -40,6 +40,7 @@ interface Props {
   ipodOpen?: boolean;
   nowPlaying?: NowPlayingInfo;
   onClose?: () => void;
+  onOpenLyrics?: () => void;
 }
 
 export default function Player({
@@ -51,6 +52,7 @@ export default function Player({
   ipodOpen,
   nowPlaying,
   onClose,
+  onOpenLyrics,
 }: Props) {
   const [showEQ, setShowEQ] = useState(false);
   const [showOptions, setShowOptions] = useState(false);
@@ -638,6 +640,29 @@ export default function Player({
               <span className="text-[9px] text-white/25">off</span>
             )}
           </motion.button>
+
+          {/* Paroles (Lyrics) toggle */}
+          {onOpenLyrics && (
+            <motion.button
+              whileTap={{ scale: 0.92 }}
+              whileHover={{ scale: 1.05 }}
+              transition={{ type: "spring", stiffness: 450, damping: 25 }}
+              onClick={onOpenLyrics}
+              aria-label="Afficher les paroles"
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all glass glass-hover flex items-center gap-1.5 cursor-pointer ${
+                nowPlaying?.songTitle ? "text-white/80" : "text-white/35"
+              }`}
+              title="Paroles du morceau en direct"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
+              </svg>
+              <span>Paroles</span>
+              {nowPlaying?.songTitle && (
+                <span className="w-1.5 h-1.5 rounded-full bg-[#d4a843] animate-pulse" />
+              )}
+            </motion.button>
+          )}
         </div>
 
         {/* One-tap audio modes */}
