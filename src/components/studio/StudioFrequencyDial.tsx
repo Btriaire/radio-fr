@@ -30,16 +30,14 @@ export default function StudioFrequencyDial({
     }).sort((a, b) => parseFloat(a.freq) - parseFloat(b.freq));
   }, []);
 
-  // Center selected station smoothly under the optical needle
+  // Center selected station smoothly under the optical needle with zero drift
   useEffect(() => {
     if (!currentStation || !containerRef.current || isDragging) return;
-    const idx = stationsWithFreq.findIndex((s) => s.id === currentStation.id);
-    if (idx !== -1) {
-      // Each marker item is ~88px wide
-      const targetScroll = idx * 88;
-      containerRef.current.scrollTo({ left: targetScroll, behavior: "smooth" });
+    const activeBtn = containerRef.current.querySelector<HTMLElement>(`[data-station-id="${currentStation.id}"]`);
+    if (activeBtn) {
+      activeBtn.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
     }
-  }, [currentStation, stationsWithFreq, isDragging]);
+  }, [currentStation, isDragging]);
 
   const handlePointerDown = (e: React.PointerEvent) => {
     if (!containerRef.current) return;
@@ -111,6 +109,7 @@ export default function StudioFrequencyDial({
               return (
                 <button
                   key={st.id}
+                  data-station-id={st.id}
                   onClick={() => {
                     onSelectStation(st);
                     try {

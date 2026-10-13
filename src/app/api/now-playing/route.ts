@@ -89,39 +89,50 @@ function fetchIcyFromStream(streamUrl: string): Promise<NowPlayingResult> {
 
           let buffer = Buffer.alloc(0);
           let resolved = false;
+          let attempts = 0;
 
           res.on("data", (chunk: Buffer) => {
             if (resolved) return;
             buffer = Buffer.concat([buffer, chunk]);
 
-            if (buffer.length >= metaint + 1) {
+            while (buffer.length >= metaint + 1 && !resolved) {
               const lenByte = buffer[metaint];
               const metaLength = lenByte * 16;
 
-              if (metaLength > 0 && buffer.length >= metaint + 1 + metaLength) {
-                resolved = true;
-                const rawMeta = buffer.subarray(metaint + 1, metaint + 1 + metaLength).toString("utf8");
-                res.destroy();
+              if (metaLength > 0) {
+                if (buffer.length >= metaint + 1 + metaLength) {
+                  resolved = true;
+                  const rawMeta = buffer.subarray(metaint + 1, metaint + 1 + metaLength).toString("utf8");
+                  res.destroy();
 
-                const match = /StreamTitle=['"](.*?)['"];/i.exec(rawMeta);
-                const rawTitle = match ? match[1] : null;
-                const { title, artist } = parseStreamTitle(rawTitle || "");
+                  const match = /StreamTitle=['"](.*?)['"];/i.exec(rawMeta);
+                  const rawTitle = match ? match[1] : null;
+                  const { title, artist } = parseStreamTitle(rawTitle || "");
 
-                return resolve({
-                  title,
-                  artist,
-                  raw: cleanString(rawTitle),
-                  station: icyStationName,
-                });
-              } else if (metaLength === 0) {
-                resolved = true;
-                res.destroy();
-                return resolve({
-                  title: null,
-                  artist: null,
-                  raw: null,
-                  station: icyStationName,
-                });
+                  return resolve({
+                    title,
+                    artist,
+                    raw: cleanString(rawTitle),
+                    station: icyStationName,
+                  });
+                } else {
+                  // Incomplete metadata payload in this chunk, wait for more data
+                  break;
+                }
+              } else {
+                // Empty frame (common on initial connect), advance past it and retry next frame
+                attempts++;
+                buffer = buffer.subarray(metaint + 1);
+                if (attempts >= 3) {
+                  resolved = true;
+                  res.destroy();
+                  return resolve({
+                    title: null,
+                    artist: null,
+                    raw: null,
+                    station: icyStationName,
+                  });
+                }
               }
             }
 
