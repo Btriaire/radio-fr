@@ -45,6 +45,20 @@ const EQ_CORS_HOSTS = [
   "icecast.funradio.fr",      // same Audiomeans infra as RTL → ACAO echoes Origin
   "streaming.nrjaudio.fm",    // NRJ group's new CDN (2026-07-18) → ACAO: *
   "cdnradio.streamakaci.com", // Chérie FM's CDN → ACAO: *
+  "audio.bfmtv.com",          // BFM Radio, BFM Business & RMC → ACAO echoes Origin
+  "stream.srg-ssr.ch",        // Radio Swiss Pop/Jazz/Classic & RTS → ACAO: *
+  "chantefrance.ice.infomaniak.ch",
+  "generationfm.ice.infomaniak.ch",
+  "start-latina.ice.infomaniak.ch",
+  "start-voltage.ice.infomaniak.ch",
+  "start-adofm.ice.infomaniak.ch",
+  "mfm.ice.infomaniak.ch",
+  "vibration.ice.infomaniak.ch",
+  "direct.croonerradio.fr",
+  "kexp.streamguys1.com",
+  "stream.live.vc.bbcmedia.co.uk",
+  "radiofg.impek.com",
+  "radios.rtbf.be",
 ];
 
 export function isEqCompatible(url: string | undefined | null): boolean {
@@ -96,6 +110,17 @@ export const STATIONS: Station[] = [
       { label: "Haute",   url: "https://icecast.radiofrance.fr/franceinfo-hifi.aac",  bitrate: "320 kbps" },
     ],
     logo: DDG("franceinfo.fr"), color: "#4361ee", genre: "Info", freq: "105.5 FM",
+  },
+  {
+    id: "bfm-radio",
+    name: "BFM Radio",
+    tagline: "Première radio d'info en continu",
+    streamUrl: "https://audio.bfmtv.com/bfmradio_128.mp3",
+    streams: [
+      { label: "Standard", url: "https://audio.bfmtv.com/bfmradio_128.mp3", bitrate: "128 kbps" },
+      { label: "Miroir",   url: "http://audio.bfmtv.com/bfmradio_128.mp3",  bitrate: "128 kbps" },
+    ],
+    logo: DDG("bfmtv.com"), color: "#0045e6", genre: "Info", freq: "102.8 FM",
   },
   {
     id: "france-culture",
@@ -515,8 +540,9 @@ export const STATIONS: Station[] = [
     streamUrl: "https://audio.bfmtv.com/rmcradio_128.mp3",
     streams: [
       { label: "Standard", url: "https://audio.bfmtv.com/rmcradio_128.mp3", bitrate: "128 kbps" },
+      { label: "Miroir",   url: "http://audio.bfmtv.com/rmcradio_128.mp3",  bitrate: "128 kbps" },
     ],
-    logo: DDG("rmc.bfmtv.com"), color: "#dc2626", genre: "Généraliste",
+    logo: DDG("rmc.bfmtv.com"), color: "#dc2626", genre: "Généraliste", freq: "103.1 FM",
   },
   {
     id: "rfm",
@@ -526,7 +552,7 @@ export const STATIONS: Station[] = [
     streams: [
       { label: "Standard", url: "https://rfm.lmn.fm/rfm.mp3", bitrate: "128 kbps" },
     ],
-    logo: DDG("rfm.fr"), color: "#e11d48", genre: "Variété",
+    logo: DDG("rfm.fr"), color: "#e11d48", genre: "Variété", freq: "103.9 FM",
   },
   {
     id: "europe2",
@@ -536,7 +562,7 @@ export const STATIONS: Station[] = [
     streams: [
       { label: "Standard", url: "https://europe2.lmn.fm/europe2.mp3", bitrate: "128 kbps" },
     ],
-    logo: DDG("europe2.fr"), color: "#7c3aed", genre: "Hits",
+    logo: DDG("europe2.fr"), color: "#7c3aed", genre: "Hits", freq: "103.5 FM",
   },
   {
     id: "sud-radio",
@@ -546,7 +572,7 @@ export const STATIONS: Station[] = [
     streams: [
       { label: "Standard", url: "https://ice.creacast.com/sudradio", bitrate: "128 kbps" },
     ],
-    logo: DDG("sudradio.fr"), color: "#0891b2", genre: "Généraliste",
+    logo: DDG("sudradio.fr"), color: "#0891b2", genre: "Généraliste", freq: "99.9 FM",
   },
   {
     id: "bfm-business",
@@ -555,8 +581,10 @@ export const STATIONS: Station[] = [
     streamUrl: "https://audio.bfmtv.com/bfmbusiness_128.mp3",
     streams: [
       { label: "Standard", url: "https://audio.bfmtv.com/bfmbusiness_128.mp3", bitrate: "128 kbps" },
+      { label: "Miroir",   url: "http://audio.bfmtv.com/bfmbusiness_128.mp3",  bitrate: "128 kbps" },
+      { label: "Direct Web", url: "https://audio.bfmtv.com/bfmbusiness_128.mp3?aw_0_1st.playerId=BFMBusiness_audio_web&aggregator=BFMBusiness_audio_web", bitrate: "128 kbps" },
     ],
-    logo: DDG("bfmtv.com"), color: "#1d4ed8", genre: "Info",
+    logo: DDG("bfmtv.com"), color: "#1d4ed8", genre: "Info", freq: "96.4 FM",
   },
   {
     id: "radio-meuh",
@@ -565,6 +593,7 @@ export const STATIONS: Station[] = [
     streamUrl: "https://radiomeuh.ice.infomaniak.ch/radiomeuh-128.mp3",
     streams: [
       { label: "Standard", url: "https://radiomeuh.ice.infomaniak.ch/radiomeuh-128.mp3", bitrate: "128 kbps" },
+      { label: "Miroir",   url: "https://radiomeuh2.ice.infomaniak.ch/radiomeuh2-128.mp3", bitrate: "128 kbps" },
     ],
     logo: DDG("radiomeuh.com"), color: "#84cc16", genre: "Éclectique",
   },
@@ -576,7 +605,7 @@ export const STATIONS: Station[] = [
     streams: [
       { label: "Haute", url: "https://alouette.ice.infomaniak.ch/alouette-high.mp3", bitrate: "128 kbps" },
     ],
-    logo: DDG("alouette.fr"), color: "#0ea5e9", genre: "Variété",
+    logo: DDG("alouette.fr"), color: "#0ea5e9", genre: "Variété", freq: "92.9 FM",
   },
   {
     id: "grosse-radio-reggae",
@@ -597,6 +626,420 @@ export const STATIONS: Station[] = [
       { label: "Haute", url: "https://jazzblues.ice.infomaniak.ch/jazzblues-high.mp3", bitrate: "128 kbps" },
     ],
     logo: DDG("jazzradio.fr"), color: "#4338ca", genre: "Jazz",
+  },
+
+  // ── Nouvelles radios francophones & thématiques vérifiées ────────────
+  {
+    id: "chante-france",
+    name: "Chante France",
+    tagline: "Les plus belles chansons françaises",
+    streamUrl: "https://chantefrance.ice.infomaniak.ch/chantefrance-128.mp3",
+    streams: [
+      { label: "Standard", url: "https://chantefrance.ice.infomaniak.ch/chantefrance-128.mp3", bitrate: "128 kbps" },
+    ],
+    logo: DDG("chantefrance.com"), color: "#e11d48", genre: "Variété", freq: "90.9 FM",
+  },
+  {
+    id: "m-radio",
+    name: "M Radio",
+    tagline: "Numéro 1 sur la chanson française",
+    streamUrl: "https://mfm.ice.infomaniak.ch/mfm-128.mp3",
+    streams: [
+      { label: "Standard", url: "https://mfm.ice.infomaniak.ch/mfm-128.mp3", bitrate: "128 kbps" },
+    ],
+    logo: DDG("mradio.fr"), color: "#ef4444", genre: "Variété", freq: "102.7 FM",
+  },
+  {
+    id: "radio-fg",
+    name: "Radio FG",
+    tagline: "Feel Good Dance & Electro",
+    streamUrl: "https://radiofg.impek.com/fg.mp3",
+    streams: [
+      { label: "Standard", url: "https://radiofg.impek.com/fg.mp3", bitrate: "128 kbps" },
+    ],
+    logo: DDG("radiofg.com"), color: "#06b6d4", genre: "Électro", freq: "98.2 FM",
+  },
+  {
+    id: "fg-chic",
+    name: "FG Chic",
+    tagline: "Lounge, Nu-Disco & Deep House",
+    streamUrl: "https://radiofg.impek.com/fgc.mp3",
+    streams: [
+      { label: "Standard", url: "https://radiofg.impek.com/fgc.mp3", bitrate: "128 kbps" },
+    ],
+    logo: DDG("fgchic.com"), color: "#a855f7", genre: "Électro",
+  },
+  {
+    id: "generations",
+    name: "Générations",
+    tagline: "Hip-Hop Soul Radio",
+    streamUrl: "https://generationfm.ice.infomaniak.ch/generationfm-high.mp3",
+    streams: [
+      { label: "Standard", url: "https://generationfm.ice.infomaniak.ch/generationfm-high.mp3", bitrate: "128 kbps" },
+    ],
+    logo: DDG("generations.fr"), color: "#eab308", genre: "Hits", freq: "88.2 FM",
+  },
+  {
+    id: "swigg",
+    name: "Swigg",
+    tagline: "100% Cultures Urbaines",
+    streamUrl: "https://start-adofm.ice.infomaniak.ch/start-adofm-high.mp3",
+    streams: [
+      { label: "Standard", url: "https://start-adofm.ice.infomaniak.ch/start-adofm-high.mp3", bitrate: "128 kbps" },
+    ],
+    logo: DDG("swigg.fr"), color: "#f97316", genre: "Hits", freq: "97.8 FM",
+  },
+  {
+    id: "latina",
+    name: "Latina",
+    tagline: "Salsa, Bachata, Reggaeton",
+    streamUrl: "https://start-latina.ice.infomaniak.ch/start-latina-high.mp3",
+    streams: [
+      { label: "Standard", url: "https://start-latina.ice.infomaniak.ch/start-latina-high.mp3", bitrate: "128 kbps" },
+    ],
+    logo: DDG("latina.fr"), color: "#ea580c", genre: "Pop", freq: "99.0 FM",
+  },
+  {
+    id: "voltage",
+    name: "Voltage",
+    tagline: "Connecteur de hits",
+    streamUrl: "https://start-voltage.ice.infomaniak.ch/start-voltage-high.mp3",
+    streams: [
+      { label: "Standard", url: "https://start-voltage.ice.infomaniak.ch/start-voltage-high.mp3", bitrate: "128 kbps" },
+    ],
+    logo: DDG("voltage.fr"), color: "#3b82f6", genre: "Hits", freq: "96.9 FM",
+  },
+  {
+    id: "vibration",
+    name: "Vibration",
+    tagline: "Vibrez avec vos hits préférés",
+    streamUrl: "https://vibration.ice.infomaniak.ch/vibration-high.mp3",
+    streams: [
+      { label: "Standard", url: "https://vibration.ice.infomaniak.ch/vibration-high.mp3", bitrate: "128 kbps" },
+    ],
+    logo: DDG("vibration.fr"), color: "#ec4899", genre: "Pop", freq: "103.9 FM",
+  },
+  {
+    id: "tropiques-fm",
+    name: "Tropiques FM",
+    tagline: "La radio des musiques du soleil",
+    streamUrl: "https://listen.radioking.com/radio/8916/stream/19088",
+    streams: [
+      { label: "Standard", url: "https://listen.radioking.com/radio/8916/stream/19088", bitrate: "128 kbps" },
+    ],
+    logo: DDG("tropiquesfm.com"), color: "#eab308", genre: "Éclectique", freq: "92.6 FM",
+  },
+  {
+    id: "beur-fm",
+    name: "Beur FM",
+    tagline: "La radio méditerranéenne & d'ouverture",
+    streamUrl: "https://beurfm.ice.infomaniak.ch/beurfm-high.mp3",
+    streams: [
+      { label: "Standard", url: "https://beurfm.ice.infomaniak.ch/beurfm-high.mp3", bitrate: "128 kbps" },
+    ],
+    logo: DDG("beurfm.net"), color: "#10b981", genre: "Généraliste", freq: "106.7 FM",
+  },
+  {
+    id: "france-maghreb-2",
+    name: "France Maghreb 2",
+    tagline: "Le trait d'union des cultures",
+    streamUrl: "https://francemaghreb2.ice.infomaniak.ch/francemaghreb2-high.mp3",
+    streams: [
+      { label: "Standard", url: "https://francemaghreb2.ice.infomaniak.ch/francemaghreb2-high.mp3", bitrate: "128 kbps" },
+    ],
+    logo: DDG("francemaghreb2.fr"), color: "#059669", genre: "Généraliste", freq: "99.5 FM",
+  },
+  {
+    id: "radio-courtoisie",
+    name: "Radio Courtoisie",
+    tagline: "La radio libre de la culture française",
+    streamUrl: "https://ice.creacast.com/radio-courtoisie",
+    streams: [
+      { label: "Standard", url: "https://ice.creacast.com/radio-courtoisie", bitrate: "128 kbps" },
+    ],
+    logo: DDG("radiocourtoisie.fr"), color: "#6366f1", genre: "Culture", freq: "95.6 FM",
+  },
+  {
+    id: "crooner-radio",
+    name: "Crooner Radio",
+    tagline: "Great American Songbook & Jazz Vocal",
+    streamUrl: "https://direct.croonerradio.fr/croonerradio-midfi.mp3",
+    streams: [
+      { label: "Standard", url: "https://direct.croonerradio.fr/croonerradio-midfi.mp3", bitrate: "128 kbps" },
+    ],
+    logo: DDG("croonerradio.fr"), color: "#ca8a04", genre: "Jazz",
+  },
+  {
+    id: "grosse-radio-rock",
+    name: "La Grosse Radio Rock",
+    tagline: "100% Rock alternatif & indépendant",
+    streamUrl: "https://hd.lagrosseradio.info/lagrosseradio-rock-192.mp3",
+    streams: [
+      { label: "Haute", url: "https://hd.lagrosseradio.info/lagrosseradio-rock-192.mp3", bitrate: "192 kbps" },
+    ],
+    logo: DDG("lagrosseradio.com"), color: "#dc2626", genre: "Rock",
+  },
+  {
+    id: "grosse-radio-metal",
+    name: "La Grosse Radio Métal",
+    tagline: "Heavy metal & sons puissants",
+    streamUrl: "https://hd.lagrosseradio.info/lagrosseradio-metal-192.mp3",
+    streams: [
+      { label: "Haute", url: "https://hd.lagrosseradio.info/lagrosseradio-metal-192.mp3", bitrate: "192 kbps" },
+    ],
+    logo: DDG("lagrosseradio.com"), color: "#475569", genre: "Rock",
+  },
+  {
+    id: "classic-21",
+    name: "Classic 21",
+    tagline: "Écoutez l'original rock (RTBF)",
+    streamUrl: "https://radios.rtbf.be/classic21-128.mp3",
+    streams: [
+      { label: "Standard", url: "https://radios.rtbf.be/classic21-128.mp3", bitrate: "128 kbps" },
+    ],
+    logo: DDG("rtbf.be"), color: "#f97316", genre: "Rock",
+  },
+  {
+    id: "radio-swiss-pop",
+    name: "Radio Swiss Pop",
+    tagline: "Pop & mélodies sans pub (SRG SSR)",
+    streamUrl: "https://stream.srg-ssr.ch/m/rsp/mp3_128",
+    streams: [
+      { label: "Audiophile", url: "https://stream.srg-ssr.ch/m/rsp/mp3_128", bitrate: "128 kbps" },
+    ],
+    logo: DDG("radioswisspop.ch"), color: "#0ea5e9", genre: "Pop",
+  },
+  {
+    id: "radio-swiss-jazz",
+    name: "Radio Swiss Jazz",
+    tagline: "Standards du jazz, soul & blues (SRG SSR)",
+    streamUrl: "https://stream.srg-ssr.ch/m/rsj/mp3_128",
+    streams: [
+      { label: "Audiophile", url: "https://stream.srg-ssr.ch/m/rsj/mp3_128", bitrate: "128 kbps" },
+    ],
+    logo: DDG("radioswissjazz.ch"), color: "#8b5cf6", genre: "Jazz",
+  },
+  {
+    id: "radio-swiss-classic",
+    name: "Radio Swiss Classic",
+    tagline: "Chefs-d'œuvre de la musique classique (SRG SSR)",
+    streamUrl: "https://stream.srg-ssr.ch/m/rsc_de/mp3_128",
+    streams: [
+      { label: "Audiophile", url: "https://stream.srg-ssr.ch/m/rsc_de/mp3_128", bitrate: "128 kbps" },
+    ],
+    logo: DDG("radioswissclassic.ch"), color: "#d97706", genre: "Classique",
+  },
+  {
+    id: "rts-la-1ere",
+    name: "RTS Première",
+    tagline: "L'info & la culture suisse romande",
+    streamUrl: "https://stream.srg-ssr.ch/m/la-1ere/mp3_128",
+    streams: [
+      { label: "Standard", url: "https://stream.srg-ssr.ch/m/la-1ere/mp3_128", bitrate: "128 kbps" },
+    ],
+    logo: DDG("srgssr.ch"), color: "#dc2626", genre: "Info",
+  },
+  {
+    id: "bbc-world",
+    name: "BBC World Service",
+    tagline: "The world's newsroom in English",
+    streamUrl: "https://stream.live.vc.bbcmedia.co.uk/bbc_world_service",
+    streams: [
+      { label: "Standard", url: "https://stream.live.vc.bbcmedia.co.uk/bbc_world_service", bitrate: "128 kbps" },
+    ],
+    logo: DDG("bbc.co.uk"), color: "#bb1919", genre: "International",
+  },
+  {
+    id: "kexp",
+    name: "KEXP Seattle",
+    tagline: "Where the music matters",
+    streamUrl: "https://kexp.streamguys1.com/kexp128.mp3",
+    streams: [
+      { label: "Standard", url: "https://kexp.streamguys1.com/kexp128.mp3", bitrate: "128 kbps" },
+    ],
+    logo: DDG("kexp.org"), color: "#eab308", genre: "Éclectique",
+  },
+  {
+    id: "fm-bo",
+    name: "La B.O. France Musique",
+    tagline: "Musiques de films & bandes originales",
+    streamUrl: "https://icecast.radiofrance.fr/francemusiquelabo-midfi.mp3",
+    streams: [
+      { label: "Moyenne", url: "https://icecast.radiofrance.fr/francemusiquelabo-midfi.mp3", bitrate: "128 kbps" },
+    ],
+    logo: DDG("francemusique.fr"), color: "#f59e0b", genre: "Classique",
+  },
+  {
+    id: "fip-sacre-francais",
+    name: "FIP Sacré Français",
+    tagline: "Le meilleur de la scène française",
+    streamUrl: "https://icecast.radiofrance.fr/fipsacrefrancais-midfi.mp3",
+    streams: [
+      { label: "Moyenne", url: "https://icecast.radiofrance.fr/fipsacrefrancais-midfi.mp3", bitrate: "128 kbps" },
+    ],
+    logo: DDG("fip.fr"), color: "#10b981", genre: "Variété",
+  },
+  {
+    id: "fip-metal",
+    name: "FIP Métal",
+    tagline: "De Led Zep au métal moderne",
+    streamUrl: "https://icecast.radiofrance.fr/fipmetal-midfi.mp3",
+    streams: [
+      { label: "Moyenne", url: "https://icecast.radiofrance.fr/fipmetal-midfi.mp3", bitrate: "128 kbps" },
+    ],
+    logo: DDG("fip.fr"), color: "#64748b", genre: "Rock",
+  },
+  {
+    id: "hotmix-dance",
+    name: "Hotmixradio Dance",
+    tagline: "Club, dance & electro non-stop",
+    streamUrl: "https://streaming.hotmixradio.com/hotmix-dance-en-mp3",
+    streams: [
+      { label: "Standard", url: "https://streaming.hotmixradio.com/hotmix-dance-en-mp3", bitrate: "128 kbps" },
+    ],
+    logo: DDG("hotmixradio.com"), color: "#06b6d4", genre: "Électro",
+  },
+  {
+    id: "hotmix-80",
+    name: "Hotmixradio 80",
+    tagline: "Les années 80 non-stop",
+    streamUrl: "https://streaming.hotmixradio.com/hotmix-80-en-mp3",
+    streams: [
+      { label: "Standard", url: "https://streaming.hotmixradio.com/hotmix-80-en-mp3", bitrate: "128 kbps" },
+    ],
+    logo: DDG("hotmixradio.com"), color: "#d946ef", genre: "Variété",
+  },
+  {
+    id: "hotmix-90",
+    name: "Hotmixradio 90",
+    tagline: "Le son des années 90",
+    streamUrl: "https://streaming.hotmixradio.com/hotmix-90-en-mp3",
+    streams: [
+      { label: "Standard", url: "https://streaming.hotmixradio.com/hotmix-90-en-mp3", bitrate: "128 kbps" },
+    ],
+    logo: DDG("hotmixradio.com"), color: "#8b5cf6", genre: "Variété",
+  },
+  {
+    id: "hotmix-rock",
+    name: "Hotmixradio Rock",
+    tagline: "Le son 100% Rock",
+    streamUrl: "https://streaming.hotmixradio.com/hotmix-rock-en-mp3",
+    streams: [
+      { label: "Standard", url: "https://streaming.hotmixradio.com/hotmix-rock-en-mp3", bitrate: "128 kbps" },
+    ],
+    logo: DDG("hotmixradio.com"), color: "#ef4444", genre: "Rock",
+  },
+  {
+    id: "hotmix-frenchy",
+    name: "Hotmixradio Frenchy",
+    tagline: "100% Tubes francophones",
+    streamUrl: "https://streaming.hotmixradio.com/hotmix-frenchy-en-mp3",
+    streams: [
+      { label: "Standard", url: "https://streaming.hotmixradio.com/hotmix-frenchy-en-mp3", bitrate: "128 kbps" },
+    ],
+    logo: DDG("hotmixradio.com"), color: "#3b82f6", genre: "Variété",
+  },
+  {
+    id: "jazz-manouche",
+    name: "Jazz Radio Manouche",
+    tagline: "Swing manouche & guitares virtuoses",
+    streamUrl: "https://jazz-wr02.ice.infomaniak.ch/jazz-wr02-128.mp3",
+    streams: [
+      { label: "Haute", url: "https://jazz-wr02.ice.infomaniak.ch/jazz-wr02-128.mp3", bitrate: "128 kbps" },
+    ],
+    logo: DDG("jazzradio.fr"), color: "#b45309", genre: "Jazz",
+  },
+  {
+    id: "jazz-funk",
+    name: "Jazz Radio Funk",
+    tagline: "Funk, groove & soul vintage",
+    streamUrl: "https://jazz-wr06.ice.infomaniak.ch/jazz-wr06-128.mp3",
+    streams: [
+      { label: "Haute", url: "https://jazz-wr06.ice.infomaniak.ch/jazz-wr06-128.mp3", bitrate: "128 kbps" },
+    ],
+    logo: DDG("jazzradio.fr"), color: "#a855f7", genre: "Jazz",
+  },
+
+  // ── France Bleu Régions (flux direct.francebleu.fr) ─────────────────
+  {
+    id: "fb-nord",
+    name: "ici Nord",
+    tagline: "Radio locale Lille & Hauts-de-France",
+    streamUrl: "https://direct.francebleu.fr/live/fbnord-midfi.mp3",
+    streams: [
+      { label: "Standard", url: "https://direct.francebleu.fr/live/fbnord-midfi.mp3", bitrate: "128 kbps" },
+    ],
+    logo: DDG("francebleu.fr"), color: "#0284c7", genre: "Local", freq: "94.7 FM",
+  },
+  {
+    id: "fb-gironde",
+    name: "ici Gironde",
+    tagline: "Radio locale Bordeaux & Gironde",
+    streamUrl: "https://direct.francebleu.fr/live/fbgironde-midfi.mp3",
+    streams: [
+      { label: "Standard", url: "https://direct.francebleu.fr/live/fbgironde-midfi.mp3", bitrate: "128 kbps" },
+    ],
+    logo: DDG("francebleu.fr"), color: "#0284c7", genre: "Local", freq: "100.1 FM",
+  },
+  {
+    id: "fb-provence",
+    name: "ici Provence",
+    tagline: "Radio locale Marseille, Aix & Toulon",
+    streamUrl: "https://direct.francebleu.fr/live/fbprovence-midfi.mp3",
+    streams: [
+      { label: "Standard", url: "https://direct.francebleu.fr/live/fbprovence-midfi.mp3", bitrate: "128 kbps" },
+    ],
+    logo: DDG("francebleu.fr"), color: "#0284c7", genre: "Local", freq: "103.6 FM",
+  },
+  {
+    id: "fb-armorique",
+    name: "ici Armorique",
+    tagline: "Radio locale Rennes & Bretagne",
+    streamUrl: "https://direct.francebleu.fr/live/fbarmorique-midfi.mp3",
+    streams: [
+      { label: "Standard", url: "https://direct.francebleu.fr/live/fbarmorique-midfi.mp3", bitrate: "128 kbps" },
+    ],
+    logo: DDG("francebleu.fr"), color: "#0284c7", genre: "Local", freq: "103.1 FM",
+  },
+  {
+    id: "fb-azur",
+    name: "ici Azur",
+    tagline: "Radio locale Nice & Côte d'Azur",
+    streamUrl: "https://direct.francebleu.fr/live/fbazur-midfi.mp3",
+    streams: [
+      { label: "Standard", url: "https://direct.francebleu.fr/live/fbazur-midfi.mp3", bitrate: "128 kbps" },
+    ],
+    logo: DDG("francebleu.fr"), color: "#0284c7", genre: "Local", freq: "103.8 FM",
+  },
+  {
+    id: "fb-alsace",
+    name: "ici Alsace",
+    tagline: "Radio locale Strasbourg & Alsace",
+    streamUrl: "https://direct.francebleu.fr/live/fbalsace-midfi.mp3",
+    streams: [
+      { label: "Standard", url: "https://direct.francebleu.fr/live/fbalsace-midfi.mp3", bitrate: "128 kbps" },
+    ],
+    logo: DDG("francebleu.fr"), color: "#0284c7", genre: "Local", freq: "101.4 FM",
+  },
+  {
+    id: "fb-toulouse",
+    name: "ici Toulouse",
+    tagline: "Radio locale Toulouse & Haute-Garonne",
+    streamUrl: "https://direct.francebleu.fr/live/fbtoulouse-midfi.mp3",
+    streams: [
+      { label: "Standard", url: "https://direct.francebleu.fr/live/fbtoulouse-midfi.mp3", bitrate: "128 kbps" },
+    ],
+    logo: DDG("francebleu.fr"), color: "#0284c7", genre: "Local", freq: "90.5 FM",
+  },
+  {
+    id: "fb-loire-ocean",
+    name: "ici Loire Océan",
+    tagline: "Radio locale Nantes & Loire-Atlantique",
+    streamUrl: "https://direct.francebleu.fr/live/fbloireocean-midfi.mp3",
+    streams: [
+      { label: "Standard", url: "https://direct.francebleu.fr/live/fbloireocean-midfi.mp3", bitrate: "128 kbps" },
+    ],
+    logo: DDG("francebleu.fr"), color: "#0284c7", genre: "Local", freq: "101.8 FM",
   },
 ];
 
