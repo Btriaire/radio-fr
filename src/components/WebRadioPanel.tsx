@@ -132,16 +132,34 @@ export default function WebRadioPanel({ onPlay, currentUrl, isPlaying, isFavorit
       </div>
 
       {/* Genre pills */}
-      <div className="flex flex-wrap gap-1.5">
-        {WEB_GENRES.map(g => (
-          <button key={g} onClick={() => setGenre(g)}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium flex-shrink-0 transition-all ${
-              genre === g ? "text-white" : "glass glass-hover text-white/60 hover:text-white"
-            }`}
-            style={genre === g ? { background: "var(--accent)", boxShadow: "0 0 10px rgba(59,130,246,0.4)" } : {}}>
-            {g}
-          </button>
-        ))}
+      <div className="relative -mx-1 px-1">
+        <div
+          className="flex items-center gap-1.5 overflow-x-auto py-1 scroll-smooth select-none"
+          style={{
+            scrollbarWidth: "none",
+            maskImage: "linear-gradient(to right, black calc(100% - 24px), transparent)",
+            WebkitMaskImage: "linear-gradient(to right, black calc(100% - 24px), transparent)",
+          }}
+          onWheel={(e) => {
+            if (e.deltaY !== 0) e.currentTarget.scrollLeft += e.deltaY;
+          }}
+        >
+          {WEB_GENRES.map(g => {
+            const on = genre === g;
+            return (
+              <button key={g} onClick={() => setGenre(g)}
+                className={`h-7 px-2.5 rounded-lg text-xs font-mono whitespace-nowrap flex items-center gap-1.5 transition-all flex-shrink-0 ${
+                  on
+                    ? "bg-white/12 text-white border border-white/30 shadow-sm font-semibold"
+                    : "bg-white/[0.03] hover:bg-white/[0.07] text-white/55 hover:text-white border border-white/[0.07] hover:border-white/[0.16]"
+                }`}
+              >
+                {on && <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 animate-pulse" style={{ background: "var(--accent)" }} />}
+                <span>{g}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {error && <p className="text-red-400/80 text-sm text-center">{error}</p>}

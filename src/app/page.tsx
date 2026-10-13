@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAudioPlayer } from "@/hooks/useAudioPlayer";
@@ -191,6 +191,14 @@ export default function Home() {
       return next;
     });
   }, [playingStationId]);
+
+  const genreCounts = useMemo(() => {
+    const counts: Record<string, number> = { Tous: STATIONS.length };
+    for (const s of STATIONS) {
+      counts[s.genre] = (counts[s.genre] || 0) + 1;
+    }
+    return counts;
+  }, []);
 
   const withLogo = (s: Station): Station => ({
     ...s,
@@ -946,40 +954,51 @@ export default function Home() {
                   )}
                 </AnimatePresence>
 
-                {/* ── Genres ── */}
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {GENRES.map((g, gi) => {
-                    const isZen = g === "Zen";
-                    const on = genre === g;
-                    // Phones: only the first few genres (+ the active one) so the
-                    // station list isn't pushed 4 rows down; ≥sm always shows all.
-                    const visible = gi < 6 || on || showAllGenres;
-                    return (
-                      <button key={g} onClick={() => setGenre(g)}
-                        className={`px-3.5 min-h-[40px] rounded-full text-[13px] font-medium flex-shrink-0 transition-all ${
-                          visible ? "" : "hidden sm:inline-block"
-                        } ${
-                          on ? "text-white" : isZen
-                            ? "glass glass-hover text-emerald-300/80 hover:text-emerald-200"
-                            : "glass glass-hover text-white/60 hover:text-white"
-                        }`}
-                        style={on ? (isZen ? {
-                          background: "linear-gradient(135deg,#10b981,#5eead4)",
-                          boxShadow: "0 1px 2px rgba(0,0,0,0.5)",
-                        } : {
-                          background: "var(--accent)",
-                          boxShadow: "0 1px 2px rgba(0,0,0,0.5)",
-                        }) : {}}>
-                        {isZen ? "Zen" : g}
-                      </button>
-                    );
-                  })}
-                  <button onClick={() => setShowAllGenres((v) => !v)}
-                    aria-expanded={showAllGenres}
-                    className="sm:hidden px-3.5 min-h-[40px] rounded-full text-[13px] font-semibold glass glass-hover transition-all"
-                    style={{ color: "var(--accent)" }}>
-                    {showAllGenres ? "Moins ▴" : `Plus (${GENRES.length - 6}) ▾`}
-                  </button>
+                {/* ── Genres — Sleek single-line audio strip ── */}
+                <div className="relative mb-3.5 -mx-1 px-1">
+                  <div
+                    className="flex items-center gap-1.5 overflow-x-auto py-1 scroll-smooth select-none"
+                    style={{
+                      scrollbarWidth: "none",
+                      maskImage: "linear-gradient(to right, black calc(100% - 28px), transparent)",
+                      WebkitMaskImage: "linear-gradient(to right, black calc(100% - 28px), transparent)",
+                    }}
+                    onWheel={(e) => {
+                      if (e.deltaY !== 0) {
+                        e.currentTarget.scrollLeft += e.deltaY;
+                      }
+                    }}
+                  >
+                    {GENRES.map((g) => {
+                      const isZen = g === "Zen";
+                      const on = genre === g;
+                      const count = genreCounts[g] ?? 0;
+                      return (
+                        <button
+                          key={g}
+                          onClick={() => setGenre(g)}
+                          className={`h-7 sm:h-7.5 px-2.5 sm:px-3 rounded-lg text-xs font-mono whitespace-nowrap flex items-center gap-1.5 transition-all flex-shrink-0 ${
+                            on
+                              ? isZen
+                                ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/50 shadow-sm font-semibold"
+                                : "bg-white/12 text-white border border-white/30 shadow-sm font-semibold"
+                              : isZen
+                                ? "bg-emerald-500/5 hover:bg-emerald-500/10 text-emerald-400/70 hover:text-emerald-300 border border-emerald-500/20"
+                                : "bg-white/[0.03] hover:bg-white/[0.07] text-white/55 hover:text-white border border-white/[0.07] hover:border-white/[0.16]"
+                          }`}
+                        >
+                          {on && (
+                            <span
+                              className="w-1.5 h-1.5 rounded-full flex-shrink-0 animate-pulse"
+                              style={{ background: isZen ? "#10b981" : "var(--accent)" }}
+                            />
+                          )}
+                          <span>{g}</span>
+                          <span className="text-[10px] tabular-nums opacity-45 font-mono">{count}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 {/* Section header decoration + Sort & View toggles */}
