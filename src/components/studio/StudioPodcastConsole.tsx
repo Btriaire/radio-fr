@@ -142,18 +142,37 @@ export default function StudioPodcastConsole({
 
       {/* ── ANALOG SCRUB CONSOLE (Visible when a podcast is playing) ── */}
       {isPodcastActive && (
-        <div className="bg-[#18181c] border border-[#d4a843]/40 rounded-xl p-3 flex flex-col gap-2.5 shadow-lg">
-          <div className="flex items-center justify-between gap-2">
-            <div className="min-w-0 flex-1">
-              <span className="text-[9px] font-mono uppercase tracking-wider text-[#d4a843] font-bold">
-                LECTURE PODCAST EN COURS
-              </span>
-              <p className="text-xs font-semibold text-white truncate">
-                {activeEpisode?.title || "Episode en direct"}
-              </p>
+        <div className="bg-[#18181c] border border-[#d4a843]/40 rounded-xl p-3 flex flex-col gap-2.5 shadow-lg relative overflow-hidden">
+          {/* Subtle tape window glare */}
+          <div className="absolute top-0 right-0 w-32 h-12 bg-gradient-to-bl from-white/[0.04] to-transparent pointer-events-none" />
+
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 min-w-0 flex-1">
+              {/* Dual Rotating Tape Spools */}
+              <div className="flex items-center gap-1.5 p-1 rounded-lg bg-black/60 border border-neutral-800 flex-shrink-0">
+                <svg width="18" height="18" viewBox="0 0 24 24" className={`text-[#d4a843] ${isPlaying ? "animate-spin" : ""}`} style={{ animationDuration: "3s" }}>
+                  <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="2" strokeDasharray="4 4" />
+                  <circle cx="12" cy="12" r="3" fill="currentColor" />
+                </svg>
+                <div className="w-2 h-0.5 bg-neutral-700" />
+                <svg width="18" height="18" viewBox="0 0 24 24" className={`text-[#d4a843] ${isPlaying ? "animate-spin" : ""}`} style={{ animationDuration: "3s" }}>
+                  <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="2" strokeDasharray="4 4" />
+                  <circle cx="12" cy="12" r="3" fill="currentColor" />
+                </svg>
+              </div>
+
+              <div className="min-w-0 flex-1">
+                <span className="text-[9px] font-mono uppercase tracking-wider text-[#d4a843] font-bold block">
+                  BANDE MAGNETIQUE • EN COURS
+                </span>
+                <p className="text-xs font-semibold text-white truncate">
+                  {activeEpisode?.title || "Episode en direct"}
+                </p>
+              </div>
             </div>
-            <div className="text-[11px] font-mono text-neutral-300 font-medium tracking-tight">
-              <span>{formatTime(currentTime)}</span>
+
+            <div className="text-[11px] font-mono text-neutral-300 font-medium tracking-tight bg-black/40 px-2 py-1 rounded border border-neutral-800">
+              <span className="text-white font-bold">{formatTime(currentTime)}</span>
               <span className="text-neutral-500 mx-1">/</span>
               <span className="text-neutral-400">{formatTime(effectiveDuration)}</span>
             </div>

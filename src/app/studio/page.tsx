@@ -164,6 +164,20 @@ export default function StudioPage() {
           {/* Subtle brushed metal hairline highlight */}
           <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#d4a843]/30 to-transparent" />
 
+          {/* Physical Corner Hex Screws */}
+          <div className="absolute top-2.5 left-2.5 w-2 h-2 rounded-full border border-neutral-700 bg-neutral-800 flex items-center justify-center opacity-70 pointer-events-none">
+            <div className="w-1 h-px bg-neutral-500 rotate-45" />
+          </div>
+          <div className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full border border-neutral-700 bg-neutral-800 flex items-center justify-center opacity-70 pointer-events-none">
+            <div className="w-1 h-px bg-neutral-500 -rotate-45" />
+          </div>
+          <div className="absolute bottom-2.5 left-2.5 w-2 h-2 rounded-full border border-neutral-700 bg-neutral-800 flex items-center justify-center opacity-70 pointer-events-none">
+            <div className="w-1 h-px bg-neutral-500 -rotate-12" />
+          </div>
+          <div className="absolute bottom-2.5 right-2.5 w-2 h-2 rounded-full border border-neutral-700 bg-neutral-800 flex items-center justify-center opacity-70 pointer-events-none">
+            <div className="w-1 h-px bg-neutral-500 rotate-60" />
+          </div>
+
           {/* Station identification display */}
           <div className="flex items-center justify-between gap-3 border-b border-neutral-800/80 pb-4">
             <div className="flex items-center gap-3.5 min-w-0">
@@ -187,26 +201,37 @@ export default function StudioPage() {
               </div>
             </div>
 
-            {/* Favorite toggle button */}
-            {currentStation && (
-              <button
-                onClick={() => toggleFavorite(currentStation)}
-                className={`w-9 h-9 rounded-xl border flex items-center justify-center transition-all ${
-                  isFavorite(currentStation.id)
-                    ? "border-[#d4a843] bg-[#d4a843]/15 text-[#d4a843]"
-                    : "border-neutral-800 bg-neutral-900 text-neutral-500 hover:text-white"
-                }`}
-                aria-label="Ajouter aux favoris"
+            {/* Braun T3 Perforated Acoustic Grille & Favorite Button */}
+            <div className="flex items-center gap-2">
+              <div
+                className="hidden sm:flex items-center justify-center px-2 py-1.5 rounded-xl braun-speaker-grille border border-neutral-800/80 w-20 h-10 shadow-inner"
+                title="Grille acoustique Braun T3 (Dieter Rams, 1958)"
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill={isFavorite(currentStation.id) ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
-                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                </svg>
-              </button>
-            )}
+                <span className="text-[7px] font-mono tracking-widest text-neutral-500 uppercase select-none">
+                  8Ω • HI-FI
+                </span>
+              </div>
+
+              {currentStation && (
+                <button
+                  onClick={() => toggleFavorite(currentStation)}
+                  className={`w-9 h-9 rounded-xl border flex items-center justify-center transition-all ${
+                    isFavorite(currentStation.id)
+                      ? "border-[#d4a843] bg-[#d4a843]/15 text-[#d4a843]"
+                      : "border-neutral-800 bg-neutral-900 text-neutral-500 hover:text-white"
+                  }`}
+                  aria-label="Ajouter aux favoris"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill={isFavorite(currentStation.id) ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                  </svg>
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Analog VU-Meter */}
-          <StudioVuMeter analyserRef={analyserRef} isPlaying={isPlaying} width={340} height={52} />
+          <StudioVuMeter analyserRef={analyserRef} isPlaying={isPlaying} width={340} height={68} />
 
           {/* FM Frequency Tuning Dial */}
           <StudioFrequencyDial
@@ -262,6 +287,13 @@ export default function StudioPage() {
               }}
             />
           )}
+
+          {/* Laser-engraved anodized specification badge */}
+          <div className="flex items-center justify-between pt-2 border-t border-neutral-800/60 text-[8px] font-mono tracking-widest text-neutral-500 uppercase px-1 select-none">
+            <span>SPEC. 1961 • DIETER RAMS PHILOSOPHY</span>
+            <span className="text-neutral-600">SOLID STATE MK-II</span>
+            <span>10-OCTAVE ACTIVE BIQUAD</span>
+          </div>
         </div>
       </main>
 
