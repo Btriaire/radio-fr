@@ -29,6 +29,8 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
+import ErrorBoundary from "@/components/ErrorBoundary";
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="fr">
@@ -55,7 +57,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <div className="absolute inset-0 metal-texture opacity-100" />
             <div className="absolute inset-0 bg-noise opacity-40" />
           </div>
-          {children}
+          <ErrorBoundary>
+            {children}
+          </ErrorBoundary>
         </ThemeProvider>
       </body>
     </html>

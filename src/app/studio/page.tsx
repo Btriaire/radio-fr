@@ -76,7 +76,7 @@ export default function StudioPage() {
       if (!target) return;
       setStationIndex(idx);
       setCurrentStation(target);
-      initAudio(preferredStreamUrl(target), { live: true });
+      initAudio(preferredStreamUrl(target), { live: true, station: target });
 
       // Haptic tick
       try {
@@ -98,7 +98,7 @@ export default function StudioPage() {
     album: currentStation?.name || "Radio Studio Hi-Fi",
     artwork: currentStation?.logo,
     isPlaying,
-    onPlay: () => currentStation && initAudio(preferredStreamUrl(currentStation), { live: true }),
+    onPlay: () => currentStation && initAudio(preferredStreamUrl(currentStation), { live: true, station: currentStation }),
     onPause: pause,
     onNext: nextStation,
     onPrev: prevStation,
@@ -238,7 +238,7 @@ export default function StudioPage() {
             currentStation={currentStation}
             onSelectStation={(st) => {
               setCurrentStation(st);
-              initAudio(preferredStreamUrl(st), { live: true });
+              initAudio(preferredStreamUrl(st), { live: true, station: st });
             }}
           />
 
@@ -321,7 +321,7 @@ export default function StudioPage() {
                 if (currentUrl === preferredStreamUrl(currentStation)) {
                   play();
                 } else {
-                  initAudio(preferredStreamUrl(currentStation), { live: true });
+                  initAudio(preferredStreamUrl(currentStation), { live: true, station: currentStation });
                 }
               }
             }}

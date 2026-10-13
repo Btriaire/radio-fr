@@ -1315,11 +1315,47 @@ export function useAudioPlayer() {
     };
     window.addEventListener("offline", onOffline);
     window.addEventListener("online", onOnline);
+
+    const navConn = typeof navigator !== "undefined" ? (navigator as any).connection : null;
+    const onConnChange = () => {
+      // Cell/WiFi interface handoff: if currentTime is frozen across the switch, trigger seamless reconnect
+      if (wantPlayingRef.current && audioRef.current && !audioRef.current.paused) {
+        const lastT = audioRef.current.currentTime;
+        setTimeout(() => {
+          if (wantPlayingRef.current && audioRef.current && !audioRef.current.paused && audioRef.current.currentTime === lastT) {
+            reconnectNow();
+          }
+        }, 1500);
+      }
+    };
+    if (navConn?.addEventListener) {
+      navConn.addEventListener("change", onConnChange);
+    }
+
     return () => {
       window.removeEventListener("offline", onOffline);
       window.removeEventListener("online", onOnline);
+      if (navConn?.removeEventListener) {
+        navConn.removeEventListener("change", onConnChange);
+      }
     };
   }, [clearReconnect, stopWatchdog, clearConnectTimer, reconnectNow]);
+
+  // ── Global user gesture audio unlock ───────────────────────────────────────
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const unlock = () => {
+      if (ctxRef.current && ctxRef.current.state === "suspended" && wantPlayingRef.current) {
+        ctxRef.current.resume().catch(() => {});
+      }
+    };
+    window.addEventListener("pointerdown", unlock, { passive: true });
+    window.addEventListener("keydown", unlock, { passive: true });
+    return () => {
+      window.removeEventListener("pointerdown", unlock);
+      window.removeEventListener("keydown", unlock);
+    };
+  }, []);
 
   // ── Resume after coming back to the foreground ─────────────────────────────
   // A longer interruption (phone call, screen-off power saving, another app
@@ -1336,12 +1372,15 @@ export function useAudioPlayer() {
       if (ctxRef.current?.state === "suspended") ctxRef.current.resume().catch(() => {});
       if (modeRef.current === "element") {
         const audio = audioRef.current;
-        if (audio?.paused) {
-          // If live radio stream socket was killed in background, reconnect fresh to live edge
-          if (liveRef.current) {
-            reconnectNow();
-          } else {
-            audio.play().catch(() => {});
+        if (audio) {
+          const isStalled = stallCountRef.current > 0 || (audio.currentTime === lastProgressRef.current.t && Date.now() - lastProgressRef.current.at > 6000);
+          if (audio.paused || (liveRef.current && isStalled)) {
+            // If live radio stream socket was killed in background, reconnect fresh to live edge
+            if (liveRef.current) {
+              reconnectNow();
+            } else {
+              audio.play().catch(() => {});
+            }
           }
         }
       } else if (modeRef.current === "decoder" && !decoderRef.current) {
