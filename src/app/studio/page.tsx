@@ -21,7 +21,26 @@ import StudioPodcastConsole from "@/components/studio/StudioPodcastConsole";
  */
 export default function StudioPage() {
   const player = useAudioPlayer();
-  const { isPlaying, isLoading, currentUrl, play, pause, changeVolume, volume, analyserRef, mediaElRef, ctxRef, gainRef, initAudio } = player;
+  const {
+    isPlaying,
+    isLoading,
+    currentUrl,
+    play,
+    pause,
+    togglePlay,
+    changeVolume,
+    volume,
+    analyserRef,
+    mediaElRef,
+    ctxRef,
+    gainRef,
+    initAudio,
+    updateBand,
+    currentTime,
+    duration,
+    seekTo,
+    seekRelative,
+  } = player;
   const { favorites, isFavorite, toggleFavorite } = useFavorites();
 
   const [currentStation, setCurrentStation] = useState<Station | null>(() => STATIONS[0] || null);
@@ -29,6 +48,25 @@ export default function StudioPage() {
   const [bassLevel, setBassLevel] = useState(50);
   const [trebleLevel, setTrebleLevel] = useState(50);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
+
+  // Connect analog Bass & Treble knobs to Web Audio biquad filter chain
+  useEffect(() => {
+    // Bass: bands 0 (32Hz), 1 (64Hz), 2 (125Hz)
+    // Scale 0..100 with 50 as neutral (0 dB) -> -12 dB to +12 dB
+    const bassGain = ((bassLevel - 50) / 50) * 12;
+    updateBand(0, bassGain);
+    updateBand(1, bassGain);
+    updateBand(2, bassGain * 0.7);
+  }, [bassLevel, updateBand]);
+
+  useEffect(() => {
+    // Treble: bands 7 (4kHz), 8 (8kHz), 9 (16kHz)
+    // Scale 0..100 with 50 as neutral (0 dB) -> -12 dB to +12 dB
+    const trebleGain = ((trebleLevel - 50) / 50) * 12;
+    updateBand(7, trebleGain * 0.7);
+    updateBand(8, trebleGain);
+    updateBand(9, trebleGain);
+  }, [trebleLevel, updateBand]);
 
   const nowPlaying = useNowPlaying(currentStation, isPlaying);
 
@@ -214,6 +252,11 @@ export default function StudioPage() {
               stationName={currentStation.name}
               currentPlayingUrl={currentUrl}
               isPlaying={isPlaying}
+              currentTime={currentTime}
+              duration={duration}
+              onSeekTo={seekTo}
+              onSeekRelative={seekRelative}
+              onTogglePlay={togglePlay}
               onPlayEpisode={(url) => {
                 initAudio(url, { live: false });
               }}

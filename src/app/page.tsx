@@ -699,16 +699,28 @@ export default function Home() {
                     className="absolute right-0 top-[calc(100%+8px)] w-56 z-50 rounded-2xl glass-dark p-1.5 shadow-2xl"
                     style={{ border: "1px solid var(--glass-border)" }} role="menu">
                     {[
+                      { label: "Studio Hi-Fi", href: "/studio", badge: "MK-II" },
                       { label: "Accueil", run: () => setHubOpen(true) },
                       { label: "Mode iPod", run: () => setIpodOpen(true) },
                       { label: "Mode DJ", run: () => { playerApi.pause(); setDjOpen(true); } },
                       { label: "Titres récents", run: () => setHistoryOpen(true) },
                     ].map((m) => (
-                      <button key={m.label} role="menuitem"
-                        onClick={() => { setMenuOpen(false); m.run(); }}
-                        className="w-full text-left px-3 py-3 rounded-xl text-sm font-medium text-white/85 hover:text-white hover:bg-white/8 transition-all min-h-[44px]">
-                        {m.label}
-                      </button>
+                      m.href ? (
+                        <Link key={m.label} href={m.href} role="menuitem"
+                          onClick={() => setMenuOpen(false)}
+                          className="flex items-center justify-between w-full text-left px-3 py-3 rounded-xl text-sm font-medium text-amber-400 bg-amber-400/10 hover:bg-amber-400/20 border border-amber-400/30 transition-all min-h-[44px]">
+                          <span>{m.label}</span>
+                          <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded border border-amber-400/40 text-amber-400">
+                            {m.badge}
+                          </span>
+                        </Link>
+                      ) : (
+                        <button key={m.label} role="menuitem"
+                          onClick={() => { setMenuOpen(false); m.run!(); }}
+                          className="w-full text-left px-3 py-3 rounded-xl text-sm font-medium text-white/85 hover:text-white hover:bg-white/8 transition-all min-h-[44px]">
+                          {m.label}
+                        </button>
+                      )
                     ))}
                   </motion.div>
                 )}
