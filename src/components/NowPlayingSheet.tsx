@@ -28,6 +28,7 @@ interface Props {
   onPrev?: () => void;
   onClose: () => void;
   onOpenLyrics?: () => void;
+  onOpenSleepTimer?: () => void;
   /** The full desktop Player (EQ, quality, presets…) — tucked behind a disclosure. */
   advanced: ReactNode;
 }
@@ -50,7 +51,7 @@ const Icon = {
 };
 
 export default function NowPlayingSheet({
-  station, podcast, playerApi, nowPlaying, isFavorite, onToggleFavorite, onNext, onPrev, onClose, onOpenLyrics, advanced,
+  station, podcast, playerApi, nowPlaying, isFavorite, onToggleFavorite, onNext, onPrev, onClose, onOpenLyrics, onOpenSleepTimer, advanced,
 }: Props) {
   const { theme } = useTheme();
   const isNothing = theme === "nothing" || theme === "nothing-dark";
@@ -255,6 +256,30 @@ export default function NowPlayingSheet({
               )}
             </button>
           )}
+
+          {onOpenSleepTimer && (
+            <button
+              onClick={onOpenSleepTimer}
+              aria-label="Minuteur de veille avec fondu"
+              className={`px-3.5 py-2 rounded-xl text-xs font-mono font-semibold transition-all glass glass-hover flex items-center gap-1.5 cursor-pointer active:scale-95 ${
+                sleepTimerRemaining != null && sleepTimerRemaining > 0
+                  ? "border border-amber-400/50 bg-amber-400/15 text-amber-300"
+                  : "text-white/80"
+              }`}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+              </svg>
+              <span>
+                {sleepTimerRemaining != null && sleepTimerRemaining > 0
+                  ? `${Math.floor(sleepTimerRemaining / 60)}:${String(Math.floor(sleepTimerRemaining % 60)).padStart(2, "0")}`
+                  : "Veille"}
+              </span>
+              {sleepTimerRemaining != null && sleepTimerRemaining > 0 && (
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+              )}
+            </button>
+          )}
         </div>
 
         {/* Volume */}
@@ -268,7 +293,17 @@ export default function NowPlayingSheet({
         {/* Sleep timer */}
         <section className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 space-y-3" aria-label="Minuterie de sommeil">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-white/85">Minuterie de sommeil</h3>
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-semibold text-white/85">Minuterie de sommeil</h3>
+              {onOpenSleepTimer && (
+                <button
+                  onClick={onOpenSleepTimer}
+                  className="text-[11px] font-mono text-amber-400 hover:text-amber-300 px-2 py-0.5 rounded-lg bg-amber-400/10 border border-amber-400/30"
+                >
+                  Fondu &amp; Réglages
+                </button>
+              )}
+            </div>
             {sleepTimerRemaining != null && (
               <span className="text-sm font-semibold tabular-nums" style={{ color: "var(--accent-2, #22d3ee)" }}>
                 Arrêt dans {fmt(sleepTimerRemaining)}

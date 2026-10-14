@@ -81,3 +81,43 @@ export function fadeOut(
     } catch {}
   };
 }
+
+export function fadeOutMediaElement(
+  mediaEl: HTMLMediaElement,
+  durationSeconds: number,
+  onComplete?: () => void
+): () => void {
+  if (!mediaEl || durationSeconds <= 0) {
+    if (mediaEl) mediaEl.volume = 0;
+    if (onComplete) onComplete();
+    return () => {};
+  }
+
+  const startVolume = mediaEl.volume;
+  const startTime = performance.now();
+  const durationMs = durationSeconds * 1000;
+  let animId: number | null = null;
+  let completed = false;
+
+  const step = (now: number) => {
+    const elapsed = now - startTime;
+    const progress = Math.min(1, elapsed / durationMs);
+    const current = Math.max(0, startVolume * (1 - progress));
+    try {
+      mediaEl.volume = current;
+    } catch {}
+
+    if (progress < 1) {
+      animId = requestAnimationFrame(step);
+    } else if (!completed) {
+      completed = true;
+      if (onComplete) onComplete();
+    }
+  };
+
+  animId = requestAnimationFrame(step);
+
+  return () => {
+    if (animId !== null) cancelAnimationFrame(animId);
+  };
+}

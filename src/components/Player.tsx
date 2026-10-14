@@ -41,6 +41,7 @@ interface Props {
   nowPlaying?: NowPlayingInfo;
   onClose?: () => void;
   onOpenLyrics?: () => void;
+  onOpenSleepTimer?: () => void;
 }
 
 export default function Player({
@@ -53,6 +54,7 @@ export default function Player({
   nowPlaying,
   onClose,
   onOpenLyrics,
+  onOpenSleepTimer,
 }: Props) {
   const [showEQ, setShowEQ] = useState(false);
   const [showOptions, setShowOptions] = useState(false);
@@ -69,7 +71,7 @@ export default function Player({
     analyserRef, filtersRef, mediaElRef, ctxRef, gainRef, togglePlay, play, pause, changeVolume, seekTo,
     bands, updateBand, applyPreset, resetEQ, initAudio,
     playbackRate, setPlaybackRate, seekRelative,
-    sleepTimerRemaining, addSleepMinutes, cancelSleepTimer,
+    sleepTimerRemaining, isSleepFading, addSleepMinutes, cancelSleepTimer,
     isLooping, toggleLoop,
     nightMode, toggleNightMode,
     stereoPan, setStereoPan,
@@ -660,6 +662,39 @@ export default function Player({
               <span>Paroles</span>
               {nowPlaying?.songTitle && (
                 <span className="w-1.5 h-1.5 rounded-full bg-[#d4a843] animate-pulse" />
+              )}
+            </motion.button>
+          )}
+
+          {/* Minuteur de Veille Avancé avec Fondu */}
+          {onOpenSleepTimer && (
+            <motion.button
+              whileTap={{ scale: 0.92 }}
+              whileHover={{ scale: 1.05 }}
+              transition={{ type: "spring", stiffness: 450, damping: 25 }}
+              onClick={onOpenSleepTimer}
+              aria-label="Minuteur de veille avancé"
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all glass glass-hover flex items-center gap-1.5 cursor-pointer ${
+                sleepTimerRemaining != null && sleepTimerRemaining > 0
+                  ? "border border-amber-400/50 bg-amber-400/15 text-amber-300 font-mono"
+                  : "text-white/40 hover:text-white"
+              }`}
+              title="Minuteur de veille avancé avec fondu sonore"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+              </svg>
+              <span>
+                {sleepTimerRemaining != null && sleepTimerRemaining > 0
+                  ? `${Math.floor(sleepTimerRemaining / 60)}:${String(Math.floor(sleepTimerRemaining % 60)).padStart(2, "0")}`
+                  : "Veille"}
+              </span>
+              {sleepTimerRemaining != null && sleepTimerRemaining > 0 && (
+                <span
+                  className={`w-1.5 h-1.5 rounded-full ${
+                    isSleepFading ? "bg-amber-400 animate-ping" : "bg-amber-400 animate-pulse"
+                  }`}
+                />
               )}
             </motion.button>
           )}

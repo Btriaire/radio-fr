@@ -1,10 +1,10 @@
 "use client";
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Station, STATIONS } from "@/lib/stations";
+import { Station, STATIONS, GENRES } from "@/lib/stations";
 import StationLogo from "@/components/StationLogo";
 
-interface CommandPaletteProps {
+export interface CommandPaletteProps {
   isOpen: boolean;
   onClose: () => void;
   onSelectStation: (station: Station) => void;
@@ -16,8 +16,31 @@ interface CommandPaletteProps {
   onOpenIpod?: () => void;
   onOpenDj?: () => void;
   onOpenConfig?: () => void;
+  onOpenSleepTimer?: () => void;
+  onOpenRecorder?: () => void;
+  onSelectGenre?: (genre: string) => void;
+  onSelectTab?: (tab: string) => void;
+  onChangeVolume?: (vol: number) => void;
   nowPlayingSong?: string | null;
 }
+
+interface PaletteAction {
+  id: string;
+  type: "action";
+  category: "Actions Audio" | "Minuteur & Fondu" | "Enregistreur" | "Navigation" | "Égaliseur";
+  title: string;
+  subtitle?: string;
+  badge?: string;
+  shortcut?: string;
+  run: () => void;
+}
+
+interface PaletteStation extends Station {
+  type: "station";
+  category: "Stations Françaises";
+}
+
+type PaletteItem = PaletteAction | PaletteStation;
 
 export default function CommandPalette({
   isOpen,
@@ -31,6 +54,11 @@ export default function CommandPalette({
   onOpenIpod,
   onOpenDj,
   onOpenConfig,
+  onOpenSleepTimer,
+  onOpenRecorder,
+  onSelectGenre,
+  onSelectTab,
+  onChangeVolume,
   nowPlayingSong,
 }: CommandPaletteProps) {
   const [query, setQuery] = useState("");
@@ -38,76 +66,225 @@ export default function CommandPalette({
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
-  // Focus on open
+  // Focus input automatically on open
   useEffect(() => {
     if (isOpen) {
       setQuery("");
       setSelectedIndex(0);
-      setTimeout(() => inputRef.current?.focus(), 50);
+      setTimeout(() => inputRef.current?.focus(), 40);
     }
   }, [isOpen]);
 
-  // Actions list
-  const actions = useMemo(() => [
+  // Pre-indexed actions list
+  const actions: PaletteAction[] = useMemo(() => [
     ...(onTogglePlay
       ? [{
           id: "act-play-pause",
           type: "action" as const,
-          title: isPlaying ? "Mettre la lecture en pause (Espace)" : "Reprendre la lecture (Espace)",
+          category: "Actions Audio" as const,
+          title: isPlaying ? "Mettre la lecture en pause" : "Reprendre la lecture en direct",
+          subtitle: "Contrôle immédiat du flux audio",
+          shortcut: "Espace",
           run: () => { onClose(); onTogglePlay(); },
+        }]
+      : []),
+    ...(onOpenSleepTimer
+      ? [{
+          id: "act-sleep-timer",
+          type: "action" as const,
+          category: "Minuteur & Fondu" as const,
+          title: "Minuteur de veille avancé avec fondu sonore",
+          subtitle: "Programmer l'extinction progressive (15m, 30m, 60m...)",
+          badge: "Fondu",
+          run: () => { onClose(); onOpenSleepTimer(); },
+        }]
+      : []),
+    ...(onOpenRecorder
+      ? [{
+          id: "act-recorder",
+          type: "action" as const,
+          category: "Enregistreur" as const,
+          title: "Magnétophone numérique & Enregistrement programmé",
+          subtitle: "Enregistrement direct DVR ou départ différé programmable",
+          badge: "DVR",
+          run: () => { onClose(); onOpenRecorder(); },
         }]
       : []),
     ...(onOpenLyrics
       ? [{
           id: "act-lyrics",
           type: "action" as const,
+          category: "Actions Audio" as const,
           title: nowPlayingSong ? `Voir les paroles : ${nowPlayingSong}` : "Afficher les paroles du morceau en direct",
+          subtitle: "Synchronisation LRCLIB et base francophone",
+          badge: "Paroles",
           run: () => { onClose(); onOpenLyrics(); },
         }]
       : []),
     ...(onRandomZapping
-      ? [{ id: "act-zap", type: "action" as const, title: "Zapper au hasard (nouvelle station)", run: () => { onClose(); onRandomZapping(); } }]
+      ? [{
+          id: "act-zap",
+          type: "action" as const,
+          category: "Actions Audio" as const,
+          title: "Zapper au hasard (Tuner Zapping)",
+          subtitle: "Découvrir une radio parmi les 91 stations",
+          shortcut: "Z",
+          run: () => { onClose(); onRandomZapping(); },
+        }]
+      : []),
+    ...(onChangeVolume
+      ? [
+          {
+            id: "act-vol-100",
+            type: "action" as const,
+            category: "Actions Audio" as const,
+            title: "Régler le volume à 100%",
+            subtitle: "Puissance sonore maximale",
+            run: () => { onClose(); onChangeVolume(1); },
+          },
+          {
+            id: "act-vol-50",
+            type: "action" as const,
+            category: "Actions Audio" as const,
+            title: "Régler le volume à 50%",
+            subtitle: "Niveau d'écoute modéré",
+            run: () => { onClose(); onChangeVolume(0.5); },
+          },
+        ]
       : []),
     ...(onOpenStudio
-      ? [{ id: "act-studio", type: "action" as const, title: "Basculer vers Studio Hi-Fi Analogique MK-II", run: () => { onClose(); onOpenStudio(); } }]
+      ? [{
+          id: "act-studio",
+          type: "action" as const,
+          category: "Navigation" as const,
+          title: "Studio Hi-Fi Analogique MK-II",
+          subtitle: "Interface matériel vintage avec potentiomètres et VU-mètres",
+          badge: "MK-II",
+          run: () => { onClose(); onOpenStudio(); },
+        }]
       : []),
     ...(onOpenIpod
-      ? [{ id: "act-ipod", type: "action" as const, title: "Ouvrir le Mode iPod Classic", run: () => { onClose(); onOpenIpod(); } }]
+      ? [{
+          id: "act-ipod",
+          type: "action" as const,
+          category: "Navigation" as const,
+          title: "Mode iPod Classic",
+          subtitle: "Molette tactile Click Wheel et écran rétro",
+          badge: "Retro",
+          run: () => { onClose(); onOpenIpod(); },
+        }]
       : []),
     ...(onOpenDj
-      ? [{ id: "act-dj", type: "action" as const, title: "Ouvrir la Console DJ (Scratch & Mix)", run: () => { onClose(); onOpenDj(); } }]
+      ? [{
+          id: "act-dj",
+          type: "action" as const,
+          category: "Navigation" as const,
+          title: "Console DJ (Double Platine & Scratch)",
+          subtitle: "Mixer, filtrer et scratcher les flux radio",
+          badge: "Mix",
+          run: () => { onClose(); onOpenDj(); },
+        }]
       : []),
     ...(onOpenConfig
-      ? [{ id: "act-cfg", type: "action" as const, title: "Ouvrir les Paramètres & Égaliseur", run: () => { onClose(); onOpenConfig(); } }]
+      ? [{
+          id: "act-cfg",
+          type: "action" as const,
+          category: "Navigation" as const,
+          title: "Paramètres, Thèmes & Égaliseur 10 bandes",
+          subtitle: "Configurer le traitement sonore et l'apparence",
+          run: () => { onClose(); onOpenConfig(); },
+        }]
       : []),
-  ], [onTogglePlay, isPlaying, onOpenLyrics, nowPlayingSong, onRandomZapping, onOpenStudio, onOpenIpod, onOpenDj, onOpenConfig, onClose]);
+    ...(onSelectTab
+      ? [
+          {
+            id: "act-tab-radio",
+            type: "action" as const,
+            category: "Navigation" as const,
+            title: "Onglet : Radios FM & DAB+",
+            subtitle: "91 stations françaises en direct",
+            run: () => { onClose(); onSelectTab("radio"); },
+          },
+          {
+            id: "act-tab-podcasts",
+            type: "action" as const,
+            category: "Navigation" as const,
+            title: "Onglet : Podcasts & Émissions",
+            subtitle: "Replay, flux RSS et téléchargements hors-ligne",
+            run: () => { onClose(); onSelectTab("podcasts"); },
+          },
+          {
+            id: "act-tab-songpod",
+            type: "action" as const,
+            category: "Navigation" as const,
+            title: "Onglet : SongPOD (Musique & Morceaux)",
+            subtitle: "Explorer les millions de titres Audius & Jamendo",
+            run: () => { onClose(); onSelectTab("audius"); },
+          },
+          {
+            id: "act-tab-webradio",
+            type: "action" as const,
+            category: "Navigation" as const,
+            title: "Onglet : Web Radios",
+            subtitle: "Stations thématiques et flux mondiaux",
+            run: () => { onClose(); onSelectTab("webradio"); },
+          },
+        ]
+      : []),
+  ], [
+    onTogglePlay, isPlaying, onOpenSleepTimer, onOpenRecorder, onOpenLyrics,
+    nowPlayingSong, onRandomZapping, onChangeVolume, onOpenStudio, onOpenIpod,
+    onOpenDj, onOpenConfig, onSelectTab, onClose
+  ]);
 
-  // Filtered stations and actions
-  const results = useMemo(() => {
+  // Precomputed station tokens for ultra-fast matching
+  const preindexedStations = useMemo(() => {
+    return STATIONS.map((s) => ({
+      ...s,
+      type: "station" as const,
+      category: "Stations Françaises" as const,
+      searchToken: `${s.name} ${s.freq || ""} ${s.genre} ${s.tagline || ""} ${s.id}`.toLowerCase(),
+    }));
+  }, []);
+
+  // Filtered list with 0ms pre-indexed search
+  const results: PaletteItem[] = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) {
+      // Default view: top actions + first 16 stations
       return [
         ...actions,
-        ...STATIONS.slice(0, 15).map((s) => ({ ...s, type: "station" as const })),
+        ...preindexedStations.slice(0, 16),
       ];
     }
 
-    const filteredActions = actions.filter((a) => a.title.toLowerCase().includes(q));
-    const filteredStations = STATIONS.filter(
-      (s) =>
-        s.name.toLowerCase().includes(q) ||
-        (s.tagline && s.tagline.toLowerCase().includes(q)) ||
-        (s.genre && s.genre.toLowerCase().includes(q)) ||
-        (s.freq && s.freq.toLowerCase().includes(q))
-    ).map((s) => ({ ...s, type: "station" as const }));
+    const filteredActions = actions.filter(
+      (a) =>
+        a.title.toLowerCase().includes(q) ||
+        (a.subtitle && a.subtitle.toLowerCase().includes(q)) ||
+        a.category.toLowerCase().includes(q)
+    );
+
+    const filteredStations = preindexedStations.filter((s) =>
+      s.searchToken.includes(q)
+    );
 
     return [...filteredActions, ...filteredStations];
-  }, [query, actions]);
+  }, [query, actions, preindexedStations]);
 
-  // Reset index on results change
+  // Reset selected index on query change
   useEffect(() => {
     setSelectedIndex(0);
   }, [results]);
+
+  // Scroll active item into view
+  useEffect(() => {
+    if (!listRef.current) return;
+    const activeEl = listRef.current.querySelector<HTMLElement>(`[data-index="${selectedIndex}"]`);
+    if (activeEl) {
+      activeEl.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+  }, [selectedIndex]);
 
   // Keyboard navigation
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -126,27 +303,18 @@ export default function CommandPalette({
         if (current.type === "action") {
           current.run();
         } else {
-          onSelectStation(current as Station);
           onClose();
+          onSelectStation(current);
         }
       }
     }
   };
 
-  // Scroll selected into view
-  useEffect(() => {
-    if (!listRef.current) return;
-    const el = listRef.current.children[selectedIndex] as HTMLElement;
-    if (el) {
-      el.scrollIntoView({ block: "nearest" });
-    }
-  }, [selectedIndex]);
-
   if (!isOpen) return null;
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-start justify-center pt-[12vh] px-3 sm:px-4">
+      <div className="fixed inset-0 z-50 flex items-start justify-center pt-14 sm:pt-20 p-4">
         {/* Backdrop */}
         <motion.div
           initial={{ opacity: 0 }}
@@ -156,17 +324,27 @@ export default function CommandPalette({
           className="absolute inset-0 bg-black/80 backdrop-blur-md"
         />
 
-        {/* Modal Chassis */}
+        {/* Palette Modal */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: -10 }}
+          initial={{ opacity: 0, scale: 0.96, y: -12 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: -10 }}
+          exit={{ opacity: 0, scale: 0.96, y: -12 }}
           transition={{ type: "spring", stiffness: 450, damping: 30 }}
-          className="relative w-full max-w-xl bg-[#0e0e12] border border-neutral-800 rounded-2xl shadow-2xl overflow-hidden z-10 flex flex-col max-h-[70vh]"
+          className="relative w-full max-w-2xl rounded-2xl sm:rounded-3xl glass-dark border border-white/10 shadow-2xl overflow-hidden z-10 flex flex-col text-white max-h-[82vh]"
         >
-          {/* Search Input Bar */}
-          <div className="p-3.5 border-b border-neutral-800 flex items-center gap-3 bg-[#131318]">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-neutral-500 flex-shrink-0">
+          {/* Search Header Bar */}
+          <div className="flex items-center px-4 py-3.5 border-b border-white/10 gap-3 bg-white/[0.02]">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="text-amber-400 flex-shrink-0"
+            >
               <circle cx="11" cy="11" r="8" />
               <line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
@@ -176,104 +354,153 @@ export default function CommandPalette({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Rechercher une radio, fréquence FM ou action..."
-              className="flex-1 bg-transparent text-sm sm:text-base text-white placeholder-neutral-500 focus:outline-none font-mono"
+              placeholder="Rechercher une radio, fréquence, minuteur, paroles, enregistrement..."
+              className="flex-1 bg-transparent border-none outline-none text-white text-sm sm:text-base placeholder-white/40 font-medium"
             />
             {query ? (
               <button
                 onClick={() => setQuery("")}
-                className="text-xs text-neutral-500 hover:text-white px-1.5 py-0.5 rounded bg-white/5"
+                className="w-6 h-6 rounded-full glass flex items-center justify-center text-white/50 hover:text-white text-xs"
+                title="Effacer"
               >
-                Effacer
+                ✕
               </button>
             ) : (
-              <kbd className="hidden sm:inline-block px-1.5 py-0.5 text-[10px] font-mono text-neutral-500 bg-white/5 rounded border border-neutral-800">
-                ESC
-              </kbd>
+              <div className="hidden sm:flex items-center gap-1 text-[11px] font-mono text-white/40">
+                <kbd className="px-1.5 py-0.5 rounded bg-white/10 border border-white/10">⌘K</kbd>
+                <kbd className="px-1.5 py-0.5 rounded bg-white/10 border border-white/10">ESC</kbd>
+              </div>
             )}
           </div>
 
           {/* Results List */}
-          <div ref={listRef} className="flex-1 overflow-y-auto p-2 space-y-1 scrollbar-thin">
+          <div ref={listRef} className="flex-1 overflow-y-auto p-2 space-y-1 overscroll-contain">
             {results.length === 0 ? (
-              <div className="py-12 text-center text-neutral-500 text-xs font-mono">
-                Aucun résultat pour « {query} »
+              <div className="py-12 text-center text-white/40 space-y-2">
+                <div className="text-sm font-medium">Aucun résultat trouvé pour "{query}"</div>
+                <div className="text-xs">Essayez un nom de radio (ex: "FIP", "Nostalgie"), une fréquence ("105.5") ou "minuteur".</div>
               </div>
             ) : (
               results.map((item, idx) => {
                 const isSelected = idx === selectedIndex;
                 if (item.type === "action") {
                   return (
-                    <button
+                    <div
                       key={item.id}
+                      data-index={idx}
                       onClick={item.run}
                       onMouseEnter={() => setSelectedIndex(idx)}
-                      className={`w-full px-3 py-2.5 rounded-xl flex items-center justify-between text-left transition-all text-xs font-mono ${
+                      className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl cursor-pointer transition-all ${
                         isSelected
-                          ? "bg-[#d4a843]/15 text-white border border-[#d4a843]/40"
-                          : "text-neutral-300 hover:bg-white/5 border border-transparent"
+                          ? "bg-amber-400/20 text-white border border-amber-400/40 shadow-sm"
+                          : "text-white/80 hover:bg-white/[0.04] border border-transparent"
                       }`}
                     >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#d4a843]" />
-                        <span className="truncate">{item.title}</span>
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div
+                          className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                            isSelected ? "bg-amber-400 text-black" : "bg-white/10 text-white/70"
+                          }`}
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                          </svg>
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-xs sm:text-sm font-semibold truncate flex items-center gap-2">
+                            <span>{item.title}</span>
+                            {item.badge && (
+                              <span className="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded bg-amber-400/30 text-amber-300 border border-amber-400/40 uppercase">
+                                {item.badge}
+                              </span>
+                            )}
+                          </div>
+                          {item.subtitle && (
+                            <div className="text-[11px] text-white/50 truncate font-normal">
+                              {item.subtitle}
+                            </div>
+                          )}
+                        </div>
                       </div>
-                      <span className="text-[10px] text-neutral-500 font-mono flex-shrink-0">Action ↵</span>
-                    </button>
+
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {item.shortcut && (
+                          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/10 text-white/60">
+                            {item.shortcut}
+                          </span>
+                        )}
+                        <span className="text-[10px] font-mono text-white/40 opacity-0 sm:opacity-100">
+                          ↵ Entrée
+                        </span>
+                      </div>
+                    </div>
                   );
                 }
 
-                const st = item as Station;
+                // Station Item
                 return (
-                  <button
-                    key={st.id}
+                  <div
+                    key={item.id}
+                    data-index={idx}
                     onClick={() => {
-                      onSelectStation(st);
                       onClose();
+                      onSelectStation(item);
                     }}
                     onMouseEnter={() => setSelectedIndex(idx)}
-                    className={`w-full px-3 py-2 rounded-xl flex items-center justify-between text-left transition-all ${
+                    className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl cursor-pointer transition-all ${
                       isSelected
-                        ? "bg-white/10 text-white border border-white/20"
-                        : "text-neutral-300 hover:bg-white/5 border border-transparent"
+                        ? "bg-amber-400/20 text-white border border-amber-400/40 shadow-sm"
+                        : "text-white/80 hover:bg-white/[0.04] border border-transparent"
                     }`}
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <StationLogo logo={st.logo} name={st.name} color={st.color} size="sm" />
+                      <div className="flex-shrink-0">
+                        <StationLogo
+                          logo={item.logo}
+                          name={item.name}
+                          color={item.color}
+                          size="sm"
+                        />
+                      </div>
                       <div className="min-w-0">
-                        <div className="text-xs sm:text-sm font-semibold text-white truncate flex items-center gap-2">
-                          <span>{st.name}</span>
-                          {st.freq && (
-                            <span className="text-[10px] font-mono text-neutral-500 tabular-nums">
-                              {st.freq}
+                        <div className="text-xs sm:text-sm font-semibold truncate flex items-center gap-2">
+                          <span>{item.name}</span>
+                          {item.freq && (
+                            <span className="text-[10px] font-mono text-amber-400/90 font-medium">
+                              {item.freq}
                             </span>
                           )}
                         </div>
-                        <p className="text-[11px] text-neutral-500 truncate">{st.tagline}</p>
+                        <div className="text-[11px] text-white/50 truncate font-normal">
+                          {item.genre} {item.tagline ? `— ${item.tagline}` : ""}
+                        </div>
                       </div>
                     </div>
+
                     <div className="flex items-center gap-2 flex-shrink-0">
-                      <span className="text-[10px] px-2 py-0.5 rounded-md bg-white/5 text-neutral-400 font-mono">
-                        {st.genre}
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-white/5 text-white/60 border border-white/10 hidden sm:inline">
+                        {item.genre}
                       </span>
-                      {isSelected && (
-                        <span className="text-[10px] text-[#d4a843] font-mono hidden sm:inline-block">Écouter ↵</span>
-                      )}
+                      <span className="text-[10px] font-mono text-white/40 opacity-0 sm:opacity-100">
+                        ↵ Écouter
+                      </span>
                     </div>
-                  </button>
+                  </div>
                 );
               })
             )}
           </div>
 
-          {/* Footer Guide */}
-          <div className="p-2.5 border-t border-neutral-800/80 bg-[#101014] flex items-center justify-between text-[10px] font-mono text-neutral-500 px-3">
+          {/* Footer Bar */}
+          <div className="px-4 py-2.5 bg-black/40 border-t border-white/10 flex items-center justify-between text-[11px] text-white/40 font-mono">
             <div className="flex items-center gap-3">
               <span>↑↓ Naviguer</span>
-              <span>↵ Valider</span>
-              <span>ESC Fermer</span>
+              <span>↵ Sélectionner</span>
+              <span>Échap Quitter</span>
             </div>
-            <span>91 Stations directes</span>
+            <div className="text-amber-400/80">
+              {results.length} résultat{results.length > 1 ? "s" : ""}
+            </div>
           </div>
         </motion.div>
       </div>

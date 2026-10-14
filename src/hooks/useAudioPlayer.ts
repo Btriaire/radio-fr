@@ -2,7 +2,7 @@
 import { useRef, useState, useCallback, useEffect } from "react";
 import type { DecodeController } from "@/lib/streamDecoder";
 import { isEqCompatible } from "@/lib/stations";
-import { fadeOut } from "@/lib/audioFade";
+import { fadeOut, fadeOutMediaElement } from "@/lib/audioFade";
 import { getNextStreamFallback, StreamCandidateStation } from "@/lib/streamFailover";
 
 // Lightweight iOS check inlined here so the heavy MP3-decoder module (with its
@@ -211,12 +211,15 @@ export function useAudioPlayer() {
   const playbackRateRef = useRef(1);
 
   // ── Sleep timer (countdown, distinct from the "Mode Sommeil" clock-time
-  // schedule above) — seconds left, or null when no timer is armed. Exposed
-  // as state (not a ref) purely for the live "Arrêt dans MM:SS" display.
+  // schedule above) — seconds left, or null when no timer is armed.
   const [sleepTimerRemaining, setSleepTimerRemaining] = useState<number | null>(null);
+  const [sleepTimerTotalSeconds, setSleepTimerTotalSeconds] = useState<number | null>(null);
+  const [sleepFadeSeconds, setSleepFadeSeconds] = useState<number>(30);
+  const [isSleepFading, setIsSleepFading] = useState<boolean>(false);
   const sleepTimerEndAtRef = useRef<number | null>(null);
   const sleepTimeoutRef    = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sleepTickRef       = useRef<ReturnType<typeof setInterval> | null>(null);
+  const cancelFadeRef      = useRef<(() => void) | null>(null);
 
   // True when the current source is an actual video podcast (we then use a
   // <video> element). For audio-only content we use an <audio> element, because
@@ -1030,37 +1033,81 @@ export function useAudioPlayer() {
   const cancelSleepTimer = useCallback(() => {
     if (sleepTimeoutRef.current) { clearTimeout(sleepTimeoutRef.current); sleepTimeoutRef.current = null; }
     if (sleepTickRef.current) { clearInterval(sleepTickRef.current); sleepTickRef.current = null; }
+    if (cancelFadeRef.current) { cancelFadeRef.current(); cancelFadeRef.current = null; }
     sleepTimerEndAtRef.current = null;
     setSleepTimerRemaining(null);
-  }, []);
+    setSleepTimerTotalSeconds(null);
+    setIsSleepFading(false);
+    // Restore volume in case it was fading
+    const g = gainRef.current;
+    const ctx = ctxRef.current;
+    if (g && ctx && ctx.state === "running") {
+      try {
+        g.gain.cancelScheduledValues(ctx.currentTime);
+        g.gain.setValueAtTime(volume, ctx.currentTime);
+      } catch {}
+    }
+    if (audioRef.current) {
+      try { audioRef.current.volume = volume; } catch {}
+    }
+  }, [volume]);
 
-  const armSleepTimer = useCallback((endAt: number) => {
+  const armSleepTimer = useCallback((endAt: number, customFadeSec?: number) => {
     if (sleepTimeoutRef.current) clearTimeout(sleepTimeoutRef.current);
     if (sleepTickRef.current) clearInterval(sleepTickRef.current);
+    if (cancelFadeRef.current) { cancelFadeRef.current(); cancelFadeRef.current = null; }
+
     sleepTimerEndAtRef.current = endAt;
-    const tick = () => setSleepTimerRemaining(Math.max(0, Math.round((endAt - Date.now()) / 1000)));
+    const totalSec = Math.max(1, Math.round((endAt - Date.now()) / 1000));
+    setSleepTimerTotalSeconds(totalSec);
+    setIsSleepFading(false);
+
+    const fadeSec = customFadeSec !== undefined ? customFadeSec : sleepFadeSeconds;
+    // Don't fade longer than the remaining time
+    const effectiveFadeSec = Math.min(fadeSec, Math.max(0, totalSec - 1));
+
+    const tick = () => {
+      const left = Math.max(0, Math.round((endAt - Date.now()) / 1000));
+      setSleepTimerRemaining(left);
+      if (left <= effectiveFadeSec && effectiveFadeSec > 0) {
+        setIsSleepFading(true);
+      }
+    };
     tick();
     sleepTickRef.current = setInterval(tick, 1000);
 
     const msUntilEnd = Math.max(0, endAt - Date.now());
-    const fadeDurationSec = Math.min(5, Math.max(1, msUntilEnd / 1000));
-    const msBeforeFade = Math.max(0, msUntilEnd - fadeDurationSec * 1000);
+    const msBeforeFade = Math.max(0, msUntilEnd - effectiveFadeSec * 1000);
 
     sleepTimeoutRef.current = setTimeout(() => {
+      setIsSleepFading(true);
+      const onDone = () => {
+        pause();
+        cancelSleepTimer();
+      };
+
+      if (effectiveFadeSec <= 0) {
+        onDone();
+        return;
+      }
+
       const g = gainRef.current;
       const ctx = ctxRef.current;
       if (g && ctx && ctx.state === "running") {
-        fadeOut(g, fadeDurationSec, ctx, () => {
-          pause();
-          cancelSleepTimer();
-          try { g.gain.setValueAtTime(volume, ctx.currentTime); } catch {}
-        });
+        cancelFadeRef.current = fadeOut(g, effectiveFadeSec, ctx, onDone);
+      } else if (audioRef.current) {
+        cancelFadeRef.current = fadeOutMediaElement(audioRef.current, effectiveFadeSec, onDone);
       } else {
-        pause();
-        cancelSleepTimer();
+        onDone();
       }
     }, msBeforeFade);
-  }, [pause, cancelSleepTimer, volume]);
+  }, [pause, cancelSleepTimer, sleepFadeSeconds]);
+
+  const setSleepTimer = useCallback((minutes: number, fadeSec: number = 30) => {
+    setSleepFadeSeconds(fadeSec);
+    const endAt = Date.now() + minutes * 60000;
+    armSleepTimer(endAt, fadeSec);
+  }, [armSleepTimer]);
 
   const addSleepMinutes = useCallback((minutes: number) => {
     const now = Date.now();
@@ -1472,7 +1519,14 @@ export function useAudioPlayer() {
     changeVolume, updateBand, applyPreset, resetEQ, stop,
     setOnEnded, retry,
     playbackRate, setPlaybackRate, seekRelative,
-    sleepTimerRemaining, addSleepMinutes, cancelSleepTimer,
+    sleepTimerRemaining,
+    sleepTimerTotalSeconds,
+    sleepFadeSeconds,
+    setSleepFadeSeconds,
+    isSleepFading,
+    setSleepTimer,
+    addSleepMinutes,
+    cancelSleepTimer,
     isLooping, toggleLoop,
     nightMode, toggleNightMode,
     stereoPan, setStereoPan,

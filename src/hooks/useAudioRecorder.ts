@@ -19,6 +19,16 @@ export interface RecordedTrack {
   blob: Blob;
 }
 
+export interface ScheduledRecording {
+  id: string;
+  stationName: string;
+  streamUrl?: string | null;
+  trackTitle?: string;
+  startAt: number;
+  durationMinutes: number;
+  status: "armed" | "recording" | "completed" | "cancelled";
+}
+
 interface UseAudioRecorderProps {
   mediaElRef: React.MutableRefObject<HTMLMediaElement | null>;
   ctxRef?: React.MutableRefObject<AudioContext | null>;
@@ -43,6 +53,14 @@ export function useAudioRecorder({
   const [recordings, setRecordings] = useState<RecordedTrack[]>([]);
   const [error, setError] = useState<string | null>(null);
 
+  // Scheduled recording state
+  const [scheduledTask, setScheduledTask] = useState<ScheduledRecording | null>(null);
+  const [scheduledCountdownSeconds, setScheduledCountdownSeconds] = useState<number | null>(null);
+  const scheduledTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scheduledTickRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const scheduledStopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const overrideMetaRef = useRef<{ stationName?: string; songTitle?: string } | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -91,6 +109,9 @@ export function useAudioRecorder({
   useEffect(() => {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
+      if (scheduledTimerRef.current) clearTimeout(scheduledTimerRef.current);
+      if (scheduledTickRef.current) clearInterval(scheduledTickRef.current);
+      if (scheduledStopTimerRef.current) clearTimeout(scheduledStopTimerRef.current);
       if (abortCtrlRef.current) {
         try { abortCtrlRef.current.abort(); } catch {}
       }
@@ -105,10 +126,14 @@ export function useAudioRecorder({
     const blobUrl = URL.createObjectURL(blob);
     activeUrlsRef.current.push(blobUrl);
 
+    const stName = overrideMetaRef.current?.stationName || currentStationName;
+    const trTitle = overrideMetaRef.current?.songTitle || currentSongTitle;
+    overrideMetaRef.current = null;
+
     const newRec: RecordedTrack = {
       id: `rec_${Date.now()}`,
-      stationName: currentStationName,
-      trackTitle: currentSongTitle || undefined,
+      stationName: stName,
+      trackTitle: trTitle || undefined,
       timestamp: Date.now(),
       durationSec: duration,
       blobUrl,
@@ -321,6 +346,79 @@ export function useAudioRecorder({
     });
   }, []);
 
+  const cancelScheduledRecording = useCallback(() => {
+    if (scheduledTimerRef.current) {
+      clearTimeout(scheduledTimerRef.current);
+      scheduledTimerRef.current = null;
+    }
+    if (scheduledTickRef.current) {
+      clearInterval(scheduledTickRef.current);
+      scheduledTickRef.current = null;
+    }
+    if (scheduledStopTimerRef.current) {
+      clearTimeout(scheduledStopTimerRef.current);
+      scheduledStopTimerRef.current = null;
+    }
+    setScheduledTask(null);
+    setScheduledCountdownSeconds(null);
+  }, []);
+
+  const scheduleRecording = useCallback((opts: {
+    stationName: string;
+    streamUrl?: string | null;
+    trackTitle?: string;
+    startAt: number;
+    durationMinutes: number;
+  }) => {
+    cancelScheduledRecording();
+
+    const task: ScheduledRecording = {
+      id: `sched_${Date.now()}`,
+      stationName: opts.stationName,
+      streamUrl: opts.streamUrl,
+      trackTitle: opts.trackTitle,
+      startAt: opts.startAt,
+      durationMinutes: opts.durationMinutes,
+      status: "armed",
+    };
+
+    setScheduledTask(task);
+
+    const tick = () => {
+      const remainingSec = Math.max(0, Math.round((opts.startAt - Date.now()) / 1000));
+      setScheduledCountdownSeconds(remainingSec);
+    };
+    tick();
+    scheduledTickRef.current = setInterval(tick, 1000);
+
+    const msUntilStart = Math.max(0, opts.startAt - Date.now());
+    scheduledTimerRef.current = setTimeout(() => {
+      if (scheduledTickRef.current) {
+        clearInterval(scheduledTickRef.current);
+        scheduledTickRef.current = null;
+      }
+      setScheduledTask((prev) => (prev ? { ...prev, status: "recording" } : null));
+
+      overrideMetaRef.current = {
+        stationName: opts.stationName,
+        songTitle: opts.trackTitle || "Programme différé",
+      };
+
+      if (opts.streamUrl) {
+        startStreamFetchRecording(opts.streamUrl);
+      } else {
+        startRecording();
+      }
+
+      // Auto-stop after specified duration
+      const durationMs = Math.max(1, opts.durationMinutes) * 60 * 1000;
+      scheduledStopTimerRef.current = setTimeout(() => {
+        stopRecording();
+        cancelScheduledRecording();
+      }, durationMs);
+    }, msUntilStart);
+  }, [cancelScheduledRecording, startStreamFetchRecording, startRecording, stopRecording]);
+
   return {
     isRecording,
     recordingSeconds,
@@ -330,5 +428,9 @@ export function useAudioRecorder({
     stopRecording,
     toggleRecording,
     deleteRecording,
+    scheduledTask,
+    scheduledCountdownSeconds,
+    scheduleRecording,
+    cancelScheduledRecording,
   };
 }

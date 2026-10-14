@@ -35,6 +35,7 @@ import { saveTrackHistory } from "@/lib/trackHistory";
 import TrackHistoryDrawer from "@/components/TrackHistoryDrawer";
 import CommandPalette from "@/components/CommandPalette";
 import LyricsModal from "@/components/LyricsModal";
+import SleepTimerModal from "@/components/SleepTimerModal";
 
 type Tab = "radio" | "webradio" | "search" | "favoris" | "podcasts" | "audius";
 
@@ -98,6 +99,7 @@ export default function Home() {
   const [historyOpen, setHistoryOpen]           = useState(false);
   const [commandOpen, setCommandOpen]           = useState(false);
   const [lyricsOpen, setLyricsOpen]             = useState(false);
+  const [sleepModalOpen, setSleepModalOpen]     = useState(false);
   const [hubOpen, setHubOpen]                   = useState(true);
   const [mobilePlayerExpanded, setMobilePlayerExpanded] = useState(false);
   const [menuOpen, setMenuOpen]                 = useState(false);
@@ -866,6 +868,7 @@ export default function Home() {
               onToggleFavorite={selectedStation ? () => toggleFavorite(selectedStation) : undefined}
               nowPlaying={nowPlaying}
               onOpenLyrics={() => setLyricsOpen(true)}
+              onOpenSleepTimer={() => setSleepModalOpen(true)}
             />
           )}
           {(currentStation || currentPodcast) && (
@@ -1301,6 +1304,7 @@ export default function Home() {
             onPrev={() => playAdjacentStation(-1)}
             onClose={() => setMobilePlayerExpanded(false)}
             onOpenLyrics={() => setLyricsOpen(true)}
+            onOpenSleepTimer={() => setSleepModalOpen(true)}
             advanced={
               <div className="space-y-4">
                 <Player
@@ -1313,6 +1317,7 @@ export default function Home() {
                   nowPlaying={nowPlaying}
                   onClose={() => setMobilePlayerExpanded(false)}
                   onOpenLyrics={() => setLyricsOpen(true)}
+                  onOpenSleepTimer={() => setSleepModalOpen(true)}
                 />
                 <ClipVisualizer
                   analyserRef={playerApi.analyserRef}
@@ -1378,9 +1383,12 @@ export default function Home() {
         isPlaying={playerApi.isPlaying}
         onRandomZapping={handleRandomZapping}
         onOpenLyrics={() => setLyricsOpen(true)}
+        onOpenSleepTimer={() => setSleepModalOpen(true)}
         onOpenIpod={() => setIpodOpen(true)}
         onOpenDj={() => { playerApi.pause(); setDjOpen(true); }}
         onOpenConfig={() => setConfigOpen(true)}
+        onSelectTab={(t) => setTab(t as Tab)}
+        onChangeVolume={(v) => playerApi.changeVolume(v)}
         nowPlayingSong={nowPlaying.songTitle}
       />
 
@@ -1391,6 +1399,21 @@ export default function Home() {
         artist={nowPlaying.songArtist || selectedStation?.name}
         title={nowPlaying.songTitle || (playerApi.isPlaying ? selectedStation?.tagline : undefined)}
         stationName={selectedStation?.name}
+      />
+
+      {/* Minuteur de Veille Avancé avec Fondu */}
+      <SleepTimerModal
+        isOpen={sleepModalOpen}
+        onClose={() => setSleepModalOpen(false)}
+        sleepTimerRemaining={playerApi.sleepTimerRemaining}
+        sleepTimerTotalSeconds={playerApi.sleepTimerTotalSeconds}
+        sleepFadeSeconds={playerApi.sleepFadeSeconds}
+        setSleepFadeSeconds={playerApi.setSleepFadeSeconds}
+        isSleepFading={playerApi.isSleepFading}
+        setSleepTimer={playerApi.setSleepTimer}
+        addSleepMinutes={playerApi.addSleepMinutes}
+        cancelSleepTimer={playerApi.cancelSleepTimer}
+        isPlaying={playerApi.isPlaying}
       />
     </div>
   );
