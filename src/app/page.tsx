@@ -36,6 +36,8 @@ import TrackHistoryDrawer from "@/components/TrackHistoryDrawer";
 import CommandPalette from "@/components/CommandPalette";
 import LyricsModal from "@/components/LyricsModal";
 import SleepTimerModal from "@/components/SleepTimerModal";
+import { useAlarmClock } from "@/hooks/useAlarmClock";
+import { AlarmClockModal } from "@/components/AlarmClockModal";
 
 type Tab = "radio" | "webradio" | "search" | "favoris" | "podcasts" | "audius";
 
@@ -100,6 +102,7 @@ export default function Home() {
   const [commandOpen, setCommandOpen]           = useState(false);
   const [lyricsOpen, setLyricsOpen]             = useState(false);
   const [sleepModalOpen, setSleepModalOpen]     = useState(false);
+  const [alarmModalOpen, setAlarmModalOpen]     = useState(false);
   const [hubOpen, setHubOpen]                   = useState(true);
   const [mobilePlayerExpanded, setMobilePlayerExpanded] = useState(false);
   const [menuOpen, setMenuOpen]                 = useState(false);
@@ -269,6 +272,20 @@ export default function Home() {
       playerApi.initAudio(preferredStreamUrl(station), { station });
     }
   }, [selectedStation?.id, playerApi]);
+
+  const handleAlarmPlayStation = useCallback((stationId: string) => {
+    const st = STATIONS.find((s) => s.id === stationId);
+    if (st) {
+      handlePlay(st);
+    }
+  }, [handlePlay]);
+
+  const alarmState = useAlarmClock({
+    onPlayStation: handleAlarmPlayStation,
+    onSetVolume: (vol) => playerApi.changeVolume(vol),
+    currentStationId: selectedStation?.id,
+    isPlaying: playerApi.isPlaying,
+  });
 
   const handleRandomZapping = useCallback(() => {
     const pool = (filteredStations.length > 0 ? filteredStations : STATIONS.map(withLogo))
@@ -728,6 +745,8 @@ export default function Home() {
                     style={{ border: "1px solid var(--glass-border)" }} role="menu">
                     {[
                       { label: "Palette de commandes (⌘K)", run: () => setCommandOpen(true) },
+                      { label: "Réveil Hi-Fi & Chevet", run: () => setAlarmModalOpen(true) },
+                      { label: "Minuteur de veille", run: () => setSleepModalOpen(true) },
                       { label: "Studio Hi-Fi", href: "/studio", badge: "MK-II" },
                       { label: "Accueil", run: () => setHubOpen(true) },
                       { label: "Mode iPod", run: () => setIpodOpen(true) },
@@ -1305,6 +1324,7 @@ export default function Home() {
             onClose={() => setMobilePlayerExpanded(false)}
             onOpenLyrics={() => setLyricsOpen(true)}
             onOpenSleepTimer={() => setSleepModalOpen(true)}
+            onOpenAlarm={() => setAlarmModalOpen(true)}
             advanced={
               <div className="space-y-4">
                 <Player
@@ -1318,6 +1338,7 @@ export default function Home() {
                   onClose={() => setMobilePlayerExpanded(false)}
                   onOpenLyrics={() => setLyricsOpen(true)}
                   onOpenSleepTimer={() => setSleepModalOpen(true)}
+                  onOpenAlarm={() => setAlarmModalOpen(true)}
                 />
                 <ClipVisualizer
                   analyserRef={playerApi.analyserRef}
@@ -1384,6 +1405,8 @@ export default function Home() {
         onRandomZapping={handleRandomZapping}
         onOpenLyrics={() => setLyricsOpen(true)}
         onOpenSleepTimer={() => setSleepModalOpen(true)}
+        onOpenAlarm={() => setAlarmModalOpen(true)}
+        onOpenNightstand={() => alarmState.setNightstandOpen(true)}
         onOpenIpod={() => setIpodOpen(true)}
         onOpenDj={() => { playerApi.pause(); setDjOpen(true); }}
         onOpenConfig={() => setConfigOpen(true)}
@@ -1414,6 +1437,15 @@ export default function Home() {
         addSleepMinutes={playerApi.addSleepMinutes}
         cancelSleepTimer={playerApi.cancelSleepTimer}
         isPlaying={playerApi.isPlaying}
+      />
+
+      {/* Réveil Hi-Fi & Sunrise Audio / Mode Chevet */}
+      <AlarmClockModal
+        isOpen={alarmModalOpen}
+        onClose={() => setAlarmModalOpen(false)}
+        alarmState={alarmState}
+        stations={STATIONS}
+        currentStation={currentStation}
       />
     </div>
   );

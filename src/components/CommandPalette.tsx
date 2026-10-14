@@ -18,6 +18,8 @@ export interface CommandPaletteProps {
   onOpenConfig?: () => void;
   onOpenSleepTimer?: () => void;
   onOpenRecorder?: () => void;
+  onOpenAlarm?: () => void;
+  onOpenNightstand?: () => void;
   onSelectGenre?: (genre: string) => void;
   onSelectTab?: (tab: string) => void;
   onChangeVolume?: (vol: number) => void;
@@ -56,6 +58,8 @@ export default function CommandPalette({
   onOpenConfig,
   onOpenSleepTimer,
   onOpenRecorder,
+  onOpenAlarm,
+  onOpenNightstand,
   onSelectGenre,
   onSelectTab,
   onChangeVolume,
@@ -86,6 +90,28 @@ export default function CommandPalette({
           subtitle: "Contrôle immédiat du flux audio",
           shortcut: "Espace",
           run: () => { onClose(); onTogglePlay(); },
+        }]
+      : []),
+    ...(onOpenAlarm
+      ? [{
+          id: "act-alarm-clock",
+          type: "action" as const,
+          category: "Minuteur & Fondu" as const,
+          title: "Réveil Hi-Fi & Sunrise Audio",
+          subtitle: "Programmer des réveils avec montée progressive du volume et secours offline",
+          badge: "Réveil",
+          run: () => { onClose(); onOpenAlarm(); },
+        }]
+      : []),
+    ...(onOpenNightstand
+      ? [{
+          id: "act-nightstand",
+          type: "action" as const,
+          category: "Minuteur & Fondu" as const,
+          title: "Mode Horloge de Chevet (Nightstand)",
+          subtitle: "Affichage nocturne géant avec Wake Lock et luminosité OLED réglable",
+          badge: "Chevet",
+          run: () => { onClose(); onOpenNightstand(); },
         }]
       : []),
     ...(onOpenSleepTimer

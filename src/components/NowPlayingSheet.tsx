@@ -29,6 +29,7 @@ interface Props {
   onClose: () => void;
   onOpenLyrics?: () => void;
   onOpenSleepTimer?: () => void;
+  onOpenAlarm?: () => void;
   /** The full desktop Player (EQ, quality, presets…) — tucked behind a disclosure. */
   advanced: ReactNode;
 }
@@ -51,7 +52,7 @@ const Icon = {
 };
 
 export default function NowPlayingSheet({
-  station, podcast, playerApi, nowPlaying, isFavorite, onToggleFavorite, onNext, onPrev, onClose, onOpenLyrics, onOpenSleepTimer, advanced,
+  station, podcast, playerApi, nowPlaying, isFavorite, onToggleFavorite, onNext, onPrev, onClose, onOpenLyrics, onOpenSleepTimer, onOpenAlarm, advanced,
 }: Props) {
   const { theme } = useTheme();
   const isNothing = theme === "nothing" || theme === "nothing-dark";
@@ -278,6 +279,22 @@ export default function NowPlayingSheet({
               {sleepTimerRemaining != null && sleepTimerRemaining > 0 && (
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
               )}
+            </button>
+          )}
+
+          {/* Réveil Hi-Fi & Sunrise Audio */}
+          {onOpenAlarm && (
+            <button
+              onClick={onOpenAlarm}
+              aria-label="Réveil Hi-Fi & Sunrise Audio"
+              title="Programmer un réveil intelligent ou mode chevet"
+              className="px-3.5 py-2 rounded-xl text-xs font-mono font-semibold transition-all glass glass-hover flex items-center gap-1.5 cursor-pointer active:scale-95 text-white/80"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="13" r="8" />
+                <path d="M12 9v4l2.5 2M5 3L2 6M19 3l3 3" />
+              </svg>
+              <span>Réveil</span>
             </button>
           )}
         </div>

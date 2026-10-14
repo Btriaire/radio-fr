@@ -42,6 +42,7 @@ interface Props {
   onClose?: () => void;
   onOpenLyrics?: () => void;
   onOpenSleepTimer?: () => void;
+  onOpenAlarm?: () => void;
 }
 
 export default function Player({
@@ -55,6 +56,7 @@ export default function Player({
   onClose,
   onOpenLyrics,
   onOpenSleepTimer,
+  onOpenAlarm,
 }: Props) {
   const [showEQ, setShowEQ] = useState(false);
   const [showOptions, setShowOptions] = useState(false);
@@ -696,6 +698,25 @@ export default function Player({
                   }`}
                 />
               )}
+            </motion.button>
+          )}
+
+          {/* Réveil Hi-Fi & Sunrise Audio */}
+          {onOpenAlarm && (
+            <motion.button
+              whileTap={{ scale: 0.92 }}
+              whileHover={{ scale: 1.05 }}
+              transition={{ type: "spring", stiffness: 450, damping: 25 }}
+              onClick={onOpenAlarm}
+              aria-label="Réveil Hi-Fi & Sunrise Audio"
+              className="px-3 py-1.5 rounded-xl text-xs font-semibold transition-all glass glass-hover flex items-center gap-1.5 cursor-pointer text-white/45 hover:text-white"
+              title="Programmer un réveil intelligent ou mode chevet"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="13" r="8" />
+                <path d="M12 9v4l2.5 2M5 3L2 6M19 3l3 3" />
+              </svg>
+              <span>Réveil</span>
             </motion.button>
           )}
         </div>
