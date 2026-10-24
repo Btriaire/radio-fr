@@ -2,6 +2,7 @@
 import { useRef, useState, useCallback, useEffect } from "react";
 import type { DecodeController } from "@/lib/streamDecoder";
 import { isEqCompatible } from "@/lib/stations";
+import { journal } from "@/lib/playbackJournal";
 import { fadeOut, fadeOutMediaElement } from "@/lib/audioFade";
 import { getNextStreamFallback, StreamCandidateStation } from "@/lib/streamFailover";
 
@@ -458,6 +459,7 @@ export function useAudioPlayer() {
   // The single place that arms a retry. No-ops if the user didn't want sound, if
   // we're offline (those don't burn attempts), or if a retry is already pending.
   const scheduleReconnect = useCallback((_reason: string) => {
+    journal("reconnect", _reason);
     if (!wantPlayingRef.current) return;
     if (reconnectTimerRef.current) return;       // a retry is already queued
     stopWatchdog();
@@ -642,6 +644,7 @@ export function useAudioPlayer() {
       }
     };
     audio.onended = () => {
+      journal("ended", liveRef.current ? "live" : "fichier");
       if (sessionIdRef.current !== currentSession) return;
       if (liveRef.current) { scheduleReconnect("ended"); return; }
       setIsPlaying(false); setCurrentTime(0); onEndedRef.current?.();
@@ -655,6 +658,7 @@ export function useAudioPlayer() {
       }
     };
     audio.onerror = () => {
+      journal("error", String(audio.error?.code ?? "?"));
       if (sessionIdRef.current !== currentSession) return;
       clearConnectTimer();
       if (audio.crossOrigin === "anonymous" && eqEnabledRef.current) {
@@ -725,6 +729,7 @@ export function useAudioPlayer() {
       }
     };
     audio.onpause = () => {
+      journal("pause-externe", wantPlayingRef.current ? "a voulu jouer" : "volontaire");
       if (sessionIdRef.current !== currentSession) return;
       setIsPlaying(false);
       // Auto-recovery securise par session token:
@@ -1346,6 +1351,7 @@ export function useAudioPlayer() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     const onOffline = () => {
+      journal("offline");
       setOffline(true);
       clearReconnect();
       stopWatchdog();
@@ -1353,6 +1359,7 @@ export function useAudioPlayer() {
       if (wantPlayingRef.current) { setReconnecting(false); setError(null); }
     };
     const onOnline = () => {
+      journal("online");
       setOffline(false);
       if (wantPlayingRef.current) {
         attemptRef.current = 0;
@@ -1414,6 +1421,7 @@ export function useAudioPlayer() {
   useEffect(() => {
     if (typeof document === "undefined") return;
     const onVisible = () => {
+      journal("visible", document.visibilityState);
       if (document.visibilityState !== "visible" || !wantPlayingRef.current) return;
       if (isSleepingNow()) return; // e.g. a call ends mid-bedtime → stay paused
       if (ctxRef.current?.state === "suspended") ctxRef.current.resume().catch(() => {});

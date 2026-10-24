@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { THEMES, IPOD_SKINS, useTheme, VisualizerStyle } from "@/context/ThemeContext";
 import { STATIONS } from "@/lib/stations";
+import { readJournal, clearJournal } from "@/lib/playbackJournal";
 
 interface Props {
   open: boolean;
@@ -18,6 +19,9 @@ export default function ConfigPanel({ open, onClose }: Props) {
     ipodSkin, setIpodSkin,
     visualizerStyle, setVisualizerStyle
   } = useTheme();
+  const [journalCount, setJournalCount] = useState(0);
+  const [journalCopied, setJournalCopied] = useState(false);
+  useEffect(() => { if (open) setJournalCount(readJournal().length); }, [open]);
 
   const [activeTab, setActiveTab] = useState<ConfigTab>("appearance");
 
@@ -526,6 +530,28 @@ export default function ConfigPanel({ open, onClose }: Props) {
               {/* TAB 4: SYSTÈME & DÉMARRAGE */}
               {activeTab === "system" && (
                 <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-5">
+                  {/* Journal de lecture — pour diagnostiquer les coupures */}
+                  <div className="p-4 rounded-2xl glass border border-white/10 space-y-3">
+                    <div>
+                      <p className="text-white text-sm font-bold">Journal de lecture</p>
+                      <p className="text-white/45 text-xs mt-0.5">{journalCount} événement{journalCount > 1 ? "s" : ""} enregistré{journalCount > 1 ? "s" : ""} sur cet appareil.</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => { navigator.clipboard?.writeText(JSON.stringify(readJournal(), null, 1)); setJournalCopied(true); setTimeout(() => setJournalCopied(false), 1500); }}
+                        className="flex-1 min-h-[44px] rounded-xl bg-white/10 hover:bg-white/15 text-white/90 text-sm font-semibold transition-all"
+                      >
+                        {journalCopied ? "Copié" : "Copier le journal"}
+                      </button>
+                      <button
+                        onClick={() => { clearJournal(); setJournalCount(0); }}
+                        className="min-h-[44px] px-4 rounded-xl border border-white/15 text-white/60 hover:text-white text-sm font-semibold transition-all"
+                      >
+                        Effacer
+                      </button>
+                    </div>
+                  </div>
+
                   {/* Podcast Autoplay */}
                   <div className="p-4 rounded-2xl glass border border-white/10 flex items-center justify-between gap-4">
                     <div>
