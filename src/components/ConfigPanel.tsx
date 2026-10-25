@@ -17,7 +17,8 @@ export default function ConfigPanel({ open, onClose }: Props) {
     theme, setTheme,
     defaultStationId, setDefaultStationId,
     ipodSkin, setIpodSkin,
-    visualizerStyle, setVisualizerStyle
+    visualizerStyle, setVisualizerStyle,
+    uiStyle, setUiStyle
   } = useTheme();
   const [journalCount, setJournalCount] = useState(0);
   const [journalCopied, setJournalCopied] = useState(false);
@@ -253,6 +254,23 @@ export default function ConfigPanel({ open, onClose }: Props) {
               {/* TAB 1: THEMES & APPARENCE */}
               {activeTab === "appearance" && (
                 <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+                  <section className="space-y-3">
+                    <h3 className="text-xs font-bold tracking-wider uppercase text-white/50">Style d&apos;interface</h3>
+                    <div className="grid grid-cols-2 gap-2">
+                      {([
+                        { id: "max" as const, name: "Max", desc: "Épuré, grandes pochettes, sans effets" },
+                        { id: "classic" as const, name: "Classique", desc: "Interface d'origine" },
+                      ]).map((u) => (
+                        <button key={u.id} onClick={() => setUiStyle(u.id)} aria-pressed={uiStyle === u.id}
+                          className={`text-left p-3 rounded-xl border transition-all min-h-[64px] ${
+                            uiStyle === u.id ? "border-[var(--accent)] bg-white/[0.07]" : "border-white/10 bg-white/[0.02] hover:bg-white/[0.05]"
+                          }`}>
+                          <p className="text-sm font-semibold text-white">{u.name}</p>
+                          <p className="text-[11px] text-white/50 mt-0.5 leading-snug">{u.desc}</p>
+                        </button>
+                      ))}
+                    </div>
+                  </section>
                   <section className="space-y-3">
                     <div className="flex items-center justify-between">
                       <h3 className="text-xs font-bold tracking-wider uppercase text-white/50">Thèmes d&apos;ambiance</h3>

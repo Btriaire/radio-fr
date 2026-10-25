@@ -668,3 +668,47 @@ input:focus-visible { outline-offset: 0; }
     scroll-behavior: auto !important;
   }
 }
+
+/* ─── Style « Max » — interface épurée, sans effets. Actif seulement avec
+   <html data-ui="max">. Le style « classic » reste exactement tel quel. ─── */
+html[data-ui="max"] body {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", system-ui, sans-serif;
+  letter-spacing: -0.005em;
+}
+html[data-ui="max"] .ambient-bg > div:nth-child(-n+3),
+html[data-ui="max"] .ambient-bg .metal-texture,
+html[data-ui="max"] .ambient-bg .bg-noise {
+  display: none;
+}
+html[data-ui="max"] .glass,
+html[data-ui="max"] .glass-dark {
+  background: rgba(16, 18, 24, 0.94);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: none;
+}
+html[data-ui="max"] .glass-hover:hover {
+  background: rgba(28, 31, 40, 0.96);
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: none;
+}
+html[data-ui="max"] header.sticky {
+  background: rgba(10, 11, 15, 0.92);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
+}
+html[data-ui="max"] h1,
+html[data-ui="max"] h2 {
+  letter-spacing: -0.02em;
+}
+html[data-ui="max"] main {
+  padding-top: 1.25rem;
+}
+html[data-ui="max"] .text-gradient {
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  color: var(--accent);
+}
