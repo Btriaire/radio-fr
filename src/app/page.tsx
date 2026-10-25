@@ -913,7 +913,7 @@ export default function Home() {
                 {/* ── Reprendre : stations récemment écoutées (un tap, rien ne démarre seul) ── */}
                 {!stationQuery && genre === "Tous" && recentIds.length > 0 && (
                   <section aria-label="Récemment écoutées" className="mb-4">
-                    <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-white/60">Reprendre</h2>
+                    <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-white/80">Reprendre</h2>
                     <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
                       {recentIds
                         .map((id) => STATIONS.find((st) => st.id === id))
@@ -1026,7 +1026,7 @@ export default function Home() {
                                 : "bg-white/12 text-white border border-white/30 shadow-sm font-semibold"
                               : isZen
                                 ? "bg-emerald-500/5 hover:bg-emerald-500/10 text-emerald-400/70 hover:text-emerald-300 border border-emerald-500/20"
-                                : "bg-white/[0.03] hover:bg-white/[0.07] text-white/55 hover:text-white border border-white/[0.07] hover:border-white/[0.16]"
+                                : "bg-white/[0.04] hover:bg-white/[0.08] text-white/75 hover:text-white border border-white/[0.10] hover:border-white/[0.20]"
                           }`}
                         >
                           {on && (
@@ -1036,7 +1036,7 @@ export default function Home() {
                             />
                           )}
                           <span>{g}</span>
-                          <span className="text-[10px] tabular-nums opacity-45 font-mono">{count}</span>
+                          <span className="text-[10px] tabular-nums opacity-70 font-mono">{count}</span>
                         </button>
                       );
                     })}
@@ -1045,13 +1045,13 @@ export default function Home() {
 
                 {/* Section header decoration + Sort & View toggles */}
                 <div className="flex items-center gap-3 mb-3">
-                  <span className="text-xs font-semibold uppercase tracking-wide opacity-80 tabular-nums" style={{ color: "var(--accent)" }}>
+                  <span className="text-xs font-semibold uppercase tracking-wide opacity-100 tabular-nums" style={{ color: "var(--accent)" }}>
                     {filteredStations.length} STATION{filteredStations.length > 1 ? "S" : ""}
                   </span>
-                  <div className="flex-1 h-px opacity-40" style={{ background: "linear-gradient(to right, var(--accent), transparent)" }} />
+                  <div className="flex-1 h-px opacity-60" style={{ background: "linear-gradient(to right, var(--accent), transparent)" }} />
 
                   {/* Sort Controls */}
-                  <div className="flex items-center gap-0.5 glass rounded-xl p-0.5 text-xs font-medium text-white/60" role="group" aria-label="Trier les stations">
+                  <div className="flex items-center gap-0.5 glass rounded-xl p-0.5 text-xs font-medium text-white/75" role="group" aria-label="Trier les stations">
                     <button
                       onClick={() => setStationSort("default")}
                       className={`min-w-[40px] min-h-[36px] px-2.5 rounded-lg transition-all ${stationSort === "default" ? "bg-white/15 text-white font-semibold" : "hover:text-white"}`}
