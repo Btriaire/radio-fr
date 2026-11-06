@@ -43,6 +43,7 @@ interface Props {
   onOpenLyrics?: () => void;
   onOpenSleepTimer?: () => void;
   onOpenAlarm?: () => void;
+  onOpenCarMode?: () => void;
 }
 
 export default function Player({
@@ -57,6 +58,7 @@ export default function Player({
   onOpenLyrics,
   onOpenSleepTimer,
   onOpenAlarm,
+  onOpenCarMode,
 }: Props) {
   const [showEQ, setShowEQ] = useState(false);
   const [showOptions, setShowOptions] = useState(false);
@@ -726,6 +728,27 @@ export default function Player({
                 <path d="M12 9v4l2.5 2M5 3L2 6M19 3l3 3" />
               </svg>
               <span>Réveil</span>
+            </motion.button>
+          )}
+
+          {/* Mode Voiture (Grand tactile & Wake Lock) */}
+          {onOpenCarMode && (
+            <motion.button
+              whileTap={{ scale: 0.92 }}
+              whileHover={{ scale: 1.05 }}
+              transition={{ type: "spring", stiffness: 450, damping: 25 }}
+              onClick={onOpenCarMode}
+              aria-label="Mode Voiture grand écran tactile"
+              className="px-3 py-1.5 rounded-xl text-xs font-semibold transition-all glass glass-hover flex items-center gap-1.5 cursor-pointer text-emerald-400 hover:text-emerald-300 border border-emerald-400/30 bg-emerald-400/10"
+              title="Passer en mode voiture plein écran tactile"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2" />
+                <circle cx="7" cy="17" r="2" />
+                <path d="M9 17h6" />
+                <circle cx="17" cy="17" r="2" />
+              </svg>
+              <span>Voiture</span>
             </motion.button>
           )}
         </div>

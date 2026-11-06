@@ -38,8 +38,8 @@ import LyricsModal from "@/components/LyricsModal";
 import SleepTimerModal from "@/components/SleepTimerModal";
 import { useAlarmClock } from "@/hooks/useAlarmClock";
 import { AlarmClockModal } from "@/components/AlarmClockModal";
-import KeyboardShortcutsModal from "@/components/KeyboardShortcutsModal";
 import DesktopFloatingPlayer from "@/components/DesktopFloatingPlayer";
+import CarModeModal from "@/components/CarModeModal";
 
 type Tab = "radio" | "webradio" | "search" | "favoris" | "podcasts" | "audius";
 
@@ -105,7 +105,7 @@ export default function Home() {
   const [lyricsOpen, setLyricsOpen]             = useState(false);
   const [sleepModalOpen, setSleepModalOpen]     = useState(false);
   const [alarmModalOpen, setAlarmModalOpen]     = useState(false);
-  const [shortcutsOpen, setShortcutsOpen]       = useState(false);
+  const [carModeOpen, setCarModeOpen]           = useState(false);
   const [hubOpen, setHubOpen]                   = useState(true);
   const [mobilePlayerExpanded, setMobilePlayerExpanded] = useState(false);
   const [menuOpen, setMenuOpen]                 = useState(false);
@@ -410,69 +410,6 @@ export default function Home() {
     onSeek: currentPodcast ? (t: number) => playerApi.seekTo(t) : undefined,
   });
 
-  // ── Global keyboard shortcuts (Desktop & iPad) ────────────────────────────
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Ignore if user is currently typing in an input or textarea
-      const target = e.target as HTMLElement | null;
-      if (
-        target &&
-        (target.tagName === "INPUT" ||
-          target.tagName === "TEXTAREA" ||
-          target.isContentEditable)
-      ) {
-        return;
-      }
-
-      if (e.code === "Space") {
-        e.preventDefault();
-        playerApi.togglePlay();
-      } else if (e.key === "m" || e.key === "M") {
-        e.preventDefault();
-        playerApi.toggleMute();
-      } else if (e.key === "ArrowRight") {
-        e.preventDefault();
-        if (currentPodcast || playerApi.duration > 0) {
-          playerApi.seekRelative(30);
-        } else {
-          playAdjacentStation(1);
-        }
-      } else if (e.key === "ArrowLeft") {
-        e.preventDefault();
-        if (currentPodcast || playerApi.duration > 0) {
-          playerApi.seekRelative(-15);
-        } else {
-          playAdjacentStation(-1);
-        }
-      } else if (e.key === "ArrowUp") {
-        e.preventDefault();
-        playerApi.changeVolume(Math.min(1, Number((playerApi.volume + 0.05).toFixed(2))));
-      } else if (e.key === "ArrowDown") {
-        e.preventDefault();
-        playerApi.changeVolume(Math.max(0, Number((playerApi.volume - 0.05).toFixed(2))));
-      } else if (e.key === "f" || e.key === "F") {
-        if (selectedStation) {
-          e.preventDefault();
-          toggleFavorite(selectedStation);
-        }
-      } else if (e.key === "n" || e.key === "N") {
-        e.preventDefault();
-        playerApi.toggleNightMode();
-      } else if (e.key === "l" || e.key === "L") {
-        e.preventDefault();
-        playerApi.toggleLoop();
-      } else if (e.key === "?" || e.key === "h" || e.key === "H") {
-        e.preventDefault();
-        setShortcutsOpen((v) => !v);
-      } else if (e.key === "Escape") {
-        setShortcutsOpen(false);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [playerApi, currentPodcast, selectedStation, playAdjacentStation, toggleFavorite]);
-
   return (
     <div className="min-h-screen flex flex-col">
 
@@ -659,8 +596,8 @@ export default function Home() {
                     icon: <><circle cx="7" cy="12" r="3" /><circle cx="17" cy="12" r="3" /><path d="M2 19h20M4 19v-3M20 19v-3" /></> },
                   { label: "Titres récents", aria: "Ouvrir l'historique des titres récents", run: () => setHistoryOpen(true),
                     icon: <><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></> },
-                  { label: "Raccourcis (?)", aria: "Afficher les raccourcis clavier (?)", run: () => setShortcutsOpen(true),
-                    icon: <><rect x="2" y="4" width="20" height="16" rx="2" /><line x1="6" y1="8" x2="6.01" y2="8" /><line x1="10" y1="8" x2="10.01" y2="8" /><line x1="14" y1="8" x2="14.01" y2="8" /><line x1="18" y1="8" x2="18.01" y2="8" /><line x1="6" y1="12" x2="6.01" y2="12" /><line x1="18" y1="12" x2="18.01" y2="12" /><line x1="8" y1="16" x2="16" y2="16" /></> },
+                  { label: "Mode Voiture", aria: "Passer en mode voiture plein écran tactile", run: () => setCarModeOpen(true),
+                    icon: <><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2" /><circle cx="7" cy="17" r="2" /><path d="M9 17h6" /><circle cx="17" cy="17" r="2" /></> },
                 ].map((b) => (
                   b.href ? (
                     <Link key={b.label} href={b.href} title={b.label} aria-label={b.aria}
@@ -762,7 +699,7 @@ export default function Home() {
                       { label: "Mode iPod", run: () => setIpodOpen(true) },
                       { label: "Mode DJ", run: () => { playerApi.pause(); setDjOpen(true); } },
                       { label: "Titres récents", run: () => setHistoryOpen(true) },
-                      { label: "Raccourcis clavier (?)", run: () => setShortcutsOpen(true) },
+                      { label: "Mode Voiture (Grand tactile)", run: () => setCarModeOpen(true) },
                     ].map((m) => (
                       m.href ? (
                         <Link key={m.label} href={m.href} role="menuitem"
@@ -899,6 +836,8 @@ export default function Home() {
               nowPlaying={nowPlaying}
               onOpenLyrics={() => setLyricsOpen(true)}
               onOpenSleepTimer={() => setSleepModalOpen(true)}
+              onOpenAlarm={() => setAlarmModalOpen(true)}
+              onOpenCarMode={() => setCarModeOpen(true)}
             />
           )}
         </div>
@@ -1327,6 +1266,7 @@ export default function Home() {
             onOpenLyrics={() => setLyricsOpen(true)}
             onOpenSleepTimer={() => setSleepModalOpen(true)}
             onOpenAlarm={() => setAlarmModalOpen(true)}
+            onOpenCarMode={() => setCarModeOpen(true)}
             advanced={
               <div className="space-y-4">
                 <Player
@@ -1341,6 +1281,7 @@ export default function Home() {
                   onOpenLyrics={() => setLyricsOpen(true)}
                   onOpenSleepTimer={() => setSleepModalOpen(true)}
                   onOpenAlarm={() => setAlarmModalOpen(true)}
+                  onOpenCarMode={() => setCarModeOpen(true)}
                 />
                 <ClipVisualizer
                   analyserRef={playerApi.analyserRef}
@@ -1450,12 +1391,6 @@ export default function Home() {
         currentStation={currentStation}
       />
 
-      {/* Raccourcis Clavier Pro Cheat-Sheet */}
-      <KeyboardShortcutsModal
-        isOpen={shortcutsOpen}
-        onClose={() => setShortcutsOpen(false)}
-      />
-
       {/* Mini-Lecteur Flottant sur Desktop au défilement */}
       <DesktopFloatingPlayer
         station={currentStation}
@@ -1469,6 +1404,24 @@ export default function Home() {
         onNextStation={() => playAdjacentStation(1)}
         onPrevStation={() => playAdjacentStation(-1)}
         nowPlaying={nowPlaying}
+      />
+
+      {/* Mode Voiture Plein Écran Tactile & Wake Lock */}
+      <CarModeModal
+        isOpen={carModeOpen}
+        onClose={() => setCarModeOpen(false)}
+        station={currentStation}
+        podcast={currentPodcast}
+        isPlaying={playerApi.isPlaying}
+        isLoading={playerApi.isLoading}
+        onTogglePlay={playerApi.togglePlay}
+        onNextStation={() => playAdjacentStation(1)}
+        onPrevStation={() => playAdjacentStation(-1)}
+        isFavorite={selectedStation ? isFavorite(selectedStation.id) : false}
+        onToggleFavorite={selectedStation ? () => toggleFavorite(selectedStation) : () => {}}
+        nowPlaying={nowPlaying}
+        volume={playerApi.volume}
+        onChangeVolume={playerApi.changeVolume}
       />
     </div>
   );
