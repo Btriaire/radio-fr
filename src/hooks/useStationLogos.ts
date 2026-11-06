@@ -41,15 +41,22 @@ export function useStationLogos(stations: Station[]) {
       }
     } catch {}
 
-    // Fetch logos for all stations
+    // Uniquement pour les stations sans logo intégré (le résultat ne sert que
+    // de repli) — évite des dizaines de requêtes inutiles au premier lancement
+    // sur réseau mobile. Concurrence limitée pour ne pas concurrencer le flux audio.
+    const missing = stations.filter((s) => !s.logo);
+    if (missing.length === 0) return;
+
     const fetchAll = async () => {
       const results: Record<string, string> = {};
-      await Promise.allSettled(
-        stations.map(async (station) => {
-          const logo = await fetchLogoForStation(station.name);
-          if (logo) results[station.id] = logo;
-        })
-      );
+      const queue = [...missing];
+      const worker = async () => {
+        for (let st = queue.shift(); st; st = queue.shift()) {
+          const logo = await fetchLogoForStation(st.name);
+          if (logo) results[st.id] = logo;
+        }
+      };
+      await Promise.all(Array.from({ length: Math.min(3, queue.length) }, worker));
       setLogos(results);
       try { localStorage.setItem(CACHE_KEY, JSON.stringify(results)); } catch {}
     };

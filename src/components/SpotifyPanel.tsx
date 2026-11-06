@@ -17,8 +17,10 @@ export type { RSSEpisode, iTunesPodcast };
 // chart/search feeds hand us low-res 100px art that looks blurry once scaled to
 // a full card. Prefer the 600px field, and as a fallback rewrite any embedded
 // "NNxNN" dimension up to 600x600 so the browser fetches a sharp asset.
-function hiResArt(p: { artworkUrl600?: string; artworkUrl100?: string }): string {
-  const up = (u?: string) => (u || "").replace(/\/\d+x\d+(bb|-100)?\./, "/600x600bb.");
+// `size` adapte la résolution à l'affichage : une tuile mobile n'a pas besoin
+// d'un 600x600 (~3x plus lourd) — précieux sur réseau 4G.
+function hiResArt(p: { artworkUrl600?: string; artworkUrl100?: string }, size = 600): string {
+  const up = (u?: string) => (u || "").replace(/\/\d+x\d+(bb|-100)?\./, `/${size}x${size}bb.`);
   const big = (p.artworkUrl600 || "").trim();
   if (big) return up(big);
   return up(p.artworkUrl100 || "");
@@ -396,7 +398,7 @@ function SpotifyPanel({ currentEpisodeUrl, isPlaying, onPlayEpisode, online = tr
                   >
                     <div className="w-10 h-10 rounded-xl overflow-hidden flex-shrink-0 relative bg-white/5 border border-white/10">
                       {ep.artwork ? (
-                        <img src={ep.artwork} alt="" className="w-full h-full object-cover" />
+                        <img src={ep.artwork} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-white/40 font-bold text-xs">POD</div>
                       )}
@@ -460,7 +462,7 @@ function SpotifyPanel({ currentEpisodeUrl, isPlaying, onPlayEpisode, online = tr
                 onClick={() => setSelected(p)}>
                 <div className="relative">
                   {p.artworkUrl100 || p.artworkUrl600
-                    ? <img src={hiResArt(p)} alt={p.trackName} loading="lazy"
+                    ? <img src={hiResArt(p, 300)} alt={p.trackName} loading="lazy" decoding="async"
                         className="w-full aspect-square rounded-xl object-cover" />
                     : <div className="w-full aspect-square rounded-xl flex items-center justify-center border border-white/10"
                         style={{ background: "linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02))" }}>
@@ -613,7 +615,7 @@ function SongsView({ onPlayEpisode }: { onPlayEpisode: SpotifyPanelProps["onPlay
               transition={{ delay: Math.min(i, 8) * 0.03 }}
               className="glass glass-hover rounded-xl p-2.5 flex items-center gap-3 touch-pan-y select-none">
               {t.image
-                ? <img src={t.image} alt={t.name} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
+                ? <img src={t.image} alt={t.name} loading="lazy" decoding="async" className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
                 : <div className="w-12 h-12 rounded-lg flex items-center justify-center text-lg flex-shrink-0"
                     style={{ background: "rgba(255,255,255,0.05)" }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white/40"><path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" /></svg></div>}
               <div className="flex-1 min-w-0">
@@ -735,7 +737,7 @@ export function AudiusView({ onPlayEpisode, onPlayYouTube, youtubeTrackId, curre
         style={active ? { borderColor: "var(--accent)60" } : {}}
         onClick={() => play(t)}>
         {t.artwork
-          ? <img src={t.artwork} alt={t.title} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
+          ? <img src={t.artwork} alt={t.title} loading="lazy" decoding="async" className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
           : <div className="w-12 h-12 rounded-lg flex items-center justify-center text-lg flex-shrink-0"
               style={{ background: "rgba(255,255,255,0.05)" }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white/40"><path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" /></svg></div>}
         <div className="flex-1 min-w-0">
@@ -1055,7 +1057,7 @@ function PodcastDetail({ podcast, currentEpisodeUrl, isPlaying, offline, onPlay,
         <div className="p-4 sm:p-5 pb-3 border-b border-white/10 flex-shrink-0 bg-white/[0.02]">
           <div className="flex gap-3">
             {(podcast.artworkUrl600 || podcast.artworkUrl100) && (
-              <img src={hiResArt(podcast)} alt={podcast.trackName}
+              <img src={hiResArt(podcast, 200)} alt={podcast.trackName}
                 className="w-16 h-16 rounded-2xl object-cover flex-shrink-0 shadow-md border border-white/10" />
             )}
             <div className="flex-1 min-w-0">
