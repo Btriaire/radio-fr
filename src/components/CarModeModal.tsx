@@ -37,58 +37,109 @@ export default function CarModeModal({
   onChangeVolume,
 }: CarModeModalProps) {
   const [clock, setClock] = useState("");
+  const [wakeLockActive, setWakeLockActive] = useState(false);
   const wakeLockRef = useRef<any>(null);
-  const touchStartX = useRef<number | null>(null);
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
 
+  // Horloge : se cale sur le début de chaque minute plutôt que de re-rendre chaque seconde
   useEffect(() => {
     if (!isOpen) return;
-
-    const updateClock = () => {
+    let timeout: ReturnType<typeof setTimeout>;
+    const tick = () => {
       const now = new Date();
-      setClock(
-        now.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })
-      );
+      setClock(now.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }));
+      timeout = setTimeout(tick, 60_000 - (now.getSeconds() * 1000 + now.getMilliseconds()) + 50);
     };
-    updateClock();
-    const interval = setInterval(updateClock, 1000);
+    tick();
+    return () => clearTimeout(timeout);
+  }, [isOpen]);
 
-    const requestWakeLock = async () => {
+  // Wake Lock : le navigateur le libère dès que la page passe en arrière-plan
+  // (ex. ouverture du GPS), on le redemande donc au retour au premier plan.
+  useEffect(() => {
+    if (!isOpen) return;
+    let cancelled = false;
+    const nav = navigator as any;
+
+    const release = () => {
+      const lock = wakeLockRef.current;
+      wakeLockRef.current = null;
+      if (lock) lock.release().catch(() => {});
+    };
+
+    const acquire = async () => {
+      if (!("wakeLock" in nav) || document.visibilityState !== "visible" || wakeLockRef.current) return;
       try {
-        if ("wakeLock" in navigator) {
-          wakeLockRef.current = await (navigator as any).wakeLock.request("screen");
+        const lock = await nav.wakeLock.request("screen");
+        if (cancelled) {
+          lock.release().catch(() => {});
+          return;
         }
+        wakeLockRef.current = lock;
+        setWakeLockActive(true);
+        lock.addEventListener?.("release", () => {
+          if (wakeLockRef.current === lock) wakeLockRef.current = null;
+          setWakeLockActive(false);
+        });
       } catch (err) {
         console.warn("Wake Lock indisponible:", err);
+        setWakeLockActive(false);
       }
     };
-    requestWakeLock();
 
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") acquire();
+    };
+
+    acquire();
+    document.addEventListener("visibilitychange", onVisibility);
     return () => {
-      clearInterval(interval);
-      if (wakeLockRef.current) {
-        wakeLockRef.current.release().catch(() => {});
-        wakeLockRef.current = null;
-      }
+      cancelled = true;
+      document.removeEventListener("visibilitychange", onVisibility);
+      release();
+      setWakeLockActive(false);
     };
   }, [isOpen]);
 
+  // Bloque le défilement de la page en dessous + touche Échap pour quitter
+  useEffect(() => {
+    if (!isOpen) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [isOpen, onClose]);
+
+  const vibrate = (ms: number) => {
+    if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(ms);
+  };
+
   const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartX.current = e.touches[0].clientX;
+    // Ne pas interpréter les gestes sur les contrôles (curseur de volume, boutons) comme un zapping
+    if ((e.target as HTMLElement).closest("input, button")) {
+      touchStart.current = null;
+      return;
+    }
+    touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
-    if (touchStartX.current === null) return;
-    const diff = e.changedTouches[0].clientX - touchStartX.current;
-    if (Math.abs(diff) > 50) {
-      if (diff > 0) {
-        onPrevStation();
-        if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(40);
-      } else {
-        onNextStation();
-        if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(40);
-      }
-    }
-    touchStartX.current = null;
+    const start = touchStart.current;
+    touchStart.current = null;
+    if (!start) return;
+    const dx = e.changedTouches[0].clientX - start.x;
+    const dy = e.changedTouches[0].clientY - start.y;
+    // Geste nettement horizontal uniquement
+    if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    if (dx > 0) onPrevStation();
+    else onNextStation();
+    vibrate(40);
   };
 
   if (!isOpen) return null;
@@ -104,6 +155,9 @@ export default function CarModeModal({
 
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Mode voiture"
       className="fixed inset-0 z-[120] bg-black text-white flex flex-col justify-between p-5 sm:p-8 select-none"
       style={{
         paddingTop: "max(1.5rem, env(safe-area-inset-top, 1.5rem))",
@@ -180,13 +234,15 @@ export default function CarModeModal({
       {/* ── Bottom Controls : Giant Touch Buttons ── */}
       <div className="w-full max-w-lg mx-auto space-y-6">
         <div className="flex items-center justify-between gap-4">
-          {/* Favorite Toggle */}
+          {/* Favorite Toggle (stations uniquement) */}
+          {station ? (
           <button
             onClick={() => {
               onToggleFavorite();
-              if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(25);
+              vibrate(25);
             }}
             aria-label={isFavorite ? "Retirer des favoris" : "Ajouter aux favoris"}
+            aria-pressed={isFavorite}
             className="w-16 h-16 sm:w-18 sm:h-18 rounded-3xl glass glass-hover flex items-center justify-center cursor-pointer transition-transform active:scale-90"
           >
             <svg
@@ -202,12 +258,15 @@ export default function CarModeModal({
               <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
             </svg>
           </button>
+          ) : (
+            <div className="w-16 h-16 sm:w-18 sm:h-18" aria-hidden />
+          )}
 
           {/* Previous Station */}
           <button
             onClick={() => {
               onPrevStation();
-              if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(35);
+              vibrate(35);
             }}
             aria-label="Station précédente"
             className="w-16 h-16 sm:w-20 sm:h-20 rounded-3xl glass glass-hover flex items-center justify-center cursor-pointer transition-transform active:scale-90"
@@ -222,7 +281,7 @@ export default function CarModeModal({
           <button
             onClick={() => {
               onTogglePlay();
-              if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(50);
+              vibrate(50);
             }}
             disabled={isLoading}
             aria-label={isPlaying ? "Pause" : "Lecture"}
@@ -249,7 +308,7 @@ export default function CarModeModal({
           <button
             onClick={() => {
               onNextStation();
-              if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(35);
+              vibrate(35);
             }}
             aria-label="Station suivante"
             className="w-16 h-16 sm:w-20 sm:h-20 rounded-3xl glass glass-hover flex items-center justify-center cursor-pointer transition-transform active:scale-90"
@@ -284,7 +343,8 @@ export default function CarModeModal({
         </div>
 
         <p className="text-center text-xs text-white/30 font-medium">
-          Glissez l&apos;écran vers la gauche ou la droite pour zapper • Écran verrouillé actif
+          Glissez l&apos;écran vers la gauche ou la droite pour zapper
+          {wakeLockActive ? " • Écran maintenu allumé" : ""}
         </p>
       </div>
     </div>
