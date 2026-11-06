@@ -37,9 +37,16 @@ export function useMediaSession(opts: MediaSessionOptions) {
     if (typeof navigator === "undefined" || !("mediaSession" in navigator)) return;
     const ms = navigator.mediaSession;
     if (!title) { ms.metadata = null; return; }
-    const art = artwork
+    let absoluteArtUrl = artwork;
+    if (artwork && typeof window !== "undefined") {
+      try {
+        absoluteArtUrl = new URL(artwork, window.location.origin).href;
+      } catch {}
+    }
+
+    const art = absoluteArtUrl
       ? [96, 128, 192, 256, 384, 512].map((s) => ({
-          src: artwork, sizes: `${s}x${s}`, type: artworkType(artwork),
+          src: absoluteArtUrl, sizes: `${s}x${s}`, type: artworkType(absoluteArtUrl),
         }))
       : [];
     try {

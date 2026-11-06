@@ -38,6 +38,8 @@ import LyricsModal from "@/components/LyricsModal";
 import SleepTimerModal from "@/components/SleepTimerModal";
 import { useAlarmClock } from "@/hooks/useAlarmClock";
 import { AlarmClockModal } from "@/components/AlarmClockModal";
+import KeyboardShortcutsModal from "@/components/KeyboardShortcutsModal";
+import DesktopFloatingPlayer from "@/components/DesktopFloatingPlayer";
 
 type Tab = "radio" | "webradio" | "search" | "favoris" | "podcasts" | "audius";
 
@@ -103,6 +105,7 @@ export default function Home() {
   const [lyricsOpen, setLyricsOpen]             = useState(false);
   const [sleepModalOpen, setSleepModalOpen]     = useState(false);
   const [alarmModalOpen, setAlarmModalOpen]     = useState(false);
+  const [shortcutsOpen, setShortcutsOpen]       = useState(false);
   const [hubOpen, setHubOpen]                   = useState(true);
   const [mobilePlayerExpanded, setMobilePlayerExpanded] = useState(false);
   const [menuOpen, setMenuOpen]                 = useState(false);
@@ -458,6 +461,11 @@ export default function Home() {
       } else if (e.key === "l" || e.key === "L") {
         e.preventDefault();
         playerApi.toggleLoop();
+      } else if (e.key === "?" || e.key === "h" || e.key === "H") {
+        e.preventDefault();
+        setShortcutsOpen((v) => !v);
+      } else if (e.key === "Escape") {
+        setShortcutsOpen(false);
       }
     };
 
@@ -651,6 +659,8 @@ export default function Home() {
                     icon: <><circle cx="7" cy="12" r="3" /><circle cx="17" cy="12" r="3" /><path d="M2 19h20M4 19v-3M20 19v-3" /></> },
                   { label: "Titres récents", aria: "Ouvrir l'historique des titres récents", run: () => setHistoryOpen(true),
                     icon: <><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></> },
+                  { label: "Raccourcis (?)", aria: "Afficher les raccourcis clavier (?)", run: () => setShortcutsOpen(true),
+                    icon: <><rect x="2" y="4" width="20" height="16" rx="2" /><line x1="6" y1="8" x2="6.01" y2="8" /><line x1="10" y1="8" x2="10.01" y2="8" /><line x1="14" y1="8" x2="14.01" y2="8" /><line x1="18" y1="8" x2="18.01" y2="8" /><line x1="6" y1="12" x2="6.01" y2="12" /><line x1="18" y1="12" x2="18.01" y2="12" /><line x1="8" y1="16" x2="16" y2="16" /></> },
                 ].map((b) => (
                   b.href ? (
                     <Link key={b.label} href={b.href} title={b.label} aria-label={b.aria}
@@ -752,6 +762,7 @@ export default function Home() {
                       { label: "Mode iPod", run: () => setIpodOpen(true) },
                       { label: "Mode DJ", run: () => { playerApi.pause(); setDjOpen(true); } },
                       { label: "Titres récents", run: () => setHistoryOpen(true) },
+                      { label: "Raccourcis clavier (?)", run: () => setShortcutsOpen(true) },
                     ].map((m) => (
                       m.href ? (
                         <Link key={m.label} href={m.href} role="menuitem"
@@ -1437,6 +1448,27 @@ export default function Home() {
         alarmState={alarmState}
         stations={STATIONS}
         currentStation={currentStation}
+      />
+
+      {/* Raccourcis Clavier Pro Cheat-Sheet */}
+      <KeyboardShortcutsModal
+        isOpen={shortcutsOpen}
+        onClose={() => setShortcutsOpen(false)}
+      />
+
+      {/* Mini-Lecteur Flottant sur Desktop au défilement */}
+      <DesktopFloatingPlayer
+        station={currentStation}
+        podcast={currentPodcast}
+        isPlaying={playerApi.isPlaying}
+        isLoading={playerApi.isLoading}
+        volume={playerApi.volume}
+        onTogglePlay={playerApi.togglePlay}
+        onChangeVolume={playerApi.changeVolume}
+        onToggleMute={playerApi.toggleMute}
+        onNextStation={() => playAdjacentStation(1)}
+        onPrevStation={() => playAdjacentStation(-1)}
+        nowPlaying={nowPlaying}
       />
     </div>
   );
