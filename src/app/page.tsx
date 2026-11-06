@@ -890,15 +890,6 @@ export default function Home() {
               onOpenSleepTimer={() => setSleepModalOpen(true)}
             />
           )}
-          {(currentStation || currentPodcast) && (
-            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-              <ClipVisualizer
-                analyserRef={playerApi.analyserRef}
-                isPlaying={playerApi.isPlaying}
-                color={currentStation?.color ?? "var(--accent)"}
-              />
-            </motion.div>
-          )}
         </div>
 
         {/* ── Left — tabs content ── */}

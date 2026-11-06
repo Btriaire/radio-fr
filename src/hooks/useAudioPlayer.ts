@@ -179,6 +179,8 @@ export function useAudioPlayer() {
   const audioRef    = useRef<HTMLMediaElement | null>(null);
   const ctxRef      = useRef<AudioContext | null>(null);
   const sourceRef   = useRef<MediaElementAudioSourceNode | null>(null);
+  const sourceAudioElRef = useRef<HTMLMediaElement | null>(null);
+  const waitingSinceRef = useRef<number | null>(null);
   const filtersRef  = useRef<BiquadFilterNode[]>([]);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const gainRef     = useRef<GainNode | null>(null);
@@ -283,23 +285,29 @@ export function useAudioPlayer() {
     const ctx = ctxRef.current;
     if (ctx.state === "suspended") ctx.resume();
 
-    // Disconnect previous source cleanly
-    if (sourceRef.current) {
-      try { sourceRef.current.disconnect(); } catch {}
-      sourceRef.current = null;
-    }
-
     let source: MediaElementAudioSourceNode;
-    try {
-      source = ctx.createMediaElementSource(audio);
-      sourceRef.current = source;
-    } catch (e) {
-      // Already connected to another context or security error — skip Web Audio
-      console.warn("Web Audio source error:", e);
-      eqEnabledRef.current = false;
-      setEqActive(false);
-      gainRef.current = null;        // no graph → volume falls back to element.volume
-      return;
+    if (audio === sourceAudioElRef.current && sourceRef.current) {
+      // Reuse existing source node bound to this HTMLMediaElement to avoid InvalidStateError
+      source = sourceRef.current;
+      try { source.disconnect(); } catch {}
+    } else {
+      if (sourceRef.current) {
+        try { sourceRef.current.disconnect(); } catch {}
+        sourceRef.current = null;
+      }
+      try {
+        source = ctx.createMediaElementSource(audio);
+        sourceRef.current = source;
+        sourceAudioElRef.current = audio;
+      } catch (e) {
+        // Already connected to another context or security error — skip Web Audio
+        console.warn("Web Audio source error, falling back to native audio:", e);
+        eqEnabledRef.current = false;
+        setEqActive(false);
+        gainRef.current = null;        // no graph → volume falls back to element.volume
+        try { audio.volume = volume; } catch {}
+        return;
+      }
     }
 
     eqEnabledRef.current = true;
@@ -534,10 +542,18 @@ export function useAudioPlayer() {
         return;
       }
 
+      // Check true buffer starvation timeout (waiting > 12s without recovery)
+      if (waitingSinceRef.current && now - waitingSinceRef.current > 12000) {
+        waitingSinceRef.current = null;
+        scheduleReconnect("buffer-starvation");
+        return;
+      }
+
       if (t > lastProgressRef.current.t + 0.05) {
         // Time moved → reset stall counter (good progress)
         lastProgressRef.current = { t, at: now };
         stallCountRef.current = 0;
+        waitingSinceRef.current = null;
       } else if (now - lastProgressRef.current.at > stallThreshold) {
         // Time frozen → increment stall counter
         stallCountRef.current++;
@@ -651,11 +667,21 @@ export function useAudioPlayer() {
     };
     audio.onstalled = () => {
       if (sessionIdRef.current !== currentSession) return;
-      // Stalled event: network buffered no new packets for a while
-      if (liveRef.current && wantPlayingRef.current) {
-        setIsLoading(true);
-        scheduleReconnect("network-stalled");
+      // Stalled event: network buffered no new packets for a while.
+      // Modern browsers stall normally when the buffer is saturated.
+      // Do not kill the stream here — watchdog handles true freeze.
+    };
+    audio.onwaiting = () => {
+      if (sessionIdRef.current !== currentSession) return;
+      setIsLoading(true);
+      if (!waitingSinceRef.current) {
+        waitingSinceRef.current = Date.now();
       }
+    };
+    audio.oncanplay = () => {
+      if (sessionIdRef.current !== currentSession) return;
+      waitingSinceRef.current = null;
+      setIsLoading(false);
     };
     audio.onerror = () => {
       journal("error", String(audio.error?.code ?? "?"));
@@ -700,6 +726,7 @@ export function useAudioPlayer() {
         return;
       }
       clearConnectTimer();
+      waitingSinceRef.current = null;
       setIsPlaying(true);
       setIsLoading(false);
       attemptRef.current = 0;
@@ -1011,6 +1038,7 @@ export function useAudioPlayer() {
     clearReconnect();
     stopWatchdog();
     clearConnectTimer();
+    waitingSinceRef.current = null;
     setReconnecting(false);
     setIsLoading(false);
     if (modeRef.current === "decoder") {

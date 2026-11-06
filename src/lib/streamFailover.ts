@@ -16,10 +16,15 @@ export interface StreamCandidateStation {
  */
 export function getAllStationStreams(station: StreamCandidateStation): string[] {
   const list: string[] = [];
+  const isHttps = typeof window !== "undefined" && window.location.protocol === "https:";
 
   const addUrl = (url: string | undefined | null) => {
     if (!url || typeof url !== "string") return;
-    const clean = url.trim();
+    let clean = url.trim();
+    if (isHttps && clean.startsWith("http://")) {
+      // In HTTPS origin, upgrade http to https to avoid mixed content blocking
+      clean = clean.replace("http://", "https://");
+    }
     if (clean && !list.includes(clean)) {
       list.push(clean);
     }
@@ -35,10 +40,10 @@ export function getAllStationStreams(station: StreamCandidateStation): string[] 
     }
   }
 
-  // 3. If primary was http, add https candidate (and vice versa)
+  // 3. Fallback candidates: only upgrade http to https, never downgrade in HTTPS
   if (station.streamUrl.startsWith("http://")) {
     addUrl(station.streamUrl.replace("http://", "https://"));
-  } else if (station.streamUrl.startsWith("https://")) {
+  } else if (!isHttps && station.streamUrl.startsWith("https://")) {
     addUrl(station.streamUrl.replace("https://", "http://"));
   }
 

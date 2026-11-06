@@ -487,7 +487,8 @@ export default function Player({
 
       {/* Controls */}
       <div className="px-5 pb-3 space-y-3">
-        <div className="flex items-center gap-2 sm:gap-3">
+        {/* Tier 1: Primary Playback & Volume Control */}
+        <div className="flex items-center gap-2.5 sm:gap-3 w-full">
           {/* Quick Skip -15s for Podcasts / Tracks */}
           {(isPodcast || duration > 0) && (
             <motion.button
@@ -577,7 +578,7 @@ export default function Player({
           )}
 
           {/* Volume with mute toggle */}
-          <div className="flex items-center gap-2 flex-1">
+          <div className="flex items-center gap-2 flex-1 min-w-0">
             <motion.button
               whileTap={{ scale: 0.85 }}
               transition={{ type: "spring", stiffness: 500, damping: 25 }}
@@ -605,12 +606,15 @@ export default function Player({
             <input type="range" min={0} max={1} step={0.02} value={volume}
               onChange={(e) => changeVolume(Number(e.target.value))}
               aria-label="Volume" title={`Volume ${Math.round(volume * 100)}%`}
-              className="flex-1" style={{ accentColor: isNothing ? "#d71921" : "var(--accent)" }} />
-            <span className="text-xs text-white/30 w-7 text-right tabular-nums">
+              className="flex-1 min-w-[50px]" style={{ accentColor: isNothing ? "#d71921" : "var(--accent)" }} />
+            <span className="text-xs text-white/30 w-7 text-right tabular-nums flex-shrink-0">
               {Math.round(volume * 100)}
             </span>
           </div>
+        </div>
 
+        {/* Tier 2: Dedicated Secondary Action Toolbar (Pills Grid / Clean Flex Wrap) */}
+        <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
           {/* Live Audio Recorder (REC DVR) */}
           <AudioRecorderModal
             mediaElRef={mediaElRef}
@@ -635,7 +639,12 @@ export default function Player({
             style={showEQ ? { color: "var(--accent)" } : {}}
             title={!eqActive ? "EQ indisponible (CORS stream)" : "Égaliseur"}
           >
-            EQ
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="4" y1="21" x2="4" y2="14" /><line x1="4" y1="10" x2="4" y2="3" />
+              <line x1="12" y1="21" x2="12" y2="12" /><line x1="12" y1="8" x2="12" y2="3" />
+              <line x1="20" y1="21" x2="20" y2="16" /><line x1="20" y1="12" x2="20" y2="3" />
+            </svg>
+            <span>EQ</span>
             {anyBandActive && eqActive && (
               <span className="w-1.5 h-1.5 rounded-full animate-pulse"
                 style={{ background: "var(--accent)" }} />
@@ -658,7 +667,7 @@ export default function Player({
               }`}
               title="Paroles du morceau en direct"
             >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
               </svg>
               <span>Paroles</span>
@@ -683,7 +692,7 @@ export default function Player({
               }`}
               title="Minuteur de veille avancé avec fondu sonore"
             >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
               </svg>
               <span>
@@ -712,7 +721,7 @@ export default function Player({
               className="px-3 py-1.5 rounded-xl text-xs font-semibold transition-all glass glass-hover flex items-center gap-1.5 cursor-pointer text-white/45 hover:text-white"
               title="Programmer un réveil intelligent ou mode chevet"
             >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="13" r="8" />
                 <path d="M12 9v4l2.5 2M5 3L2 6M19 3l3 3" />
               </svg>
