@@ -10,7 +10,7 @@ import {
   CONCERT_HALL,
   DYNAMIC_PUNCH,
 } from "@/hooks/useAudioPlayer";
-import { Station, StreamQuality } from "@/lib/stations";
+import { Station, StreamQuality, isLowBandwidthActive } from "@/lib/stations";
 import AudioVisualizer from "./AudioVisualizer";
 import Equalizer from "./Equalizer";
 import StationLogo from "./StationLogo";
@@ -181,8 +181,7 @@ export default function Player({
   // Determine current stream (selected quality, else station default — the
   // lowest-bitrate tier when "Économie de données" is on, matching what
   // page.tsx actually loaded via preferredStreamUrl()).
-  let lowBandwidth = false;
-  try { lowBandwidth = localStorage.getItem("radiofr_low_bandwidth") === "1"; } catch {}
+  const lowBandwidth = isLowBandwidthActive();
   const currentStream = activeQuality ?? (lowBandwidth
     ? (station?.streams?.[0] ?? station?.streams?.[1])
     : (station?.streams?.[1] ?? station?.streams?.[0]));

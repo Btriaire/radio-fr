@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-import { Station, preferredStreamUrl } from "@/lib/stations";
+import { Station, preferredStreamUrl, isConstrainedNetwork } from "@/lib/stations";
 
 export interface NowPlayingInfo {
   songTitle: string | null;
@@ -11,6 +11,9 @@ export interface NowPlayingInfo {
 }
 
 const POLL_INTERVAL_MS = 12000;
+// Sur réseau lent / économiseur de données : moins de requêtes, la bande
+// passante va d'abord au flux audio.
+const POLL_INTERVAL_CONSTRAINED_MS = 30000;
 
 export function useNowPlaying(station: Station | null, isPlaying: boolean): NowPlayingInfo {
   const [info, setInfo] = useState<NowPlayingInfo>({
@@ -73,12 +76,15 @@ export function useNowPlaying(station: Station | null, isPlaying: boolean): NowP
     // First fetch immediately
     fetchMetadata(true);
 
-    // Poll every 12 seconds
-    const interval = setInterval(() => {
-      if (document.visibilityState === "visible") {
-        fetchMetadata(false);
-      }
-    }, POLL_INTERVAL_MS);
+    // Polling (12 s, 30 s sur réseau contraint) — uniquement écran visible
+    let interval: ReturnType<typeof setTimeout>;
+    const schedule = () => {
+      interval = setTimeout(() => {
+        if (document.visibilityState === "visible") fetchMetadata(false);
+        schedule();
+      }, isConstrainedNetwork() ? POLL_INTERVAL_CONSTRAINED_MS : POLL_INTERVAL_MS);
+    };
+    schedule();
 
     // Also fetch on tab becoming visible again
     const onVisibilityChange = () => {
@@ -90,7 +96,7 @@ export function useNowPlaying(station: Station | null, isPlaying: boolean): NowP
 
     return () => {
       isCancelled = true;
-      clearInterval(interval);
+      clearTimeout(interval);
       document.removeEventListener("visibilitychange", onVisibilityChange);
     };
   }, [station?.id, isPlaying]);

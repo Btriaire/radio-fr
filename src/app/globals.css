@@ -1,4 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=Silkscreen:wght@400;700&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -21,8 +20,8 @@
   --metal-hi:    rgba(255,255,255,0.12);
   --metal-lo:    rgba(0,0,0,0.35);
   --text-primary:#e2e8f0;
-  --font-main:   'Space Grotesk', 'Outfit', system-ui, sans-serif;
-  --font-dot:    'Silkscreen', 'Space Mono', monospace;
+  --font-main:   var(--nf-grotesk, 'Space Grotesk'), system-ui, sans-serif;
+  --font-dot:    var(--nf-silkscreen, 'Silkscreen'), var(--nf-mono, 'Space Mono'), monospace;
   /* legacy alias */
   --font-outfit: var(--font-main);
 }
@@ -43,7 +42,7 @@
   --metal-hi:    rgba(0,0,0,0.06);
   --metal-lo:    rgba(0,0,0,0.03);
   --text-primary:#000000;
-  --font-main:   'Space Grotesk', system-ui, sans-serif;
+  --font-main:   var(--nf-grotesk, 'Space Grotesk'), system-ui, sans-serif;
 }
 
 /* ─── Nothing OS (Dark) - Deep OLED & Precision Monochrome aesthetic ─ */
@@ -62,7 +61,7 @@
   --metal-hi:    rgba(255,255,255,0.08);
   --metal-lo:    rgba(0,0,0,0.8);
   --text-primary:#ffffff;
-  --font-main:   'Space Grotesk', system-ui, sans-serif;
+  --font-main:   var(--nf-grotesk, 'Space Grotesk'), system-ui, sans-serif;
 }
 
 [data-theme="steel"] {

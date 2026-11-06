@@ -1,12 +1,13 @@
 "use client";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAudioPlayer } from "@/hooks/useAudioPlayer";
 import { useFavorites } from "@/hooks/useFavorites";
 import { useStationLogos } from "@/hooks/useStationLogos";
 import { useTheme, THEMES } from "@/context/ThemeContext";
-import { STATIONS, GENRES, Station, isEqCompatible, preferredStreamUrl } from "@/lib/stations";
+import { STATIONS, GENRES, Station, isEqCompatible, preferredStreamUrl, isConstrainedNetwork } from "@/lib/stations";
 import { playableUrl, MusicTrack } from "@/lib/musicSearch";
 import { getOfflineBlobUrl } from "@/lib/offlineStorage";
 import Player from "@/components/Player";
@@ -15,10 +16,7 @@ import SpotifyPanel, { SpotifyPanelHandle, AudiusView, RSSEpisode, iTunesPodcast
 import { usePlayedEpisodes } from "@/hooks/usePlayedEpisodes";
 import ClipVisualizer from "@/components/ClipVisualizer";
 import RadioSearch from "@/components/RadioSearch";
-import ConfigPanel from "@/components/ConfigPanel";
 import WebRadioPanel from "@/components/WebRadioPanel";
-import IpodOverlay from "@/components/IpodOverlay";
-import DjMode from "@/components/DjMode";
 import YouTubeMiniPlayer from "@/components/YouTubeMiniPlayer";
 import ZenBackground from "@/components/ZenBackground";
 import NothingGlyphBackground from "@/components/NothingGlyphBackground";
@@ -32,14 +30,44 @@ import OfflineNotice from "@/components/OfflineNotice";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { useNowPlaying } from "@/hooks/useNowPlaying";
 import { saveTrackHistory } from "@/lib/trackHistory";
-import TrackHistoryDrawer from "@/components/TrackHistoryDrawer";
-import CommandPalette from "@/components/CommandPalette";
-import LyricsModal from "@/components/LyricsModal";
-import SleepTimerModal from "@/components/SleepTimerModal";
 import { useAlarmClock } from "@/hooks/useAlarmClock";
-import { AlarmClockModal } from "@/components/AlarmClockModal";
-import DesktopFloatingPlayer from "@/components/DesktopFloatingPlayer";
-import CarModeModal from "@/components/CarModeModal";
+
+
+// ── Modales chargées à la demande ────────────────────────────────────────────
+// Elles ne s'affichent qu'après une action de l'utilisateur : les sortir du
+// bundle initial accélère nettement le premier affichage sur réseau mobile.
+const lazyModules = {
+  ConfigPanel: () => import("@/components/ConfigPanel"),
+  IpodOverlay: () => import("@/components/IpodOverlay"),
+  DjMode: () => import("@/components/DjMode"),
+  TrackHistoryDrawer: () => import("@/components/TrackHistoryDrawer"),
+  CommandPalette: () => import("@/components/CommandPalette"),
+  LyricsModal: () => import("@/components/LyricsModal"),
+  SleepTimerModal: () => import("@/components/SleepTimerModal"),
+  DesktopFloatingPlayer: () => import("@/components/DesktopFloatingPlayer"),
+  CarModeModal: () => import("@/components/CarModeModal"),
+  AlarmClockModal: () => import("@/components/AlarmClockModal"),
+};
+const ConfigPanel = dynamic(() => lazyModules.ConfigPanel().then((m) => m.default), { ssr: false });
+const IpodOverlay = dynamic(() => lazyModules.IpodOverlay().then((m) => m.default), { ssr: false });
+const DjMode = dynamic(() => lazyModules.DjMode().then((m) => m.default), { ssr: false });
+const TrackHistoryDrawer = dynamic(() => lazyModules.TrackHistoryDrawer().then((m) => m.default), { ssr: false });
+const CommandPalette = dynamic(() => lazyModules.CommandPalette().then((m) => m.default), { ssr: false });
+const LyricsModal = dynamic(() => lazyModules.LyricsModal().then((m) => m.default), { ssr: false });
+const SleepTimerModal = dynamic(() => lazyModules.SleepTimerModal().then((m) => m.default), { ssr: false });
+const DesktopFloatingPlayer = dynamic(() => lazyModules.DesktopFloatingPlayer().then((m) => m.default), { ssr: false });
+const CarModeModal = dynamic(() => lazyModules.CarModeModal().then((m) => m.default), { ssr: false });
+const AlarmClockModal = dynamic(() => lazyModules.AlarmClockModal().then((m) => m.AlarmClockModal), { ssr: false });
+
+// Une fois l'app affichée et au repos, on précharge ces modules pour qu'ils
+// s'ouvrent instantanément — sauf sur réseau lent / économiseur de données.
+function prefetchLazyModules() {
+  if (isConstrainedNetwork()) return;
+  const run = () => Object.values(lazyModules).forEach((load) => load().catch(() => {}));
+  const w = window as any;
+  if (typeof w.requestIdleCallback === "function") w.requestIdleCallback(run, { timeout: 8000 });
+  else setTimeout(run, 4000);
+}
 
 type Tab = "radio" | "webradio" | "search" | "favoris" | "podcasts" | "audius";
 
@@ -124,6 +152,8 @@ export default function Home() {
 
   // Podcast play-queue for automatic episode chaining (enchaînement auto).
   const episodeQueueRef = useRef<{ episodes: RSSEpisode[]; podcast: iTunesPodcast; index: number } | null>(null);
+
+  useEffect(() => { prefetchLazyModules(); }, []);
 
   // Save played songs to track history (persisted in localStorage)
   useEffect(() => {
