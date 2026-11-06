@@ -55,6 +55,8 @@ export default function StationLogo({ logo, name, color, size = "md" }: Props) {
           alt={name}
           width={px - 8}
           height={px - 8}
+          loading={size === "xl" ? "eager" : "lazy"}
+          decoding="async"
           className="relative z-10 p-1"
           style={{ objectFit: "contain", width: size === "xl" ? px - 56 : px - 8, height: size === "xl" ? px - 56 : px - 8 }}
           onError={() => {

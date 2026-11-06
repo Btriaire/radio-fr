@@ -964,6 +964,17 @@ export function useAudioPlayer() {
       setIsLoading(false);
       return; // onOnline() retries this same station once connectivity is back
     }
+    // Réseau mobile faible (4G saturée, zone blanche, tunnel) : après 2 coupures
+    // d'affilée, on se replie sur le flux le plus léger de la station — un
+    // 32 kbps qui tient vaut mieux qu'un 128 kbps qui coupe. Le flux normal
+    // revient au prochain changement de station.
+    const st = stationRef.current;
+    const lowest = st?.streams?.[0]?.url;
+    const isThisStation = !!st && (st.streamUrl === last.url || !!st.streams?.some((q) => q.url === last.url));
+    if (last.live && lowest && isThisStation && attemptRef.current >= 2 && last.url !== lowest) {
+      journal("downgrade", lowest);
+      last.url = lowest;
+    }
     setReconnecting(true);
     setIsLoading(true);
     let iosEqOptIn = false;

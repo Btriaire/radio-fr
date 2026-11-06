@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { THEMES, IPOD_SKINS, useTheme, VisualizerStyle } from "@/context/ThemeContext";
-import { STATIONS } from "@/lib/stations";
+import { STATIONS, isLowBandwidthActive } from "@/lib/stations";
 import { readJournal, clearJournal } from "@/lib/playbackJournal";
 
 interface Props {
@@ -29,6 +29,7 @@ export default function ConfigPanel({ open, onClose }: Props) {
   // Options states
   const [iosEq, setIosEq] = useState(false);
   const [lowBandwidth, setLowBandwidth] = useState(false);
+  const [lowBandwidthAuto, setLowBandwidthAuto] = useState(true);
   const [lowBattery, setLowBattery] = useState(false);
   const [autoReconnect, setAutoReconnect] = useState(true);
   const [volumeNormalization, setVolumeNormalization] = useState(true);
@@ -55,7 +56,8 @@ export default function ConfigPanel({ open, onClose }: Props) {
   useEffect(() => {
     try {
       setIosEq(localStorage.getItem("radiofr_ios_eq") === "1");
-      setLowBandwidth(localStorage.getItem("radiofr_low_bandwidth") === "1");
+      setLowBandwidth(isLowBandwidthActive());
+      setLowBandwidthAuto(localStorage.getItem("radiofr_low_bandwidth") === null);
       setLowBattery(localStorage.getItem("radiofr_low_battery") === "1");
       setAutoReconnect(localStorage.getItem("radiofr_auto_reconnect") !== "0");
       setVolumeNormalization(localStorage.getItem("radiofr_vol_norm") !== "0");
@@ -83,6 +85,7 @@ export default function ConfigPanel({ open, onClose }: Props) {
     setLowBandwidth((v) => {
       const next = !v;
       try { localStorage.setItem("radiofr_low_bandwidth", next ? "1" : "0"); } catch {}
+      setLowBandwidthAuto(false);
       return next;
     });
   };
@@ -375,6 +378,20 @@ export default function ConfigPanel({ open, onClose }: Props) {
                       <div>
                         <p className="text-white text-sm font-bold">Économie de données</p>
                         <p className="text-white/45 text-xs mt-0.5">Privilégie les flux 32-64 kbps pour réduire la consommation mobile.</p>
+                        {lowBandwidthAuto ? (
+                          <p className="text-white/35 text-[11px] mt-1">Auto : s&apos;active seul sur réseau lent ou si l&apos;économiseur de données du téléphone est activé.</p>
+                        ) : (
+                          <button
+                            onClick={() => {
+                              try { localStorage.removeItem("radiofr_low_bandwidth"); } catch {}
+                              setLowBandwidthAuto(true);
+                              setLowBandwidth(isLowBandwidthActive());
+                            }}
+                            className="text-[var(--accent)] text-[11px] font-semibold mt-1 underline underline-offset-2"
+                          >
+                            Repasser en automatique
+                          </button>
+                        )}
                       </div>
                       <button
                         onClick={toggleLowBandwidth}

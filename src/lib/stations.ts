@@ -77,12 +77,34 @@ export function isEqCompatible(url: string | undefined | null): boolean {
 // localStorage per-call (not cached) keeps this correct even if the user
 // flips the setting mid-session without needing to thread the flag through
 // every call site.
-export function preferredStreamUrl(station: { streamUrl: string; streams?: StreamQuality[] }): string {
+// Réseau contraint : Android/Chrome expose navigator.connection (iOS Safari
+// non — le réglage manuel reste alors le seul levier). On bascule sur le flux
+// économique quand l'utilisateur a activé « Économiseur de données » sur son
+// téléphone, ou quand le débit mesuré est celui d'une 3G/2G (4G saturée,
+// zone mal couverte).
+export function isConstrainedNetwork(): boolean {
   try {
-    if (localStorage.getItem("radiofr_low_bandwidth") === "1" && station.streams?.length) {
-      return station.streams[0].url;
-    }
+    const c = (navigator as any).connection;
+    if (!c) return false;
+    if (c.saveData) return true;
+    return c.effectiveType === "slow-2g" || c.effectiveType === "2g" || c.effectiveType === "3g";
+  } catch {
+    return false;
+  }
+}
+
+// "1" = toujours, "0" = jamais (choix explicite), absent = automatique selon le réseau.
+export function isLowBandwidthActive(): boolean {
+  try {
+    const v = localStorage.getItem("radiofr_low_bandwidth");
+    if (v === "1") return true;
+    if (v === "0") return false;
   } catch {}
+  return isConstrainedNetwork();
+}
+
+export function preferredStreamUrl(station: { streamUrl: string; streams?: StreamQuality[] }): string {
+  if (station.streams?.length && isLowBandwidthActive()) return station.streams[0].url;
   return station.streamUrl;
 }
 

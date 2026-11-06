@@ -1,5 +1,13 @@
 import type { Metadata, Viewport } from "next";
+import { Space_Grotesk, Silkscreen, Space_Mono } from "next/font/google";
 import "./globals.css";
+
+// Polices auto-hébergées par Next (servies depuis notre domaine, préchargées,
+// mises en cache par le service worker) : plus de chaîne bloquante
+// CSS Google -> CSS -> fichiers de police, coûteuse en latence sur la 4G.
+const grotesk = Space_Grotesk({ subsets: ["latin"], weight: ["300", "400", "500", "600", "700"], display: "swap", variable: "--nf-grotesk" });
+const silkscreen = Silkscreen({ subsets: ["latin"], weight: ["400", "700"], display: "swap", variable: "--nf-silkscreen", preload: false });
+const spaceMono = Space_Mono({ subsets: ["latin"], weight: ["400", "700"], display: "swap", variable: "--nf-mono", preload: false });
 import { ThemeProvider } from "@/context/ThemeContext";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 
@@ -33,15 +41,7 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fr">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap"
-          rel="stylesheet"
-        />
-      </head>
+    <html lang="fr" className={`${grotesk.variable} ${silkscreen.variable} ${spaceMono.variable}`}>
       <body className="min-h-screen antialiased" style={{ background: "var(--bg-0)" }}>
         <ServiceWorkerRegister />
         <ThemeProvider>
