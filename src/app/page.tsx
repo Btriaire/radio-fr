@@ -40,6 +40,7 @@ import { useAlarmClock } from "@/hooks/useAlarmClock";
 import { AlarmClockModal } from "@/components/AlarmClockModal";
 import DesktopFloatingPlayer from "@/components/DesktopFloatingPlayer";
 import CarModeModal from "@/components/CarModeModal";
+import PwaInstallPrompt from "@/components/PwaInstallPrompt";
 
 type Tab = "radio" | "webradio" | "search" | "favoris" | "podcasts" | "audius";
 
@@ -115,7 +116,7 @@ export default function Home() {
   const spotifyPanelRef                         = useRef<SpotifyPanelHandle>(null);
 
   const playerApi                               = useAudioPlayer();
-  const online                                  = useOnlineStatus();
+  const { online, reconnected }                 = useOnlineStatus();
   const nowPlaying                              = useNowPlaying(selectedStation, playerApi.isPlaying);
   const { favorites, isFavorite, toggleFavorite } = useFavorites();
   const logoMap                                 = useStationLogos(STATIONS);
@@ -799,7 +800,7 @@ export default function Home() {
         </div>
       </nav>
 
-      {/* ── Global offline banner — independent of whether anything is playing ── */}
+      {/* ── Global offline & reconnected banners ── */}
       <AnimatePresence>
         {!online && (
           <motion.div
@@ -810,7 +811,21 @@ export default function Home() {
               <div role="status" className="flex items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-medium text-amber-100"
                 style={{ background: "rgba(217,119,6,0.18)", border: "1px solid rgba(217,119,6,0.35)" }}>
                 <span className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0 animate-pulse" />
-                Hors ligne — Favoris, Radio et tes épisodes téléchargés restent utilisables ; la recherche est en pause.
+                Mode Hors ligne / Tunnel — Favoris et épisodes téléchargés restent utilisables.
+              </div>
+            </div>
+          </motion.div>
+        )}
+        {online && reconnected && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }} className="overflow-hidden relative z-20"
+          >
+            <div className="max-w-6xl mx-auto px-3 sm:px-4 pt-3">
+              <div role="status" className="flex items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-medium text-emerald-100"
+                style={{ background: "rgba(16,185,129,0.18)", border: "1px solid rgba(16,185,129,0.35)" }}>
+                <span className="w-2 h-2 rounded-full bg-emerald-400 flex-shrink-0 animate-ping" />
+                Connexion rétablie — Reprise du direct en cours.
               </div>
             </div>
           </motion.div>
@@ -1423,6 +1438,9 @@ export default function Home() {
         volume={playerApi.volume}
         onChangeVolume={playerApi.changeVolume}
       />
+
+      {/* Invite d'installation PWA Mobile (iOS Safari & Android Chromium) */}
+      <PwaInstallPrompt />
     </div>
   );
 }

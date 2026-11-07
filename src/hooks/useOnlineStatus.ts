@@ -1,26 +1,53 @@
 "use client";
+
 import { useEffect, useState } from "react";
 
-// App-wide connectivity, independent of whether a station/podcast happens to
-// be loaded — useAudioPlayer's own `offline` flag only exists once something
-// is playing. This one is available anywhere (header banner, disabling
-// network-only tabs) from the moment the page loads.
-export function useOnlineStatus(): boolean {
-  // navigator.onLine is undefined during SSR; assume online until the effect
-  // below reads the real value on mount (avoids a false "offline" flash).
-  const [online, setOnline] = useState(true);
+type OnlineStatus = {
+  online: boolean;
+  reconnected: boolean;
+};
+
+export const useOnlineStatus = (): OnlineStatus => {
+  const [online, setOnline] = useState<boolean>(
+    typeof navigator !== "undefined" ? navigator.onLine : true
+  );
+  const [reconnected, setReconnected] = useState<boolean>(false);
 
   useEffect(() => {
-    setOnline(navigator.onLine);
-    const onOnline = () => setOnline(true);
-    const onOffline = () => setOnline(false);
-    window.addEventListener("online", onOnline);
-    window.addEventListener("offline", onOffline);
-    return () => {
-      window.removeEventListener("online", onOnline);
-      window.removeEventListener("offline", onOffline);
-    };
-  }, []);
+    let timeoutId: NodeJS.Timeout | null = null;
 
-  return online;
-}
+    const handleOnline = () => {
+      if (!online) {
+        setOnline(true);
+        timeoutId = setTimeout(() => {
+          setReconnected(true);
+          setTimeout(() => {
+            setReconnected(false);
+          }, 3500);
+        }, 0);
+      }
+    };
+
+    const handleOffline = () => {
+      setOnline(false);
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+      setReconnected(false);
+    };
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [online]);
+
+  return { online, reconnected };
+};
