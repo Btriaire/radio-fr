@@ -7,6 +7,7 @@ import type { NowPlayingInfo } from "@/hooks/useNowPlaying";
 import type { useAudioPlayer } from "@/hooks/useAudioPlayer";
 import { useTheme } from "@/context/ThemeContext";
 import AudioRecorderModal from "./AudioRecorderModal";
+import { useSwipeGesture } from "@/hooks/useSwipeGesture";
 
 interface PodcastNowPlaying {
   episodeTitle: string;
@@ -67,6 +68,13 @@ export default function NowPlayingSheet({
   const [showAdvanced, setShowAdvanced] = useState(false);
   const dragControls = useDragControls();
 
+  const artworkSwipe = useSwipeGesture({
+    onSwipeLeft: onNext,
+    onSwipeRight: onPrev,
+    minDistance: 35,
+    enableHaptics: true,
+  });
+
   const isPodcast = !!podcast && !station;
   const accent = isNothing ? "#d71921" : (station?.color ?? "#3b82f6");
   const title = isPodcast ? podcast!.episodeTitle : station!.name;
@@ -126,10 +134,14 @@ export default function NowPlayingSheet({
       </div>
 
       <div className="relative z-10 flex-1 flex flex-col px-6 pt-4 pb-6 gap-6">
-        {/* Artwork — breathes while playing, shrinks when paused */}
-        <div className="flex justify-center">
-          <motion.div animate={{ scale: isPlaying ? 1 : 0.9 }} transition={{ type: "spring", damping: 20, stiffness: 180 }}
-            className="relative">
+        {/* Artwork — breathes while playing, shrinks when paused, swipe to zap */}
+        <div className="flex flex-col items-center justify-center">
+          <motion.div
+            {...artworkSwipe}
+            animate={{ scale: isPlaying ? 1 : 0.9 }}
+            transition={{ type: "spring", damping: 20, stiffness: 180 }}
+            className="relative cursor-grab active:cursor-grabbing touch-pan-y"
+          >
             {isPodcast ? (
               podcast!.artwork ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -142,6 +154,13 @@ export default function NowPlayingSheet({
               <StationLogo logo={station!.logo} name={station!.name} color={station!.color} size="xl" />
             )}
           </motion.div>
+          {!isPodcast && (
+            <p className="text-[10px] uppercase tracking-wider text-white/40 mt-2 flex items-center gap-1 select-none font-medium">
+              <svg className="w-3 h-3 stroke-current opacity-60" viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              Glisser pour zapper
+              <svg className="w-3 h-3 stroke-current opacity-60" viewBox="0 0 24 24" fill="none"><path d="M9 18l6-6-6-6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </p>
+          )}
         </div>
 
         {/* Title block */}

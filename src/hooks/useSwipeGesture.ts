@@ -1,98 +1,95 @@
 "use client";
-import { useRef, useCallback } from "react";
+
+import { useRef } from 'react';
 
 export interface SwipeGestureOptions {
   onSwipeLeft?: () => void;
   onSwipeRight?: () => void;
   onSwipeUp?: () => void;
   onSwipeDown?: () => void;
+  onSwipe?: (direction: 'left' | 'right' | 'up' | 'down') => void;
   minDistance?: number;
   maxDurationMs?: number;
+  enableHaptics?: boolean;
 }
 
 export interface SwipeHandlers {
   onTouchStart: (e: React.TouchEvent) => void;
+  onTouchMove?: (e: React.TouchEvent) => void;
   onTouchEnd: (e: React.TouchEvent) => void;
   onTouchCancel: () => void;
 }
 
-/**
- * Mobile touch swipe detection hook for station navigation and panel expansion.
- * Sequenced and engineered with Falken-Smart.
- */
 export function useSwipeGesture(options: SwipeGestureOptions): SwipeHandlers {
   const {
     onSwipeLeft,
     onSwipeRight,
     onSwipeUp,
     onSwipeDown,
-    minDistance = 45,
+    onSwipe,
+    minDistance = 40,
     maxDurationMs = 600,
+    enableHaptics = true,
   } = options;
 
-  const touchRef = useRef<{
-    startX: number;
-    startY: number;
-    startTime: number;
-  } | null>(null);
+  const startX = useRef<number>(0);
+  const startY = useRef<number>(0);
+  const startTime = useRef<number>(0);
 
-  const onTouchStart = useCallback((e: React.TouchEvent) => {
-    if (e.touches.length !== 1) {
-      touchRef.current = null;
-      return;
-    }
+  const onTouchStart = (e: React.TouchEvent) => {
     const touch = e.touches[0];
-    touchRef.current = {
-      startX: touch.clientX,
-      startY: touch.clientY,
-      startTime: Date.now(),
-    };
-  }, []);
+    startX.current = touch.clientX;
+    startY.current = touch.clientY;
+    startTime.current = Date.now();
+  };
 
-  const onTouchEnd = useCallback(
-    (e: React.TouchEvent) => {
-      if (!touchRef.current || e.changedTouches.length === 0) {
-        touchRef.current = null;
-        return;
-      }
+  const onTouchEnd = (e: React.TouchEvent) => {
+    const touch = e.changedTouches[0];
+    const deltaX = touch.clientX - startX.current;
+    const deltaY = touch.clientY - startY.current;
+    const duration = Date.now() - startTime.current;
 
-      const { startX, startY, startTime } = touchRef.current;
-      touchRef.current = null;
-
-      const duration = Date.now() - startTime;
-      if (duration > maxDurationMs) return;
-
-      const touch = e.changedTouches[0];
-      const deltaX = touch.clientX - startX;
-      const deltaY = touch.clientY - startY;
+    if (duration <= maxDurationMs) {
       const absX = Math.abs(deltaX);
       const absY = Math.abs(deltaY);
 
-      // Horizontal swipe dominant
-      if (absX >= minDistance && absX > 1.4 * absY) {
+      if (absX > 1.3 * absY && absX >= minDistance) {
         if (deltaX < 0) {
           onSwipeLeft?.();
+          onSwipe?.('left');
         } else {
           onSwipeRight?.();
+          onSwipe?.('right');
         }
-        return;
-      }
-
-      // Vertical swipe dominant
-      if (absY >= minDistance && absY > 1.4 * absX) {
+        if (enableHaptics && typeof navigator !== "undefined" && navigator.vibrate) {
+          navigator.vibrate(30);
+        }
+      } else if (absY > 1.3 * absX && absY >= minDistance) {
         if (deltaY < 0) {
           onSwipeUp?.();
+          onSwipe?.('up');
         } else {
           onSwipeDown?.();
+          onSwipe?.('down');
+        }
+        if (enableHaptics && typeof navigator !== "undefined" && navigator.vibrate) {
+          navigator.vibrate(25);
         }
       }
-    },
-    [onSwipeLeft, onSwipeRight, onSwipeUp, onSwipeDown, minDistance, maxDurationMs]
-  );
+    }
+  };
 
-  const onTouchCancel = useCallback(() => {
-    touchRef.current = null;
-  }, []);
+  const onTouchCancel = () => {
+    startX.current = 0;
+    startY.current = 0;
+    startTime.current = 0;
+  };
 
-  return { onTouchStart, onTouchEnd, onTouchCancel };
+  return {
+    onTouchStart,
+    onTouchEnd,
+    onTouchCancel,
+  };
 }
+
+export default useSwipeGesture;
